@@ -1,29 +1,50 @@
-# Modelo relacional — diagrama v1
+# Diagrama ER v1 — Modelo SQLite en uso
 
-La propuesta original incluye cuentas, usuarios, monedas, ingresos, gastos, transferencias, presupuestos, alertas y ahorros. Esta vista simplificada representa las relaciones principales.
+Este es el modelo real de **cinco tablas** utilizado por `src/db.py` y definido en `src/schema.sql`.
 
 ```mermaid
 erDiagram
-    usuarios ||--o{ cuentas : tiene
-    usuarios ||--o{ categorias : personaliza
+    usuarios ||--o{ categorias : configura
+    usuarios ||--o{ cuentas : mantiene
+    usuarios ||--o{ movimientos : registra
     usuarios ||--o{ presupuestos : establece
-    usuarios ||--o{ ingresos : registra
-    usuarios ||--o{ gastos : registra
-    usuarios ||--o{ metas_ahorro : define
-    usuarios ||--o{ sesiones : abre
-    monedas ||--o{ cuentas : denomina
-    monedas ||--o{ metas_ahorro : denomina
-    monedas ||--o{ tipos_cambio : origen
-    categorias ||--o{ ingresos : clasifica
-    categorias ||--o{ gastos : clasifica
+    categorias ||--o{ movimientos : clasifica
     categorias ||--o{ presupuestos : limita
-    cuentas ||--o{ ingresos : recibe
-    cuentas ||--o{ gastos : paga
-    cuentas ||--o{ transferencias : participa
-    cuentas ||--o{ movimientos_ahorro : financia
-    presupuestos ||--o{ alertas : genera
-    metas_ahorro ||--o{ movimientos_ahorro : recibe
-    gastos ||--o{ comprobantes : documenta
+    cuentas ||--o{ movimientos : registra
+
+    usuarios {
+      integer id_usuario PK
+      text nombre
+    }
+    categorias {
+      integer id_categoria PK
+      integer id_usuario FK
+      text nombre
+      text tipo
+    }
+    cuentas {
+      integer id_cuenta PK
+      integer id_usuario FK
+      text nombre
+      integer saldo_inicial_centimos
+    }
+    movimientos {
+      integer id_movimiento PK
+      integer id_usuario FK
+      integer id_cuenta FK
+      integer id_categoria FK
+      text tipo
+      integer monto_centimos
+      text fecha
+    }
+    presupuestos {
+      integer id_presupuesto PK
+      integer id_usuario FK
+      integer id_categoria FK
+      integer anio
+      integer mes
+      integer monto_limite_centimos
+    }
 ```
 
-Las restricciones concretas, incluidas las dos cuentas de transferencia, se encuentran en `scripts/schema.sql`.
+El modelo ampliado de la presentación del Grupo 5 es una **propuesta para el futuro**; no es el esquema activo. Ver `docs/modelo_datos.md`.
