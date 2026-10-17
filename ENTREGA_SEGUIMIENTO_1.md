@@ -1,22 +1,36 @@
-# Qué hacer HOY — Grupo 5 — 16/10/2026
+# Seguimiento 1 — Estado verificado y cierre pendiente (16/10/2026)
 
-Esta es una base **local y verificable** para el Seguimiento 1 de **Control de Finanzas Familiares**. La propuesta proviene de la presentación del grupo (9/10/2026). **No representa una entrega hecha automáticamente a GitHub.**
+**Proyecto:** Control de Finanzas Familiares · **Grupo 5** · Tópicos Avanzados de Bases de Datos · UNA.
 
-## Archivos listos
+Esta guía resume el **estado real**, no una plantilla de instalación ni una afirmación de que el profesor ya aprobó el seguimiento.
 
-- `README.md`: problema, usuario, arquitectura, alcance, instalación y ruta de trabajo.
-- `src/schema.sql`: SQLite con 5 tablas de MVP.
-- `docs/arquitectura/diagrama.md`: diagrama y flujo entre aplicación y SQLite.
-- `docs/arquitectura/modelo-v1.md`: modelo relacional simplificado a partir del v4 de la propuesta.
-- `scripts/check_connection.py`: evidencia "hola mundo" de SQLite.
-- `scripts/seed.py`: datos de prueba totalmente inventados.
-- `docs/seguimientos/S1.md`: bitácora con estados y espacios para completar enlaces a evidencias reales.
-- `docs/seguimientos/guion_demo_S1.md`: guía oral de 5 minutos.
-- `.gitignore`, `.env.example`, `LICENSE`, `tests/`.
+## Evidencias completadas
 
-## Cómo mostrarlo en VS Code (Windows)
+- [x] Repositorio GitHub público: https://github.com/sebastins18/Control_Finanzas_Familiares
+- [x] README, licencia y estructura de carpetas.
+- [x] Arquitectura y modelo SQLite con cinco tablas operativas (`src/schema.sql`).
+- [x] Inicialización, conexión y carga de datos ficticios.
+- [x] Prototipo web y ruta `/health` en ejecución local.
+- [x] Pruebas: **10 de 10 correctas**, según la terminal del equipo (16 de octubre).
+- [x] Issues #1–#4 para S1–S4.
+- [x] GitHub Project creado e Issues importados: https://github.com/users/sebastins18/projects/1/views/1
+- [x] `docs/seguimientos/S1.md` actualizado con evidencias y pendientes.
+- [x] Tag remoto `v0.1.0` existente; **no contiene todas las correcciones posteriores de `main`**.
+
+## Pendientes reales
+
+- [ ] Cambiar la visibilidad de **GitHub Project** a **Public**. El repo ya es público, pero el tablero aparecía privado en la captura.
+- [ ] Mover Issue **#1 a In Progress** en el tablero mientras se verifica el cierre de S1; dejar #2–#4 en Todo hasta que comiencen.
+- [ ] Confirmar colaboradores Diego, Crystian y Mariano, con sus cuentas GitHub reales y al menos un commit propio comprobable por persona.
+- [ ] Acordar responsables y asignar los Issues correspondientes.
+- [ ] Registrar aprobación, asistencia, demostración y acuerdos del profesor.
+- [ ] Coordinar si la referencia compartida `v0.1.0` requiere actualización; no reescribirla sin avisar al equipo.
+
+### Verificación local (PowerShell)
 
 ```powershell
+git status
+git pull --ff-only origin main
 py scripts/init_db.py
 py scripts/seed.py
 py scripts/check_connection.py
@@ -24,17 +38,9 @@ py -m unittest discover -s tests -v
 py -m src.app
 ```
 
-Abrir `http://127.0.0.1:8000/` y probar registrar un gasto; abrir `/health` para la conexión.
+Luego abrir `http://127.0.0.1:8000/` y `http://127.0.0.1:8000/health`.
 
-## Falta hacerlo con el GitHub del grupo
+**No publicar archivos .env, credenciales ni datos financieros reales.** El proyecto está diseñado para una demo local académica.
 
-1. Publicar estos archivos en un repositorio **público**.
-2. Agregar colaboradores y registrar **un commit propio por cada integrante** (Sebastián, Diego, Crystian y Mariano).
-3. Crear **Issues** con responsables e hitos S1/S2/S3/S4.
-4. Actualizar los marcadores `PENDIENTE` de `docs/seguimientos/S1.md` con los enlaces reales.
-5. Crear y subir el tag remoto **`v0.1.0`** del commit que incluya la bitácora actualizada.
-6. Mostrar el avance al profesor y registrar los acuerdos en la bitácora.
-
-El enunciado especifica **6:00 p. m.** como hora límite previa al seguimiento del 16 de octubre; esa hora ya transcurrió. Conviene publicar inmediatamente y comunicarlo al profesor.
-
-**Cuidado:** no subir archivos SQLite con información personal ni el `.env` local.
+Para actualizar tareas y trabajar en ramas: [PLAN_GITHUB](docs/PLAN_GITHUB.md).  
+Para evidencia formal del seguimiento: [Bitácora S1](docs/seguimientos/S1.md).
