@@ -1,3 +1,7 @@
+-- MODELO AMPLIADO PROPUESTO / NO UTILIZAR PARA INICIALIZAR EL MVP.
+-- El esquema real de la aplicación Python se encuentra en src/schema.sql.
+-- Este DDL solo conserva la propuesta conceptual para etapas futuras.
+
 PRAGMA foreign_keys = ON;
 
 CREATE TABLE IF NOT EXISTS usuarios (
