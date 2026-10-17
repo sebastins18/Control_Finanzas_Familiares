@@ -43,7 +43,7 @@ flowchart LR
 - **Sin Redis, MongoDB ni Docker**: no tienen un rol necesario para este caso de uso local.
 - **Moneda actual:** colones costarricenses, almacenados como **centavos enteros** para evitar imprecisiones decimales.
 
-Ver [arquitectura detallada](docs/arquitectura/diagrama.md) y [modelo de datos](docs/arquitectura/modelo-v1.md).
+Ver [arquitectura detallada](docs/arquitectura/diagrama.md) y [modelo de datos vigente del MVP](docs/arquitectura/modelo-v1.md). El esquema ejecutado por la aplicación es **`src/schema.sql`**. El archivo `scripts/schema.sql` es un modelo ampliado propuesto para el futuro: **no ejecutarlo** sobre la base del MVP.
 
 ## 4. Requisitos
 
@@ -56,11 +56,11 @@ Ver [arquitectura detallada](docs/arquitectura/diagrama.md) y [modelo de datos](
 Descargar el ZIP del repositorio o clonarlo:
 
 ```powershell
-git clone https://github.com/TU-USUARIO/TU-REPO.git
-cd TU-REPO
+git clone https://github.com/sebastins18/Control_Finanzas_Familiares.git
+cd Control_Finanzas_Familiares
 ```
 
-> La dirección anterior es **un ejemplo pendiente**. Sustituirla por el repositorio público real del grupo. Si se usa un ZIP, descomprimirlo y abrir la carpeta `grupo5-finanzas-familiares`.
+Si se descarga como ZIP, descomprimirlo y abrir la carpeta del proyecto.
 
 ```powershell
 # Desde la raíz del proyecto
@@ -133,6 +133,8 @@ tests/                 # Pruebas unittest
 ```
 
 ## 9. Evidencia GitHub
+
+**Repositorio:** https://github.com/sebastins18/Control_Finanzas_Familiares · **Issues:** https://github.com/sebastins18/Control_Finanzas_Familiares/issues · **Tag S1:** https://github.com/sebastins18/Control_Finanzas_Familiares/releases/tag/v0.1.0 (verificar que apunta a la versión final).
 
 El repositorio debe ser público y tener: licencia MIT, Issues con responsables, colaboradores, commits propios de todos los integrantes, y tag `v0.1.0` para el seguimiento 1. **Un ZIP por sí solo no acredita estas acciones.** Consultar [guía para publicar](docs/PLAN_GITHUB.md) y [bitácora S1](docs/seguimientos/S1.md).
 
