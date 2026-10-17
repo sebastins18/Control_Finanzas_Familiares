@@ -9,4 +9,6 @@
 - Ajuste del test de conexión a la implementación real del MVP.
 - Clarificación de la diferencia entre el DDL operativo y el modelo ampliado propuesto.
 
-> Pendiente de cierre: repetir pruebas completas, confirmar commits de cada integrante y mover el tag a la revisión final.
+> Validación local documentada el 16/10/2026: **10/10 pruebas correctas**, tras corregir incompatibilidad del test de conexión y cierre explícito de conexiones en Windows. El tablero GitHub Projects fue creado con Issues #1–#4 y se vinculó en la bitácora.
+>
+> Pendiente de cierre: confirmar commits propios de los cuatro integrantes, hacer público el Project y coordinar con el equipo la versión definitiva del tag compartido `v0.1.0`. Los ajustes posteriores están en `main` y no cambian automáticamente el contenido del tag.
