@@ -1,33 +1,29 @@
-# Modelo de datos v1 (SQLite)
+# Modelo de datos SQLite — MVP implementado (S1)
 
-Baseado en la propuesta del Grupo 5, con ajustes de implementación para el MVP. Las tablas se crean en `scripts/schema.sql`.
+La **fuente de verdad** del modelo implementado es `src/schema.sql`. `src/db.py` trabaja exclusivamente con estas cinco tablas:
 
-| Tabla | Responsabilidad |
-|---|---|
-| usuarios | Personas autorizadas (hash de contraseña; sin contraseñas planas) |
-| sesiones | Sesiones futuras, con hash del token y caducidad |
-| monedas | Código ISO, nombre y símbolo |
-| tipos_cambio | Tipo de cambio por fecha y par de monedas |
-| categorias | Clasificación de ingreso/gasto, global o por usuario |
-| cuentas | Saldo inicial y moneda por cuenta |
-| ingresos | Entradas de dinero por usuario, cuenta y categoría |
-| gastos | Salidas de dinero por usuario, cuenta y categoría |
-| transferencias | Movimientos entre cuentas, incluidos cruces de moneda |
-| presupuestos | Límite por categoría, usuario y mes |
-| alertas | Alertas asociadas al presupuesto |
-| metas_ahorro | Objetivos de ahorro por usuario y moneda |
-| movimientos_ahorro | Aportes/retiros a una meta desde una cuenta |
-| comprobantes | Rutas relativas de archivos asociados a gastos |
+| Tabla | Propósito |
+| --- | --- |
+| `usuarios` | Hogar ficticio de demostración, identificado como usuario 1 |
+| `categorias` | Clasificación de ingresos y gastos |
+| `cuentas` | Cuentas de la familia y saldo inicial |
+| `movimientos` | Ingresos o gastos, monto, cuenta, categoría y fecha |
+| `presupuestos` | Límite mensual por categoría |
 
-## Convenciones
-- Importes en **centavos enteros**, nunca floats de dinero. La presentación divide entre 100.
-- Claves primarias enteras y claves foráneas habilitadas con `PRAGMA foreign_keys=ON`.
-- Fechas ISO `YYYY-MM-DD` y registros de tipo de cambio como un entero escalado a 1 000 000.
-- `UNIQUE` para códigos ISO, correos y presupuestos por período.
-- Validaciones relacionales y reglas de dominio en SQL y, en S2, en Python.
-- No registrar datos personales reales ni adjuntos privados.
+## Relaciones y restricciones
 
-## Evolución del diseño
-En S2 se revisará si `ingresos` y `gastos` permanecen separados o si conviene una tabla única de movimientos, manteniendo una migración reproducible. El diagrama de la propuesta es una referencia conceptual, no un CRUD implementado.
+- `categorias.id_usuario` y `cuentas.id_usuario` → `usuarios.id_usuario`.
+- `movimientos` → `usuarios`, `cuentas` y `categorias`.
+- `presupuestos` → `usuarios` y `categorias`.
+- `tipo` de categorías y movimientos: `ingreso` o `gasto`.
+- Los montos en `movimientos` y los límites en `presupuestos` se guardan como **enteros de centavos**, con validación de valores positivos.
+- Índices principales: `idx_movimientos_fecha_tipo`, `idx_movimientos_categoria_fecha` e `idx_presupuestos_periodo`.
+- `PRAGMA foreign_keys=ON` en cada conexión y modo WAL al inicializar.
 
-Consultar también [diagrama Mermaid](arquitectura/modelo_er.md).
+## Modelo ampliado: solo propuesta
+
+El diagrama v4 de la presentación propone **monedas, tipos de cambio, ingresos y gastos separados, transferencias, metas de ahorro, alertas, sesiones y comprobantes**, pero esas tablas NO forman parte de la base que utiliza el MVP S1.
+
+El archivo `scripts/schema.sql` conserva ese diseño ampliado para discusión futura: **no utilizarlo con la aplicación actual**, porque la estructura no coincide con `src/db.py`.
+
+Véase el [diagrama real de cinco tablas](arquitectura/modelo_er.md) y [arquitectura](arquitectura/README.md).
