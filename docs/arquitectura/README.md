@@ -1,28 +1,38 @@
 # Arquitectura v1 — Seguimiento 1
 
-## Componentes
-1. **Presentación:** futura aplicación web accesible desde navegador (no implementada en S1).
-2. **Lógica de negocio:** Python, responsable de validar montos, categorías, límites, fechas y transacciones.
-3. **Persistencia:** SQLite 3 para usuarios, monedas, cuentas, categorías, movimientos, presupuestos, metas, alertas y tasas de cambio. Archivo local, sin servidor de base de datos.
+**Arquitectura implementada:** aplicación web local con Python 3.10+ (biblioteca estándar), una base de datos SQLite y datos sintéticos.
 
 ```mermaid
 flowchart TD
-    A[Usuario / navegador] --> B[Aplicación web Python - S2]
-    B --> C[Validaciones y lógica de negocio]
-    C --> D[(SQLite 3)]
-    E[Scripts de inicialización] --> D
+    U[Usuario en navegador] -->|HTTP localhost:8000| A[src/app.py: servidor web Python]
+    A --> B[src/db.py: validación y consultas parametrizadas]
+    B --> D[(SQLite local: data/finanzas.sqlite3)]
+    I[scripts/init_db.py] --> B
+    S[scripts/seed.py] --> B
 ```
 
+## Responsabilidad de cada componente
+
+- `src/app.py`: páginas HTML, rutas HTTP y formularios del prototipo.
+- `src/db.py`: validación de montos, fechas y relaciones; operaciones sobre SQLite.
+- `src/schema.sql`: **único DDL usado para inicializar el MVP**. Contiene las tablas `usuarios`, `categorias`, `cuentas`, `movimientos` y `presupuestos`.
+- `scripts/init_db.py`: inicialización del esquema, WAL y catálogos de ejemplo.
+- `scripts/seed.py`: datos sintéticos reproducibles.
+- `tests/`: casos de CRUD, conexión, errores y HTTP.
+
 ## Decisiones
-- **Un solo motor:** SQLite evita administrar infraestructura para un proyecto pequeño; cumple el perfil A y exige profundidad técnica en S3.
-- **Modelo relacional:** las claves foráneas impiden movimientos sobre cuentas inexistentes y el importe se guarda como centavos enteros, para evitar errores de punto flotante.
-- **Una moneda por cuenta:** una transferencia entre monedas requerirá montos de origen/destino y tasa de cambio.
-- **Sin datos reales:** solo datos sintéticos/de demostración.
-- **Autenticación y sesiones:** representadas en el modelo para crecimiento; por implementar, no se garantiza seguridad de acceso en S1.
-- **Medición futura:** comparar consulta con y sin índice, y documentar EXPLAIN QUERY PLAN, tres repeticiones y mediana.
 
-## Fallos y recuperación
-Ante un error de archivo bloqueado, permisos o disco, la capa de acceso deberá cerrar/revertir la transacción y devolver un mensaje claro. No existe un motor secundario cuyo fallo deba gestionarse.
+- **Perfil A, un motor:** SQLite es suficiente para un MVP local. Se documentarán el modo WAL, los índices y, en S3, el análisis de `EXPLAIN QUERY PLAN` con comparaciones.
+- **Datos coherentes:** claves foráneas habilitadas y parámetros SQL; montos expresados en centavos enteros.
+- **Alcance reducido:** un hogar ficticio en CRC; sin autenticación, bancos reales, multimoneda o despliegue público.
+- **Propuesta de expansión:** `scripts/schema.sql` y el diagrama de la presentación son **referenciales** y NO se usan en la aplicación actual. No ejecutar ese archivo contra la base MVP.
 
-## Fuera de S1
-Interfaz web, operaciones CRUD, dashboard, alertas automáticas, conversión monetaria efectiva y despliegue. No declarar completas estas funciones sin pruebas.
+## Pruebas y fallos
+
+La inicialización y conexión SQLite fueron exitosas en la ejecución local informada el 16/10/2026. Los casos de CRUD y HTTP también pasaron. Se corrigió un import incorrecto de la prueba de conexión; aún falta repetir la batería completa tras esa corrección.
+
+Si SQLite no puede abrir o escribir el archivo, las operaciones deben producir un error y la transacción debe revertirse. Se recomienda probar explícitamente el caso de fallo en S3.
+
+## Evolución esperada
+
+S2: consolidar CRUD, validaciones, PRs y carga. S3: casos de error, índices, métricas (tres operaciones y mediana de tres repeticiones). S4: instalación desde cero por otra persona y demostración final.
