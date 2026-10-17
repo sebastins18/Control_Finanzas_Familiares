@@ -6,7 +6,7 @@ Prototipo **open source** de aplicación web local para registrar ingresos y gas
 
 > **Estado:** entrega base para Seguimiento 1 (v0.1.0). Proyecto académico con datos sintéticos, **no adecuado para despliegue público ni para información financiera real**: aún no incorpora autenticación, aislamiento entre familias ni protección CSRF.
 
-**Antes de entregar hoy:** leer [ENTREGA_SEGUIMIENTO_1.md](ENTREGA_SEGUIMIENTO_1.md) para saber qué acciones faltan en GitHub.
+**Seguimiento 1 (16/10/2026):** consultar la [bitácora S1](docs/seguimientos/S1.md) para ver los avances probados y los pendientes de colaboración. El código de `main` contiene correcciones posteriores al tag inicial `v0.1.0`.
 
 ## 1. Problema y usuarios
 
@@ -134,9 +134,12 @@ tests/                 # Pruebas unittest
 
 ## 9. Evidencia GitHub
 
-**Repositorio:** https://github.com/sebastins18/Control_Finanzas_Familiares · **Issues:** https://github.com/sebastins18/Control_Finanzas_Familiares/issues · **Tag S1:** https://github.com/sebastins18/Control_Finanzas_Familiares/releases/tag/v0.1.0 (verificar que apunta a la versión final).
+**Repositorio:** https://github.com/sebastins18/Control_Finanzas_Familiares  
+**Issues:** https://github.com/sebastins18/Control_Finanzas_Familiares/issues  
+**GitHub Project:** https://github.com/users/sebastins18/projects/1/views/1  
+**Tag S1:** https://github.com/sebastins18/Control_Finanzas_Familiares/tree/v0.1.0 (primera versión publicada; no incluye necesariamente correcciones posteriores de `main`).
 
-El repositorio debe ser público y tener: licencia MIT, Issues con responsables, colaboradores, commits propios de todos los integrantes, y tag `v0.1.0` para el seguimiento 1. **Un ZIP por sí solo no acredita estas acciones.** Consultar [guía para publicar](docs/PLAN_GITHUB.md) y [bitácora S1](docs/seguimientos/S1.md).
+El repositorio debe ser público y tener: licencia MIT, Issues con responsables, colaboradores, commits propios de todos los integrantes, y tag `v0.1.0` para el seguimiento 1. **Un ZIP por sí solo no acredita estas acciones.** Consultar [guía de trabajo en GitHub](docs/PLAN_GITHUB.md) y [bitácora S1](docs/seguimientos/S1.md).
 
 ## 10. Licencia y próximos pasos
 
