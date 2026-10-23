@@ -95,3 +95,14 @@ Licencia: MIT.
 ### GitHub Project de seguimiento
 
 El tablero [Control de Finanzas Familiares — Grupo 5](https://github.com/users/sebastins18/projects/1) se configuró como público desde GitHub CLI y contiene 11 elementos clasificados por Status, Seguimiento y Prioridad (23/10/2026). La visibilidad para un visitante sin sesión y la identidad de los commits de tres integrantes siguen por verificar. [Matriz de rúbrica](docs/seguimientos/CIERRE_S1_S2.md).
+
+## Validación integral adicional para S2 (posterior al tag)
+
+Se incorporaron cuatro pruebas HTTP adicionales (CRUD completo desde rutas web, alertas al 80 % y 100 %, solicitudes inválidas y POST sin sesión), una herramienta que valida SQLite sobre una base temporal y CI en GitHub Actions. No se alteró el código de negocio ni el tag histórico de entrega. Ver [Guía de demostración](docs/seguimientos/GUIA_DEMO_S2.md).
+
+```bash
+python -m unittest discover -s tests -v
+python -m scripts.evidencia_s2 --output evidencia_s2_local.md --count 1000
+```
+
+**Nota:** este script genera el archivo local `evidencia_s2_local.md` (se puede adjuntar como evidencia); no escribe en la base del servidor ni introduce credenciales.

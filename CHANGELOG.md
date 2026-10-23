@@ -29,3 +29,9 @@
 - Campos de seguimiento/prioridad y 11 elementos confirmados con `gh project item-list`.
 - El Issue #7 (ajuste del tag) quedó cerrado tras verificar las referencias en GitHub.
 - Siguen abiertos los compromisos individuales, demo manual y acta del profesor; detalles en Issues #6, #8, #9 y #11.
+
+## QA posterior a v0.2.0 — 23/10/2026
+
+- Cobertura HTTP S2 incrementada de 29 a 33 casos de prueba en revisión aislada; sin cambios de funcionalidad ni migraciones.
+- Incorporado generador de evidencia no destructiva con SQLite temporal, guía de demo paso a paso y GitHub Actions.
+- Este registro **no** altera la etiqueta `v0.2.0` ya entregada.
