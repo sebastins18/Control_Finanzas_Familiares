@@ -16,7 +16,7 @@ Esta matriz distingue **evidencia técnica comprobada** de requisitos de equipo 
 | README problema, usuario, MVP incluido/excluido | CUMPLIDO | `README.md` y `docs/seguimientos/S1.md` |
 | Diagrama de arquitectura v1 | CUMPLIDO | `docs/arquitectura/diagrama.md` |
 | Modelo de datos v1 | CUMPLIDO | `docs/arquitectura/modelo-v1.md`, cinco tablas base |
-| Backlog con hitos/responsables | PARCIAL | Issues #1–#4 y #6–#11; coordinador inicial conocido, falta asignación de compañeros y visibilidad del Project #1 |
+| Backlog con hitos/responsables | PARCIAL | Project #1 público, vinculado, con 11 ítems y estados/campos configurados; faltan responsables reales de compañeros |
 | Fuente de datos abierta o sintética | CUMPLIDO | `scripts/seed.py`, movimientos ficticios |
 | Hola mundo: conexión al motor | CUMPLIDO | `scripts/check_connection.py`, SQLite con WAL |
 | Tag v0.1.0 + S1.md | CUMPLIDO CON SALVEDAD | Tag apunta a `1385132`; correcciones S1 posteriores quedaron fuera de ese snapshot |
@@ -30,8 +30,8 @@ Esta matriz distingue **evidencia técnica comprobada** de requisitos de equipo 
 | Script reproducible de prueba/carga | CUMPLIDO | `scripts/seed.py` y `scripts/seed_bulk_s2.py`; carga 1000 en tests y 100000 en DB temporal aislada |
 | .env.example y ausencia de secretos reales en repo | DOCUMENTADO; REVISIÓN FINAL PENDIENTE | `.env.example`, `.gitignore` y análisis de secretos en Issue #10; contraseñas ficticias de tests no son credenciales reales |
 | Ramas y pull requests | CUMPLIDO | PR #5, rama de integración y merge a `main` en `abf92fb` |
-| Issues de hito cerrados o reprogramados justificadamente | PARCIAL | #2 abierto por verificaciones personales, tag y demo; subtareas #6–#11 con razón documentada |
-| Tag v0.2.0 y bitácora S2.md | PARCIAL | `S2.md` existe; `v0.2.0` apunta a `721a4a7` (anterior a V17), Issue #7 |
+| Issues de hito cerrados o reprogramados justificadamente | PARCIAL | #7 cerrado por tag resuelto; #2 abierto por aportes individuales, demo y acta, con dependencias #6/#8/#9/#11 |
+| Tag v0.2.0 y bitácora S2.md | CUMPLIDO | `v0.2.0` apunta a `584971e` (V17 y bitácora S2); `v0.2.0-original` conserva `721a4a7`; Issue #7 cerrado |
 
 ### Comprobaciones reales de 23/10
 
@@ -45,9 +45,9 @@ Esta matriz distingue **evidencia técnica comprobada** de requisitos de equipo 
 ## Cierre pendiente antes de marcar S1/S2 como completados
 
 1. **Issue #6:** identificar y comprobar invitación y commits auténticos de los cuatro; no fabricar historial.
-2. **Issue #7:** resolver referencia errónea de `v0.2.0` en coordinación con el equipo (sin mover tags compartidos en silencio).
+2. **Issue #7 (RESUELTO):** `v0.2.0` apunta a `584971e` y se preservó la etiqueta anterior como `v0.2.0-original`.
 3. **Issue #8:** capturar demo manual CRUD + presupuestos/alertas con datos ficticios.
-4. **Issue #9:** verificar/publicar Project #1 y completar estados y responsables reales; conexión actual no permite editar GitHub Projects directamente.
+4. **Issue #9 (PARCIAL):** Project #1 se publicó y cargó vía GitHub CLI (11 ítems, estados y campos); faltan responsables reales y prueba de acceso sin sesión.
 5. **Issue #11:** registrar asistencia y comentarios reales del profesor cuando sucedan.
 6. **Issue #10:** mantener la aplicación de demo sin datos personales, con contraseña privada; documentar hardening pendiente.
 
@@ -60,3 +60,7 @@ Esta matriz distingue **evidencia técnica comprobada** de requisitos de equipo 
 - [Project #1](https://github.com/users/sebastins18/projects/1)
 - [Issues](https://github.com/sebastins18/Control_Finanzas_Familiares/issues)
 - [Pull Request #5](https://github.com/sebastins18/Control_Finanzas_Familiares/pull/5)
+
+### Nota posterior al etiquetado
+
+El 23/10/2026 el usuario ejecutó GitHub CLI, publicó Project #1, configuró `Status`, `Seguimiento` y `Prioridad`, y registró 11 elementos; la salida JSON muestra las asignaciones. Ese mismo día creó el respaldo `v0.2.0-original` → `721a4a7` y actualizó explícitamente `v0.2.0` → `584971e` mediante `--force-with-lease`. Se verificaron ambas referencias en GitHub. Las posteriores correcciones de texto de esta matriz son documentación posetiquetado, no cambios de funcionalidad. No afirmar acceso público sin sesión hasta que un integrante lo pruebe.

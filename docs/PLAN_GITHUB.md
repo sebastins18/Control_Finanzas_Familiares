@@ -89,6 +89,15 @@ Como se ha publicado y compartido `v0.1.0`, moverlo cambia el significado de una
 
 - Se fusionó PR #5 a `main` (commit `abf92fb`), con 29/29 pruebas en CRNube y Windows y funcionamiento público GET HTTP 200.
 - Documentación: [matriz S1/S2](seguimientos/CIERRE_S1_S2.md) y [plantilla de evidencia personal](seguimientos/EVIDENCIA_EQUIPO.md).
-- Subtareas: Issues #6 a #11; #1/#2 siguen en progreso hasta cumplir commits individuales, demo, tag y acta.
+- Subtareas: Issues #6 a #11; #7 resuelto y cerrado; #1/#2 siguen en progreso hasta cumplir commits individuales, demo y acta.
 - Para poblar **el GitHub Project existente #1** desde Windows con tu sesión de GitHub, ejecutar `scripts/sync_github_project_s1_s2.ps1 -HacerPublico` después de `gh auth login` y `gh auth refresh -s project`. El script no inventa asignaciones de compañeros ni marca hitos completos. Requiere GitHub CLI compatible con `gh project item-edit --url --field --value`.
 - Nota: la integración GitHub de ChatGPT permite modificar repositorio, Issues y PR, pero **no expone operaciones de edición de Projects**. La visibilidad y el estado del tablero requieren el CLI autenticado o la UI.
+
+## 7. Resultado real de ejecución del Project — 23/10/2026
+
+- `gh auth status` reportó cuenta `sebastins18` con permiso `project`.
+- `gh project link 1 --owner sebastins18 --repo sebastins18/Control_Finanzas_Familiares` enlazó el repositorio.
+- `gh project edit 1 --owner sebastins18 --visibility PUBLIC` confirmó visibilidad pública.
+- `gh project item-list 1 --owner sebastins18 --format json` mostró **11 ítems**: Issues #1–#4, #6–#11 y PR #5, clasificados por status/seguimiento/prioridad.
+- `v0.2.0` se verificó en `584971e`; respaldo `v0.2.0-original` en `721a4a7`.
+- **Pendiente:** confirmar vista anónima del tablero y asignar los integrantes por su usuario real (Issues #9 y #6). No repetir el paso de autenticación si `gh auth status` ya es correcto.
