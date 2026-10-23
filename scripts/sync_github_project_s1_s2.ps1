@@ -55,11 +55,14 @@ $items = @(
     @{No=4; Seguimiento='S4'; Prioridad='Media'; Status='todo'},
     @{No=5; Seguimiento='S2'; Prioridad='Alta'; Status='done'; IsPR=$true},
     @{No=6; Seguimiento='S1'; Prioridad='Critica'; Status='progress'},
-    @{No=7; Seguimiento='S2'; Prioridad='Critica'; Status='progress'},
+    @{No=7; Seguimiento='S2'; Prioridad='Critica'; Status='done'},
     @{No=8; Seguimiento='S2'; Prioridad='Alta'; Status='progress'},
     @{No=9; Seguimiento='S1'; Prioridad='Critica'; Status='progress'},
     @{No=10; Seguimiento='S3'; Prioridad='Alta'; Status='todo'},
-    @{No=11; Seguimiento='S1'; Prioridad='Alta'; Status='todo'}
+    @{No=11; Seguimiento='S1'; Prioridad='Alta'; Status='todo'},
+    @{No=12; Seguimiento='S2'; Prioridad='Alta'; Status='done'; IsPR=$true},
+    @{No=13; Seguimiento='S2'; Prioridad='Alta'; Status='done'; IsPR=$true},
+    @{No=14; Seguimiento='S2'; Prioridad='Alta'; Status='done'; IsPR=$true}
 )
 
 function Set-ProjectOption([string]$url,[string]$fieldName,[string]$requested) {
