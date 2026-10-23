@@ -1,3 +1,5 @@
+> **Aviso de versión:** lo siguiente describe el estado S1. El módulo V17 agrega tablas y cambia la arquitectura operativa. Consultar [`docs/arquitectura/modelo-v17.md`](arquitectura/modelo-v17.md) para el modelo integrado.
+
 # Modelo de datos SQLite — MVP implementado (S1)
 
 La **fuente de verdad** del modelo implementado es `src/schema.sql`. `src/db.py` trabaja exclusivamente con estas cinco tablas:

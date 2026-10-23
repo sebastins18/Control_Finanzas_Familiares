@@ -20,12 +20,26 @@ def db_path() -> Path:
     return path.resolve()
 
 
+class ProfileConnection(sqlite3.Connection):
+    """Local demo profile routing for legacy statements (not authentication)."""
+    def execute(self, sql, parameters=()):
+        if not getattr(self,'profile_routing_disabled',False):
+            try:
+                active=super().execute("SELECT valor FROM app_config WHERE clave='perfil_activo'").fetchone()
+                uid=int(active[0]) if active else 1
+            except sqlite3.OperationalError:
+                uid=1
+            if uid != 1:
+                sql=sql.replace('id_usuario=1',f'id_usuario={uid}').replace('id_usuario = 1',f'id_usuario = {uid}')
+                sql=sql.replace('VALUES (1,',f'VALUES ({uid},').replace('VALUES(1,',f'VALUES({uid},')
+        return super().execute(sql,parameters)
+
 @contextmanager
 def connect() -> Iterator[sqlite3.Connection]:
     """Contexto transaccional que también cierra la conexión al finalizar."""
     path = db_path()
     path.parent.mkdir(parents=True, exist_ok=True)
-    connection = sqlite3.connect(str(path), timeout=10)
+    connection = sqlite3.connect(str(path), timeout=10, factory=ProfileConnection)
     try:
         connection.row_factory = sqlite3.Row
         connection.execute('PRAGMA foreign_keys = ON')
@@ -38,6 +52,7 @@ def connect() -> Iterator[sqlite3.Connection]:
 
 def init_db() -> None:
     with connect() as connection:
+        connection.profile_routing_disabled=True
         connection.execute('PRAGMA journal_mode = WAL')
         connection.executescript(SCHEMA.read_text(encoding='utf-8'))
         connection.execute(
@@ -61,6 +76,8 @@ def init_db() -> None:
             "INSERT OR IGNORE INTO cuentas (id_usuario, nombre) VALUES (1, 'Efectivo')"
         )
 
+    from src import extension
+    extension.init()
 
 def parse_money(value: str) -> int:
     """Conserva centavos como entero para evitar inexactitudes de coma flotante."""
@@ -123,17 +140,23 @@ def save_movement(form: dict, movement_id: int | None = None) -> None:
     description = str(form.get('descripcion', '')).strip()[:160]
     with connect() as db:
         validate_category_account(db, category_id, account_id, kind)
-        args = (account_id, category_id, kind, amount_cents, valid_date, description)
+        from src.finance import account_balance
+        credited = amount_cents
+        old=db.execute('SELECT * FROM movimientos WHERE id_movimiento=? AND id_usuario=1',(movement_id,)).fetchone() if movement_id else None
+        available=account_balance(db,account_id)
+        if old and old['id_cuenta']==account_id:
+            available-= (1 if old['tipo']=='ingreso' else -1)*(old['monto_acreditado_centimos'] if old['monto_acreditado_centimos'] is not None else old['monto_centimos'])
+        args = (account_id, category_id, kind, amount_cents, valid_date, description,credited)
         if movement_id is None:
             db.execute(
                 '''INSERT INTO movimientos
-                (id_usuario, id_cuenta, id_categoria, tipo, monto_centimos, fecha, descripcion)
-                VALUES (1, ?, ?, ?, ?, ?, ?)''', args,
+                (id_usuario, id_cuenta, id_categoria, tipo, monto_centimos, fecha, descripcion,monto_acreditado_centimos)
+                VALUES (1, ?, ?, ?, ?, ?, ?, ?)''', args,
             )
         else:
             cursor = db.execute(
                 '''UPDATE movimientos SET id_cuenta=?, id_categoria=?, tipo=?,
-                   monto_centimos=?, fecha=?, descripcion=?
+                   monto_centimos=?, fecha=?, descripcion=?,monto_acreditado_centimos=?
                    WHERE id_movimiento=? AND id_usuario=1''', (*args, movement_id),
             )
             if cursor.rowcount != 1:
@@ -161,6 +184,7 @@ def save_budget(form: dict) -> None:
     except (ValueError, TypeError):
         raise ValueError('Indique categoría y período correctos.') from None
     amount_cents = parse_money(form.get('monto_limite', ''))
+    moneda=int(form.get('id_moneda') or 0)
     if not (2020 <= year <= 2100 and 1 <= month <= 12):
         raise ValueError('Período fuera de rango.')
     with connect() as db:
@@ -171,11 +195,11 @@ def save_budget(form: dict) -> None:
         if not allowed:
             raise ValueError('Solo se permiten presupuestos para categorías de gastos.')
         db.execute(
-            '''INSERT INTO presupuestos (id_usuario, id_categoria, anio, mes, monto_limite_centimos)
-            VALUES (1, ?, ?, ?, ?)
+            '''INSERT INTO presupuestos (id_usuario, id_categoria, anio, mes, monto_limite_centimos,id_moneda)
+            VALUES (1, ?, ?, ?, ?, ?)
             ON CONFLICT (id_usuario, id_categoria, anio, mes)
-            DO UPDATE SET monto_limite_centimos=excluded.monto_limite_centimos''',
-            (category_id, year, month, amount_cents),
+            DO UPDATE SET monto_limite_centimos=excluded.monto_limite_centimos,id_moneda=excluded.id_moneda''',
+            (category_id, year, month, amount_cents,moneda or db.execute("SELECT id_moneda FROM monedas WHERE codigo_iso='CRC'").fetchone()[0]),
         )
 
 
@@ -187,21 +211,34 @@ def dashboard(year: int, month: int) -> dict:
             JOIN cuentas a ON a.id_cuenta=m.id_cuenta
             WHERE m.id_usuario=1 AND m.fecha>=? AND m.fecha<?
             ORDER BY m.fecha DESC, m.id_movimiento DESC LIMIT 100''', (start, end)).fetchall()
-        sums = db.execute('''SELECT tipo, COALESCE(SUM(monto_centimos),0) AS total
-            FROM movimientos WHERE id_usuario=1 AND fecha>=? AND fecha<? GROUP BY tipo''', (start, end)).fetchall()
-        values = {r['tipo']:r['total'] for r in sums}
-        budget_rows = db.execute('''SELECT p.id_categoria, c.nombre AS categoria,
-            p.monto_limite_centimos AS limite,
-            COALESCE(SUM(m.monto_centimos),0) AS gastado
-            FROM presupuestos p JOIN categorias c ON c.id_categoria=p.id_categoria
-            LEFT JOIN movimientos m ON m.id_categoria=p.id_categoria
-              AND m.tipo='gasto' AND m.fecha>=? AND m.fecha<? AND m.id_usuario=1
-            WHERE p.id_usuario=1 AND p.anio=? AND p.mes=?
-            GROUP BY p.id_presupuesto ORDER BY c.nombre''', (start, end, year, month)).fetchall()
+        sums = db.execute('''SELECT m.tipo, mo.codigo_iso, COALESCE(SUM(m.monto_centimos),0) AS total
+            FROM movimientos m JOIN cuentas a ON a.id_cuenta=m.id_cuenta
+            JOIN monedas mo ON mo.id_moneda=a.id_moneda
+            WHERE m.id_usuario=1 AND m.fecha>=? AND m.fecha<?
+            GROUP BY m.tipo,mo.codigo_iso''', (start,end)).fetchall()
+        totals_by_currency = {}
+        for r in sums:
+            totals_by_currency.setdefault(r['codigo_iso'], {'ingreso':0,'gasto':0})[r['tipo']] = r['total']
+        values = {'ingreso': totals_by_currency.get('CRC',{}).get('ingreso',0),
+                  'gasto': totals_by_currency.get('CRC',{}).get('gasto',0)}
+        raw_budgets=db.execute("""SELECT p.*,c.nombre AS categoria,mo.simbolo FROM presupuestos p
+            JOIN categorias c ON c.id_categoria=p.id_categoria JOIN monedas mo ON mo.id_moneda=p.id_moneda
+            WHERE p.id_usuario=1 AND p.anio=? AND p.mes=? ORDER BY c.nombre""",(year,month)).fetchall()
+        from src.finance import historical_conversion
+        crc=db.execute("SELECT id_moneda FROM monedas WHERE codigo_iso='CRC'").fetchone()[0]
+        budget_rows=[]
+        for b in raw_budgets:
+            moves=db.execute("SELECT m.monto_centimos,m.fecha,a.id_moneda FROM movimientos m JOIN cuentas a ON a.id_cuenta=m.id_cuenta WHERE m.id_usuario=1 AND m.id_categoria=? AND m.tipo='gasto' AND m.fecha>=? AND m.fecha<?",(b['id_categoria'],start,end)).fetchall()
+            spent=0
+            missing=0
+            for m in moves:
+                try: spent+=historical_conversion(db,m['id_moneda'],b['id_moneda'],m['monto_centimos'],m['fecha'])
+                except ValueError: missing+=1
+            budget_rows.append(dict(categoria=b['categoria'],limite=b['monto_limite_centimos'],gastado=spent,simbolo=b['simbolo'],missing=missing))
         categories = db.execute('SELECT * FROM categorias WHERE id_usuario=1 ORDER BY tipo, nombre').fetchall()
         accounts = db.execute('SELECT * FROM cuentas WHERE id_usuario=1 ORDER BY nombre').fetchall()
     return dict(
         movements=tx, income=values.get('ingreso',0), expense=values.get('gasto',0),
-        budgets=budget_rows, categories=categories, accounts=accounts,
+        budgets=budget_rows, categories=categories, accounts=accounts, totals_by_currency=totals_by_currency,
         year=year, month=month,
     )
