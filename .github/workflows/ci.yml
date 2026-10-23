@@ -1,0 +1,34 @@
+name: Pruebas SQLite y HTTP
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  pruebas:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Ejecutar suite sin datos reales
+        run: python -m unittest discover -s tests -v
+      - name: Validar carga temporal y generar evidencia
+        run: python -m scripts.evidencia_s2 --output evidencia_s2_ci.md --count 1000
+      - name: Adjuntar evidencia de ejecucion
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: evidencia-s2-python-${{ matrix.python-version }}
+          path: evidencia_s2_ci.md
+          if-no-files-found: ignore

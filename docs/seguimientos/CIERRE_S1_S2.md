@@ -64,3 +64,10 @@ Esta matriz distingue **evidencia técnica comprobada** de requisitos de equipo 
 ### Nota posterior al etiquetado
 
 El 23/10/2026 el usuario ejecutó GitHub CLI, publicó Project #1, configuró `Status`, `Seguimiento` y `Prioridad`, y registró 11 elementos; la salida JSON muestra las asignaciones. Ese mismo día creó el respaldo `v0.2.0-original` → `721a4a7` y actualizó explícitamente `v0.2.0` → `584971e` mediante `--force-with-lease`. Se verificaron ambas referencias en GitHub. Las posteriores correcciones de texto de esta matriz son documentación posetiquetado, no cambios de funcionalidad. No afirmar acceso público sin sesión hasta que un integrante lo pruebe.
+
+### Verificación adicional de QA automatizada (posterior al tag S2)
+
+- Cuatro pruebas HTTP integrales de S2 añadidas sin modificar la aplicación: CRUD, alertas 80/100 %, monto inválido, control de sesión.
+- **33/33 pruebas OK** en una revisión aislada (Python 3.13.5); el servidor CRNube había confirmado 29/29 antes de añadirlas. No confundir esos dos resultados ni afirmar una ejecución de 33 pruebas en CRNube sin su terminal.
+- Se añadió `scripts/evidencia_s2.py`: comprueba suite, WAL, claves foráneas, integridad, 1000 movimientos sintéticos e idempotencia en SQLite temporal. La demo manual y los aportes personales siguen abiertos.
+- GitHub Actions automatiza la suite y la evidencia en pushes/PR; su resultado remoto requiere consultar la pestaña Actions una vez integrada la rama.
