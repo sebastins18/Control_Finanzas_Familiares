@@ -17,8 +17,15 @@
 - Se incorporó el módulo ampliado desde ZIP V17 aportado por un integrante; autoría Git individual pendiente de acreditar.
 - Ajustes a pruebas de autenticación y conversión manual, cobertura de prefijo `/finanzas`, carga masiva transaccional sintética.
 - Protección de credenciales y comprobantes locales en `.gitignore`.
-- `v0.2.0` remoto existía antes de estos cambios y no los incluye.
+- La primera referencia de `v0.2.0` se publicó antes de V17; su respaldo histórico quedó como `v0.2.0-original` (`721a4a7`) y el tag de entrega `v0.2.0` fue corregido a `584971e` con `--force-with-lease`.
 
 - PR #5 fusionado en `main` (commit `abf92fb`) con 29/29 pruebas en CRNube y Windows.
 - URL de prueba `/finanzas/login` con HTTP 200; base SQLite separada del directorio público.
 - Auditoría de rúbrica, evidencias del equipo y tareas pendientes documentadas; Issue #7 mantiene trazabilidad del tag `v0.2.0` preintegración.
+
+## Evidencia posetiquetado — GitHub Project #1 (23/10/2026)
+
+- Project #1 enlazado al repositorio y configurado público vía GitHub CLI autenticado.
+- Campos de seguimiento/prioridad y 11 elementos confirmados con `gh project item-list`.
+- El Issue #7 (ajuste del tag) quedó cerrado tras verificar las referencias en GitHub.
+- Siguen abiertos los compromisos individuales, demo manual y acta del profesor; detalles en Issues #6, #8, #9 y #11.
