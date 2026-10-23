@@ -78,7 +78,7 @@ py -m unittest discover -s tests -v
 ## Estado del curso
 
 - **S1 (16 de octubre):** problema, repositorio, diagrama, tabla base, datos de prueba y `v0.1.0` (el tag inicial no incluía todas las correcciones posteriores).
-- **S2 (23 de octubre):** integración V17 preparada en rama, pruebas corregidas, carga transaccional y bitácora `docs/seguimientos/S2.md`. El tag `v0.2.0` se creó antes de estos cambios; deberá acordarse su tratamiento, sin reescribirlo unilateralmente.
+- **S2 (23 de octubre):** V17 integrada en `main` mediante [PR #5](https://github.com/sebastins18/Control_Finanzas_Familiares/pull/5), 29 pruebas aprobadas en Windows y CRNube, carga transaccional y bitácora `docs/seguimientos/S2.md`. El tag `v0.2.0` es anterior al merge y debe corregirse/aclararse según [Issue #7](https://github.com/sebastins18/Control_Finanzas_Familiares/issues/7). Ver [auditoría de rúbrica](docs/seguimientos/CIERRE_S1_S2.md).
 - **S3 (30 de octubre):** mediciones de tres operaciones con al menos tres ejecuciones y medianas, comparación con/sin índices y `EXPLAIN QUERY PLAN`.
 - **S4 (6 de noviembre):** instalación limpia por otro integrante, capturas, video, release candidate, `portal.yml` y presentación.
 

@@ -1,6 +1,6 @@
 # Trabajo colaborativo en GitHub — Control de Finanzas Familiares (Grupo 5)
 
-**Actualización:** 16 de octubre de 2026. El repositorio y el Project ya existen. No crear repositorios ni volver a ejecutar `git init`.
+**Actualización:** 23 de octubre de 2026. El repositorio y el Project ya existen. No crear repositorios ni volver a ejecutar `git init`.
 
 ## Enlaces reales
 
@@ -84,3 +84,11 @@ El profesor exige subir la bitácora y el tag **antes de las 6:00 p. m. del día
 Como se ha publicado y compartido `v0.1.0`, moverlo cambia el significado de una versión existente. Si el equipo y el docente necesitan que incluya las correcciones y bitácoras definitivas, **coordinarlo antes** para que nadie dependa de la referencia anterior. Las nuevas correcciones de `main` no pasan automáticamente al tag.
 
 **Última verificación requerida para S1:** aprobación del alcance, colaboración de los cuatro, visibilidad pública del Project, participación en la reunión y registro de acuerdos.
+
+## 6. Cierre S1/S2 auditado — 23/10/2026
+
+- Se fusionó PR #5 a `main` (commit `abf92fb`), con 29/29 pruebas en CRNube y Windows y funcionamiento público GET HTTP 200.
+- Documentación: [matriz S1/S2](seguimientos/CIERRE_S1_S2.md) y [plantilla de evidencia personal](seguimientos/EVIDENCIA_EQUIPO.md).
+- Subtareas: Issues #6 a #11; #1/#2 siguen en progreso hasta cumplir commits individuales, demo, tag y acta.
+- Para poblar **el GitHub Project existente #1** desde Windows con tu sesión de GitHub, ejecutar `scripts/sync_github_project_s1_s2.ps1 -HacerPublico` después de `gh auth login` y `gh auth refresh -s project`. El script no inventa asignaciones de compañeros ni marca hitos completos. Requiere GitHub CLI compatible con `gh project item-edit --url --field --value`.
+- Nota: la integración GitHub de ChatGPT permite modificar repositorio, Issues y PR, pero **no expone operaciones de edición de Projects**. La visibilidad y el estado del tablero requieren el CLI autenticado o la UI.

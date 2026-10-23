@@ -13,8 +13,12 @@
 >
 > Pendiente de cierre: confirmar commits propios de los cuatro integrantes, hacer público el Project y coordinar con el equipo la versión definitiva del tag compartido `v0.1.0`. Los ajustes posteriores están en `main` y no cambian automáticamente el contenido del tag.
 
-## Integración propuesta V17 / S2 — 23/10/2026 (rama, aún sin merge)
+## Integración V17 / S2 — 23/10/2026 (PR #5 fusionado)
 - Se incorporó el módulo ampliado desde ZIP V17 aportado por un integrante; autoría Git individual pendiente de acreditar.
 - Ajustes a pruebas de autenticación y conversión manual, cobertura de prefijo `/finanzas`, carga masiva transaccional sintética.
 - Protección de credenciales y comprobantes locales en `.gitignore`.
 - `v0.2.0` remoto existía antes de estos cambios y no los incluye.
+
+- PR #5 fusionado en `main` (commit `abf92fb`) con 29/29 pruebas en CRNube y Windows.
+- URL de prueba `/finanzas/login` con HTTP 200; base SQLite separada del directorio público.
+- Auditoría de rúbrica, evidencias del equipo y tareas pendientes documentadas; Issue #7 mantiene trazabilidad del tag `v0.2.0` preintegración.
