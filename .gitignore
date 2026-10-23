@@ -17,3 +17,10 @@ Thumbs.db
 .idea/
 .vscode/
 coverage/
+
+logs/
+
+# Credenciales locales y comprobantes adjuntos
+data/login_credentials.json
+data/login_credentials.tmp
+data/comprobantes/

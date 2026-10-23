@@ -8,7 +8,8 @@ from pathlib import Path
 from unittest.mock import patch
 from urllib.error import HTTPError
 from urllib.parse import urlencode
-from urllib.request import urlopen, Request
+from urllib.request import urlopen, Request, build_opener, HTTPCookieProcessor
+from http.cookiejar import CookieJar
 
 from src import db
 from src.app import Handler, currency
@@ -96,22 +97,31 @@ class TestHttp(unittest.TestCase):
         self.thread.join(timeout=3)
         TestFinanzas.tearDown(self)
 
+    def logged_in(self):
+        opener = build_opener(HTTPCookieProcessor(CookieJar()))
+        payload = urlencode({'usuario': 'admin', 'contrasena': 'Admin12345!'}).encode()
+        with opener.open(Request(self.base + '/login', data=payload), timeout=3) as result:
+            self.assertEqual(result.status, 200)
+        return opener
+
     def test_http_200_and_health(self):
-        with urlopen(self.base + '/') as result:
+        opener = self.logged_in()
+        with opener.open(self.base + '/') as result:
             body = result.read().decode('utf-8')
             self.assertIn('Finanzas Familiares',body)
             self.assertEqual(result.status,200)
-        with urlopen(self.base + '/health') as result:
+        with opener.open(self.base + '/health') as result:
             self.assertIn('"status": "ok"',result.read().decode('utf-8'))
 
     def test_http_create_and_invalid(self):
+        opener = self.logged_in()
         payload = urlencode(self.form()).encode()
-        with urlopen(Request(self.base + '/movimientos', data=payload), timeout=3) as result:
+        with opener.open(Request(self.base + '/movimientos', data=payload), timeout=3) as result:
             self.assertEqual(result.status,200)  # 303 seguido por urllib
         self.assertEqual(db.dashboard(date.today().year, date.today().month)['expense'], 25050)
         invalid = urlencode(self.form(amount='-300')).encode()
         with self.assertRaises(HTTPError) as context:
-            urlopen(Request(self.base+'/movimientos', data=invalid), timeout=3)
+            opener.open(Request(self.base+'/movimientos', data=invalid), timeout=3)
         self.assertEqual(context.exception.code,400)
 
 
