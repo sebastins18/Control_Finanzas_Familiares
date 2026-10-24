@@ -1,0 +1,59 @@
+# Archivos que no deben leerse ni compartirse con asistentes de IA.
+# Mantener alineado con .gitignore. Soporte segun herramienta: no todas leen este archivo.
+
+# Variables de entorno y secretos
+.env
+.env.*
+!.env.example
+
+# Credenciales locales, comprobantes y bases de datos
+data/login_credentials.json
+data/login_credentials.tmp
+data/comprobantes/
+*.sqlite3
+*.sqlite3-*
+*.sqlite
+*.sqlite-*
+*.db
+*.db-*
+
+# Registros y temporales
+logs/
+*.log
+*.tmp
+*.bak
+*.swp
+
+# Cache y entornos virtuales
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.venv/
+venv/
+env/
+ENV/
+.coverage
+.coverage.*
+htmlcov/
+coverage/
+*.egg-info/
+
+# Build y dependencias de terceros
+build/
+dist/
+node_modules/
+
+# Evidencia generada localmente
+evidencia_s2_local.md
+evidencia_s2_ci.md
+
+# Configuracion local de editor/herramientas
+.vscode/
+.idea/
+.claude/settings.local.json
+CLAUDE.local.md
+.DS_Store
+Thumbs.db

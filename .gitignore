@@ -24,3 +24,33 @@ logs/
 data/login_credentials.json
 data/login_credentials.tmp
 data/comprobantes/
+
+# Entornos virtuales y configuracion local de herramientas
+env/
+ENV/
+.claude/settings.local.json
+CLAUDE.local.md
+
+# Cache y reportes de herramientas
+.mypy_cache/
+.ruff_cache/
+.tox/
+.coverage
+.coverage.*
+htmlcov/
+*.egg-info/
+
+# Build, distribucion y dependencias de terceros
+build/
+dist/
+node_modules/
+
+# Temporales y registros
+*.log
+*.tmp
+*.bak
+*.swp
+
+# Evidencia generada localmente por scripts.evidencia_s2
+evidencia_s2_local.md
+evidencia_s2_ci.md
