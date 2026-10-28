@@ -31,7 +31,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlencode, urlsplit
 
-from src import db, extension, finance
+from src import db, extension, finance, request_ctx
 
 LOG_DIR=db.db_path().parent / 'logs'
 LOG_DIR.mkdir(parents=True,exist_ok=True)
@@ -44,6 +44,16 @@ if not logger.handlers:
 
 def error_page(title, message):
     return layout('<section class="panel" role="alert"><h2>'+e(title)+'</h2><p>'+e(message)+'</p><p>Intente nuevamente en unos momentos. Si el problema continúa, contacte al administrador.</p><a href="/">Volver al inicio</a></section>').encode('utf-8')
+
+def request_is_admin() -> bool:
+    """Rol de la solicitud en curso (False sin sesión). Solo decide qué enlaces muestra la interfaz;
+    la autorización real se valida en cada ruta con Handler.is_admin().
+    El estado vive en src.request_ctx para que sea único aunque este módulo se cargue dos veces."""
+    return request_ctx.is_admin()
+
+def forbidden_page():
+    """Página 403 con el diseño de la aplicación (sin cambiar el código de estado)."""
+    return layout('<section class="panel denied" role="alert"><div class="denied-icon" aria-hidden="true">🔒</div><p class="eyebrow">ERROR 403 · ACCESO RESTRINGIDO</p><h2>No tiene permiso para ver esta página</h2><p>Esta sección está reservada para administradores. Su cuenta no cuenta con los permisos necesarios para acceder a ella.</p><p class="help">Si considera que debería tener acceso, solicite a un administrador que revise su rol.</p><div class="denied-actions"><a class="denied-btn primary" href="/">← Volver al panel principal</a><a class="denied-btn" href="/admin/cambiar-clave">Cambiar mi contraseña</a></div></section>').encode('utf-8')
 
 AUTH_LOCK=threading.Lock()
 SESSIONS={}
@@ -97,7 +107,26 @@ def change_password_page(message='',error=False):
     return layout('<section class="panel"><h2>Cambiar mi contraseña</h2><p>Escriba su nueva contraseña y confírmela. Por seguridad, el sistema no genera ni muestra contraseñas nuevas: la nueva será exactamente la que usted introduzca. Después deberá iniciar sesión de nuevo.</p>'+notice+'<form method="post" action="/admin/cambiar-clave" class="form-grid"><label>Contraseña actual<input type="password" name="actual" required></label><label>Nueva contraseña<input type="password" name="nueva" minlength="8" required></label><label>Confirmar contraseña<input type="password" name="confirmar" minlength="8" required></label><button class="primary">Cambiar contraseña</button></form></section>')
 
 def login_page(error=''):
-    return ('<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Ingresar - Finanzas Familiares</title><link rel="stylesheet" href="/static/styles.css"></head><body><main class="shell"><section class="panel" style="max-width:430px;margin:10vh auto;padding:30px"><h1>Iniciar sesión</h1><p>Ingrese sus credenciales para acceder al sistema.</p>'+('<p role="alert" style="color:#b91c1c">'+e(error)+'</p>' if error else '')+'<form method="post" action="/login" class="form-grid"><label>Usuario<input name="usuario" required autocomplete="username"></label><label>Contraseña<input name="contrasena" type="password" required autocomplete="current-password"></label><button class="primary" type="submit">Ingresar</button></form></section></main></body></html>')
+    return ('<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Ingresar - Finanzas Familiares</title><link rel="stylesheet" href="/static/styles.css"></head>'
+            '<body class="login-body"><div class="lg-bg" aria-hidden="true"><span class="lg-orb lg-orb-1"></span><span class="lg-orb lg-orb-2"></span><span class="lg-orb lg-orb-3"></span><span class="lg-orb lg-orb-4"></span></div>'
+            '<main class="lg-wrap"><section class="lg-card" aria-labelledby="lg-title"><div class="lg-brand"><span class="lg-logo" aria-hidden="true">₡</span><span>Finanzas Familiares</span></div>'
+            '<h1 id="lg-title">Iniciar sesión</h1><p class="lg-sub">Ingrese sus credenciales para acceder al sistema.</p>'
+            +('<p class="lg-alert" role="alert">'+e(error)+'</p>' if error else '')+
+            '<form method="post" action="/login" class="lg-form"><label>Usuario<input class="lg-input" name="usuario" required autocomplete="username" autofocus></label>'
+            '<label>Contraseña<input class="lg-input" name="contrasena" type="password" required autocomplete="current-password"></label>'
+            '<button class="lg-btn" type="submit">Ingresar</button></form><p class="lg-forgot"><a href="/olvide-clave">¿Olvidó su contraseña?</a></p></section></main></body></html>')
+
+def forgot_password_page():
+    """Recuperación sin correo: la contraseña solo la restablece un administrador."""
+    return ('<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Recuperar contraseña - Finanzas Familiares</title><link rel="stylesheet" href="/static/styles.css"></head>'
+            '<body class="login-body"><div class="lg-bg" aria-hidden="true"><span class="lg-orb lg-orb-1"></span><span class="lg-orb lg-orb-2"></span><span class="lg-orb lg-orb-3"></span><span class="lg-orb lg-orb-4"></span></div>'
+            '<main class="lg-wrap"><section class="lg-card" aria-labelledby="lg-title"><div class="lg-brand"><span class="lg-logo" aria-hidden="true">₡</span><span>Finanzas Familiares</span></div>'
+            '<h1 id="lg-title">¿Olvidó su contraseña?</h1><p class="lg-sub">Por seguridad, las contraseñas no se pueden consultar ni enviar por correo. Un administrador puede asignarle una nueva.</p>'
+            '<ol class="lg-steps"><li>Comuníquese con un administrador del sistema e indíquele su nombre de usuario.</li>'
+            '<li>El administrador la restablece en <strong>Seguridad → Mantenimiento de usuarios</strong>.</li>'
+            '<li>Ingrese con la contraseña temporal y cámbiela de inmediato en <strong>Seguridad → Cambiar contraseña</strong>.</li></ol>'
+            '<p class="lg-note">Si la contraseña olvidada es la de un administrador y no hay otro disponible, la recuperación requiere acceso al servidor donde se ejecuta la aplicación.</p>'
+            '<a class="lg-btn lg-btn-link" href="/login">← Volver a iniciar sesión</a></section></main></body></html>')
 
 def app_base_path() -> str:
     """Prefijo público cuando la app vive bajo /finanzas (proxy inverso)."""
@@ -158,11 +187,14 @@ def option_rows(rows, selected: int | None, kind: str | None = None) -> str:
 
 
 def layout(content: str, *, subtitle: str = '') -> str:
+    # Opciones de administración visibles solo para administradores (las rutas se protegen aparte).
+    security_links = ('<a href="/admin/usuarios">Mantenimiento de usuarios</a><a href="/perfiles">Mantenimiento de perfiles</a>'
+                      if request_is_admin() else '')
     return f'''<!doctype html>
 <html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Finanzas Familiares · Grupo 5</title><link rel="stylesheet" href="/static/styles.css"></head>
 <body><header class="topbar"><div class="shell top-inner"><div class="brand"><span class="brand-icon">₡</span><span><strong>Finanzas Familiares</strong><small>Proyecto open source · Grupo 5</small></span></div><span class="top-badge">SQLite · MVP local</span></div></header>
-<main class="shell"><nav class="main-nav" aria-label="Menú principal"><a class="nav-home" href="/">⌂ Resumen</a><details class="nav-group"><summary>Operaciones</summary><div class="nav-drop"><a href="/">Ingresos y gastos</a><a href="/admin/transferencias">Transferencias</a><a href="/admin/movimientos_ahorro">Movimientos de ahorro</a><a href="/comprobantes">Comprobantes</a></div></details><details class="nav-group"><summary>Planificación</summary><div class="nav-drop"><a href="/admin/presupuestos">Presupuestos</a><a href="/admin/metas_ahorro">Metas de ahorro</a><a href="/admin/alertas">Alertas</a></div></details><details class="nav-group"><summary>Catálogos</summary><div class="nav-drop"><a href="/admin/cuentas">Cuentas</a><a href="/admin/categorias">Categorías</a><a href="/admin/monedas">Monedas</a></div></details><details class="nav-group"><summary>Seguridad</summary><div class="nav-drop"><a href="/admin/usuarios">Mantenimiento de usuarios</a><a href="/perfiles">Mantenimiento de perfiles</a><a href="/admin/cambiar-clave">Cambiar contraseña</a></div></details><form method="post" action="/logout" style="display:inline"><button type="submit">Cerrar sesión</button></form></nav><section class="hero"><div><p class="eyebrow">PANEL FINANCIERO</p><h1>Un panorama claro de tu dinero.</h1><p>Movimientos, presupuestos y alertas en una sola página. {e(subtitle)}</p></div><span class="hero-art" aria-hidden="true">↗</span></section>{content}</main>
+<main class="shell"><nav class="main-nav" aria-label="Menú principal"><a class="nav-home" href="/">⌂ Resumen</a><details class="nav-group"><summary>Operaciones</summary><div class="nav-drop"><a href="/">Ingresos y gastos</a><a href="/admin/transferencias">Transferencias</a><a href="/admin/movimientos_ahorro">Movimientos de ahorro</a><a href="/comprobantes">Comprobantes</a></div></details><details class="nav-group"><summary>Planificación</summary><div class="nav-drop"><a href="/admin/presupuestos">Presupuestos</a><a href="/admin/metas_ahorro">Metas de ahorro</a><a href="/admin/alertas">Alertas</a></div></details><details class="nav-group"><summary>Catálogos</summary><div class="nav-drop"><a href="/admin/cuentas">Cuentas</a><a href="/admin/categorias">Categorías</a><a href="/admin/monedas">Monedas</a></div></details><details class="nav-group"><summary>Seguridad</summary><div class="nav-drop">{security_links}<a href="/admin/cambiar-clave">Cambiar contraseña</a></div></details><form method="post" action="/logout" style="display:inline"><button type="submit">Cerrar sesión</button></form></nav><section class="hero"><div><p class="eyebrow">PANEL FINANCIERO</p><h1>Un panorama claro de tu dinero.</h1><p>Movimientos, presupuestos y alertas en una sola página. {e(subtitle)}</p></div><span class="hero-art" aria-hidden="true">↗</span></section>{content}</main>
 <footer class="shell footer">Datos de demostración ficticios · Sin cuentas reales · UNA · II-2026</footer>
 <script>
 const tipo = document.getElementById('tipo'); const categoria = document.getElementById('id_categoria');
@@ -181,6 +213,11 @@ for(const form of document.querySelectorAll('form[method="post"]')){{
   }});
 }}
 for(const b of document.querySelectorAll('[data-confirm]'))b.addEventListener('click',ev=>{{if(!confirm('¿Eliminar este movimiento?'))ev.preventDefault();}});
+// Menú principal: un solo desplegable abierto a la vez; se cierra al hacer clic fuera o con Escape.
+const grupos=[...document.querySelectorAll('.main-nav details.nav-group')];
+for(const g of grupos)g.addEventListener('toggle',()=>{{if(g.open)for(const o of grupos)if(o!==g)o.open=false;}});
+document.addEventListener('click',ev=>{{for(const g of grupos)if(g.open&&!g.contains(ev.target))g.open=false;}});
+document.addEventListener('keydown',ev=>{{if(ev.key==='Escape')for(const g of grupos)g.open=false;}});
 </script></body></html>'''
 
 
@@ -242,7 +279,7 @@ def dashboard_page(query: dict) -> str:
     balances=''.join(f'<tr><td>{e(name)}</td><td>{e(code)}</td><td>{amount/100:,.2f}</td></tr>' for name,code,amount in finance.all_balances())
     content = f'''
     <section class="panel"><h2>Saldos por cuenta</h2><p>Incluye ingresos, gastos, transferencias y ahorros. Cada saldo está en su propia moneda.</p><table><tr><th>Cuenta</th><th>Moneda</th><th>Saldo</th></tr>{balances}</table></section>
-    <section class="notice-strip"><span>🔔 <strong>{alert_count}</strong> alertas pendientes</span><a href="/admin/alertas">Ver alertas →</a><span>Perfil activo: <strong>{e(extension.profile_name())}</strong></span><a href="/perfiles">Cambiar perfil</a></section>
+    <section class="notice-strip"><span>🔔 <strong>{alert_count}</strong> alertas pendientes</span><a href="/admin/alertas">Ver alertas →</a><span>Perfil activo: <strong>{e(extension.profile_name())}</strong></span>{'<a href="/perfiles">Cambiar perfil</a>' if request_is_admin() else ''}</section>
     <form class="period" method="get"><label>Período <input type="month" name="periodo" value="{year:04d}-{month:02d}" aria-label="Mes de consulta" onchange="const a=this.value.split('-');document.getElementById('anio').value=a[0];document.getElementById('mes').value=Number(a[1]);this.form.submit()"></label>
     <input type="hidden" id="anio" name="anio" value="{year}"><input type="hidden" id="mes" name="mes" value="{month}"><button class="secondary" type="submit">Actualizar</button></form>
     {metrics_html}
@@ -323,20 +360,28 @@ class Handler(BaseHTTPRequestHandler):
     def auth_redirect(self):
         self.redirect_to('/login')
 
+    def prepare_request(self):
+        """Fija el rol de esta solicitud para que layout() oculte las opciones de administración."""
+        request_ctx.set_admin(self.authenticated() and self.is_admin())
+
     def do_GET(self) -> None:
+        self.prepare_request()
         path = urlsplit(self.path)
         route = internal_path(path.path)
         try:
             if route == '/login':
                 return self.redirect_to('/') if self.authenticated() else self.respond(200,login_page().encode('utf-8'))
+            if route == '/olvide-clave':
+                return self.respond(200,forgot_password_page().encode('utf-8'))
             if route != '/static/styles.css' and not self.authenticated(): return self.auth_redirect()
             if route == '/admin/usuarios':
-                if not self.is_admin(): return self.respond(403,b'Acceso restringido','text/plain')
+                if not self.is_admin(): return self.respond(403,forbidden_page())
                 return self.respond(200,users_page(editing=parse_qs(path.query).get('editar',[''])[0]).encode('utf-8'))
             if route == '/admin/cambiar-clave': return self.respond(200,change_password_page().encode('utf-8'))
             if route == '/static/styles.css':
                 return self.respond(200, CSS_PATH.read_bytes(), 'text/css; charset=utf-8')
             if route == '/perfiles':
+                if not self.is_admin(): return self.respond(403,forbidden_page())
                 return self.respond(200, extension.profiles_page().encode('utf-8'))
             if route == '/comprobantes':
                 return self.respond(200, extension.receipts_page().encode('utf-8'))
@@ -365,6 +410,7 @@ class Handler(BaseHTTPRequestHandler):
             return self.respond(500,error_page('Error temporal','No fue posible completar la solicitud.'))
 
     def do_POST(self) -> None:
+        self.prepare_request()
         path = internal_path(urlsplit(self.path).path)
         length = int(self.headers.get('Content-Length','0'))
         if length < 0 or length > 6_000_000:
@@ -384,7 +430,7 @@ class Handler(BaseHTTPRequestHandler):
                 return self.respond(401,login_page('Usuario o contraseña incorrectos').encode('utf-8'))
             if not self.authenticated(): return self.auth_redirect()
             if path == '/admin/usuarios/guardar':
-                if not self.is_admin(): return self.respond(403,b'Acceso restringido','text/plain')
+                if not self.is_admin(): return self.respond(403,forbidden_page())
                 form={k:v[0] for k,v in parse_qs(payload.decode('utf-8'),keep_blank_values=True).items()}
                 username=form.get('username','').strip(); name=form.get('name','').strip()
                 role=form.get('role'); active=form.get('active')=='1'; password=form.get('password','')
@@ -424,6 +470,7 @@ class Handler(BaseHTTPRequestHandler):
             posted = parse_qs(payload.decode('utf-8'), keep_blank_values=True)
             form = {key: vals[0] for key, vals in posted.items()}
             if path == '/perfiles/seleccionar':
+                if not self.is_admin(): return self.respond(403,forbidden_page())
                 extension.select_profile(form)
                 return self.redirect_to('/perfiles')
             if m := re.fullmatch(r'/comprobantes/(\d+)/eliminar',path):
@@ -431,6 +478,7 @@ class Handler(BaseHTTPRequestHandler):
                 return self.redirect_to('/comprobantes')
             if m := re.fullmatch(r'/admin/([a-z_]+)(?:/(\d+))?/(guardar|eliminar)', path):
                 table,item_id,action=m.group(1),int(m.group(2)) if m.group(2) else None,m.group(3)
+                if table=='usuarios' and not self.is_admin(): return self.respond(403,forbidden_page())
                 if action=='eliminar':
                     if item_id is None: raise ValueError('Falta el identificador')
                     extension.delete(table,item_id)
