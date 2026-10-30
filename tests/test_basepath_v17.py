@@ -40,6 +40,11 @@ class BasePathTests(unittest.TestCase):
             self.assertIn('action="/finanzas/login"',html)
             self.assertIn('href="/finanzas/static/styles.css"',html)
         with opener.open(Request(self.base+'/finanzas/login',data=urlencode({'usuario':'admin','contrasena':'ClaveDePrueba12345!'}).encode())) as response:
+            self.assertEqual(response.geturl(),self.base+'/finanzas/perfiles/elegir')
+            html=response.read().decode()
+            self.assertIn('Seleccionar perfil financiero',html)
+            self.assertIn('action="/finanzas/perfiles/seleccionar"',html)
+        with opener.open(Request(self.base+'/finanzas/perfiles/seleccionar',data=urlencode({'id_perfil':'1'}).encode())) as response:
             self.assertEqual(response.geturl(),self.base+'/finanzas/')
             html=response.read().decode()
             self.assertIn('href="/finanzas/admin/cuentas"',html)

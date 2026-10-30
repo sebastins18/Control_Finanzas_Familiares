@@ -24,6 +24,7 @@ import sqlite3
 import logging
 from logging.handlers import RotatingFileHandler
 import re
+from functools import wraps
 from datetime import date
 from html import escape
 from http import HTTPStatus
@@ -31,19 +32,76 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlencode, urlsplit
 
-from src import db, extension, finance, request_ctx
+from src import db, extension, finance, request_ctx, auth, profiles
 
 LOG_DIR=db.db_path().parent / 'logs'
-LOG_DIR.mkdir(parents=True,exist_ok=True)
 logger=logging.getLogger('finanzas')
 logger.setLevel(logging.ERROR)
 if not logger.handlers:
-    log_handler=RotatingFileHandler(LOG_DIR/'errores.log',maxBytes=2_000_000,backupCount=3,encoding='utf-8')
+    try:
+        LOG_DIR.mkdir(parents=True,exist_ok=True)
+        log_handler=RotatingFileHandler(LOG_DIR/'errores.log',maxBytes=2_000_000,backupCount=3,encoding='utf-8')
+    except OSError:
+        log_handler=logging.StreamHandler()
     log_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s %(message)s'))
     logger.addHandler(log_handler)
 
 def error_page(title, message):
-    return layout('<section class="panel" role="alert"><h2>'+e(title)+'</h2><p>'+e(message)+'</p><p>Intente nuevamente en unos momentos. Si el problema continúa, contacte al administrador.</p><a href="/">Volver al inicio</a></section>').encode('utf-8')
+    return layout('<section class="panel denied" role="alert"><div class="denied-icon" aria-hidden="true">!</div><h2>'+e(title)+'</h2><p>'+e(message)+'</p><p class="help">Si el problema continúa, contacte al administrador. Los detalles técnicos quedaron registrados para su revisión.</p><a class="denied-btn primary" href="/">Volver al inicio</a></section>').encode('utf-8')
+
+
+def controlled_request(method):
+    """Una sola frontera de errores, incluida la autenticación que consulta SQLite."""
+    @wraps(method)
+    def handle(self):
+        request_ctx.set_admin(False)
+        request_ctx.set_user_id(1)
+        request_ctx.set_identity()
+        try:
+            self.connection.settimeout(10)
+            return method(self)
+        except (BrokenPipeError, ConnectionResetError):
+            logger.info('Cliente desconectado durante %s', self.command)
+            return
+        except profiles.AccessDenied:
+            status, title, message = 403, 'Acceso restringido', 'No tiene permiso para esta operación en el perfil seleccionado.'
+        except sqlite3.IntegrityError as exc:
+            logger.exception('Restricción SQLite durante %s', self.command)
+            status, title = 409, 'No se pudo realizar el cambio'
+            code = getattr(exc, 'sqlite_errorname', '')
+            if code in ('SQLITE_CONSTRAINT_UNIQUE', 'SQLITE_CONSTRAINT_PRIMARYKEY'):
+                message = 'Ya existe un registro con esos datos. Revise la información antes de guardar.'
+            elif code == 'SQLITE_CONSTRAINT_FOREIGNKEY':
+                message = 'El registro está relacionado con otros datos o una referencia ya no está disponible. Revise sus relaciones antes de cambiarlo.'
+            else:
+                message = 'Los datos no cumplen las reglas del registro. Revise los campos e intente nuevamente.'
+        except sqlite3.Error as exc:
+            logger.exception('Error SQLite durante %s', self.command)
+            status, title = 503, 'Base de datos no disponible'
+            code = getattr(exc, 'sqlite_errorcode', 0) or 0
+            if (code & 255) in (sqlite3.SQLITE_BUSY, sqlite3.SQLITE_LOCKED):
+                message = 'La base de datos está ocupada. Espere unos segundos y vuelva a intentarlo.'
+            elif (code & 255) == sqlite3.SQLITE_INTERRUPT:
+                message = 'La consulta superó el tiempo permitido y se detuvo. Intente una operación más pequeña.'
+            else:
+                message = 'No fue posible acceder a los datos en este momento.'
+            if self.command == 'POST':
+                message += ' Compruebe si el cambio se guardó antes de volver a enviarlo.'
+        except (OSError, TimeoutError):
+            logger.exception('Error de almacenamiento o espera durante %s', self.command)
+            status, title = 503, 'No se pudo completar la operación'
+            message = 'El almacenamiento no está disponible o la espera terminó. Compruebe el resultado antes de volver a intentarlo.'
+        except ValueError:
+            logger.exception('Solicitud inválida durante %s', self.command)
+            status, title, message = 400, 'Revise los datos', 'Hay un campo con formato incorrecto. Revise la información ingresada.'
+        except Exception:
+            logger.exception('Error inesperado durante %s', self.command)
+            status, title, message = 500, 'No se pudo completar la operación', 'Ocurrió un problema inesperado. Compruebe el resultado antes de volver a intentarlo.'
+        try:
+            return self.respond(status, error_page(title, message))
+        except (OSError, TimeoutError):
+            logger.info('No se pudo entregar la respuesta de error al cliente')
+    return handle
 
 def request_is_admin() -> bool:
     """Rol de la solicitud en curso (False sin sesión). Solo decide qué enlaces muestra la interfaz;
@@ -57,33 +115,11 @@ def forbidden_page():
 
 AUTH_LOCK=threading.Lock()
 SESSIONS={}
-def auth_file():
-    # Separa credenciales por DB_PATH; evita contaminar datos de prueba.
-    return db.db_path().parent / 'login_credentials.json'
-def hash_password(password,salt):
-    return hashlib.pbkdf2_hmac('sha256',password.encode(),bytes.fromhex(salt),310000).hex()
-def credentials():
-    if not auth_file().exists():
-        auth_file().parent.mkdir(parents=True,exist_ok=True)
-        initial = os.environ.get('FINANZAS_INITIAL_ADMIN_PASSWORD', '')
-        if app_base_path() and len(initial) < 12:
-            raise RuntimeError('Configure FINANZAS_INITIAL_ADMIN_PASSWORD (12 caracteres o más) antes de iniciar la instancia web')
-        # Contraseña histórica predeterminada solo para el prototipo localhost.
-        initial = initial or 'Admin12345!'
-        salt=secrets.token_hex(16)
-        save_users([{'username':'admin','name':'Administrador','role':'admin','active':True,'salt':salt,'hash':hash_password(initial,salt)}])
-    data=json.loads(auth_file().read_text(encoding='utf-8'))
-    if isinstance(data,dict) and 'users' not in data:
-        data={'users':[{'username':data['username'],'name':'Administrador','role':'admin','active':True,'salt':data['salt'],'hash':data['hash']}]}
-        save_users(data['users'])
-    return data['users']
+# La persistencia de autenticacion vive en SQLite.
+hash_password = auth.hash_password
+credentials = auth.credentials
+save_users = auth.save_users
 
-def save_users(users):
-    temp=auth_file().with_suffix('.tmp')
-    temp.write_text(json.dumps({'users':users},ensure_ascii=False,indent=2),encoding='utf-8')
-    try: os.chmod(temp,0o600)
-    except OSError: pass
-    temp.replace(auth_file())
 
 def user_by_name(name):
     return next((u for u in credentials() if u['username']==name),None)
@@ -92,11 +128,12 @@ def users_page(message='',error=False,editing=''):
     users=credentials()
     selected=next((u for u in users if u['username']==editing),None)
     notice=('<p role="alert" style="color:'+('#b91c1c' if error else '#166534')+'">'+e(message)+'</p>') if message else ''
-    rows=''.join('<tr><td>'+e(u['username'])+'</td><td>'+e(u['name'])+'</td><td>'+e(u['role'])+'</td><td>'+('Activo' if u['active'] else 'Inactivo')+'</td><td><a href="/admin/usuarios?editar='+e(u['username'])+'">Editar</a></td></tr>' for u in users)
+    rows=''.join('<tr><td>'+e(u['username'])+'</td><td>'+e(u['name'])+'</td><td>'+e(u['role_name'])+'</td><td>'+('Activo' if u['active'] else 'Inactivo')+'</td><td><a href="/admin/usuarios?editar='+e(u['username'])+'">Editar</a></td></tr>' for u in users)
+    role_options = ''.join(f'<option value="{value}" {"selected" if (selected and selected["role_name"]==value) or (not selected and value=="usuario") else ""}>{label}</option>' for value,label in (('administrador','Administrador'),('usuario','Usuario')))
     form=f"""<form method="post" action="/admin/usuarios/guardar" class="form-grid">
     <label>Usuario<input name="username" maxlength="40" pattern="[A-Za-z0-9_.-]+" value="{e(selected['username']) if selected else ''}" {'readonly' if selected else 'required'}></label>
     <label>Nombre completo<input name="name" maxlength="100" value="{e(selected['name']) if selected else ''}" required></label>
-    <label>Rol<select name="role"><option value="usuario" {'selected' if not selected or selected['role']=='usuario' else ''}>Usuario</option><option value="admin" {'selected' if selected and selected['role']=='admin' else ''}>Administrador</option></select></label>
+    <label>Rol<select name="role">{role_options}</select></label>
     <label>Estado<select name="active"><option value="1" {'selected' if not selected or selected['active'] else ''}>Activo</option><option value="0" {'selected' if selected and not selected['active'] else ''}>Inactivo</option></select></label>
     <label>{'Nueva contraseña (dejar vacío para conservar)' if selected else 'Contraseña inicial'}<input name="password" type="password" minlength="8" maxlength="128" {'required' if not selected else ''}></label>
     <button class="primary" type="submit">Guardar usuario</button><a href="/admin/usuarios">Cancelar</a></form>"""
@@ -106,21 +143,40 @@ def change_password_page(message='',error=False):
     notice=('<p role="alert" style="color:'+('#b91c1c' if error else '#166534')+'">'+e(message)+'</p>') if message else ''
     return layout('<section class="panel"><h2>Cambiar mi contraseña</h2><p>Escriba su nueva contraseña y confírmela. Por seguridad, el sistema no genera ni muestra contraseñas nuevas: la nueva será exactamente la que usted introduzca. Después deberá iniciar sesión de nuevo.</p>'+notice+'<form method="post" action="/admin/cambiar-clave" class="form-grid"><label>Contraseña actual<input type="password" name="actual" required></label><label>Nueva contraseña<input type="password" name="nueva" minlength="8" required></label><label>Confirmar contraseña<input type="password" name="confirmar" minlength="8" required></label><button class="primary">Cambiar contraseña</button></form></section>')
 
-def login_page(error=''):
-    return ('<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Ingresar - Finanzas Familiares</title><link rel="stylesheet" href="/static/styles.css"></head>'
+def login_page(error='',message=''):
+    return ('<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Ingresar - MisFinanzas</title><link rel="icon" type="image/png" href="/static/logo.png"><link rel="stylesheet" href="/static/styles.css"></head>'
             '<body class="login-body"><div class="lg-bg" aria-hidden="true"><span class="lg-orb lg-orb-1"></span><span class="lg-orb lg-orb-2"></span><span class="lg-orb lg-orb-3"></span><span class="lg-orb lg-orb-4"></span></div>'
-            '<main class="lg-wrap"><section class="lg-card" aria-labelledby="lg-title"><div class="lg-brand"><span class="lg-logo" aria-hidden="true">₡</span><span>Finanzas Familiares</span></div>'
+            '<main class="lg-wrap"><section class="lg-card" aria-labelledby="lg-title"><div class="lg-brand"><img class="app-logo app-logo-login" src="/static/logo.png" alt="Logo de MisFinanzas" width="72" height="72"><span>MisFinanzas</span></div>'
             '<h1 id="lg-title">Iniciar sesión</h1><p class="lg-sub">Ingrese sus credenciales para acceder al sistema.</p>'
-            +('<p class="lg-alert" role="alert">'+e(error)+'</p>' if error else '')+
+            +('<p class="lg-alert" role="alert">'+e(error)+'</p>' if error else '')
+            +('<p class="lg-success" role="status">'+e(message)+'</p>' if message else '')+
             '<form method="post" action="/login" class="lg-form"><label>Usuario<input class="lg-input" name="usuario" required autocomplete="username" autofocus></label>'
             '<label>Contraseña<input class="lg-input" name="contrasena" type="password" required autocomplete="current-password"></label>'
-            '<button class="lg-btn" type="submit">Ingresar</button></form><p class="lg-forgot"><a href="/olvide-clave">¿Olvidó su contraseña?</a></p></section></main></body></html>')
+            '<button class="lg-btn" type="submit">Ingresar</button></form><p class="lg-create">¿No tienes una cuenta? <a href="/registro">Crear cuenta</a></p><p class="lg-forgot"><a href="/olvide-clave">¿Olvidó su contraseña?</a></p></section></main></body></html>')
+
+
+def registration_page(error='',form=None):
+    form=form or {}
+    html=login_page().replace('<title>Ingresar -','<title>Crear cuenta -')
+    start=html.index('<h1 id="lg-title">')
+    end=html.index('</section>',start)
+    notice=f'<p class="lg-alert" role="alert">{e(error)}</p>' if error else ''
+    content=f'''<h1 id="lg-title">Crear cuenta</h1><p class="lg-sub">Regístrate para comenzar a organizar tus finanzas.</p>{notice}
+        <form method="post" action="/registro" class="lg-form">
+        <label>Nombre completo<input class="lg-input" name="name" autocomplete="name" maxlength="100" value="{e(form.get('name',''))}" required></label>
+        <label>Usuario<input class="lg-input" name="username" autocomplete="username" pattern="[A-Za-z0-9_.-]+" maxlength="40" value="{e(form.get('username',''))}" required></label>
+        <p class="help">El usuario debe ser único. Usa letras, números, puntos o guiones, sin espacios.</p>
+        <label>Contraseña<input class="lg-input" name="password" type="password" autocomplete="new-password" minlength="8" maxlength="128" required></label>
+        <label>Confirmar contraseña<input class="lg-input" name="confirm_password" type="password" autocomplete="new-password" minlength="8" maxlength="128" required></label>
+        <button class="lg-btn" type="submit">Crear cuenta</button></form>
+        <p class="lg-create">¿Ya tienes cuenta? <a href="/login">Iniciar sesión</a></p>'''
+    return html[:start]+content+html[end:]
 
 def forgot_password_page():
     """Recuperación sin correo: la contraseña solo la restablece un administrador."""
-    return ('<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Recuperar contraseña - Finanzas Familiares</title><link rel="stylesheet" href="/static/styles.css"></head>'
+    return ('<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Recuperar contraseña - MisFinanzas</title><link rel="icon" type="image/png" href="/static/logo.png"><link rel="stylesheet" href="/static/styles.css"></head>'
             '<body class="login-body"><div class="lg-bg" aria-hidden="true"><span class="lg-orb lg-orb-1"></span><span class="lg-orb lg-orb-2"></span><span class="lg-orb lg-orb-3"></span><span class="lg-orb lg-orb-4"></span></div>'
-            '<main class="lg-wrap"><section class="lg-card" aria-labelledby="lg-title"><div class="lg-brand"><span class="lg-logo" aria-hidden="true">₡</span><span>Finanzas Familiares</span></div>'
+            '<main class="lg-wrap"><section class="lg-card" aria-labelledby="lg-title"><div class="lg-brand"><img class="app-logo app-logo-login" src="/static/logo.png" alt="Logo de MisFinanzas" width="72" height="72"><span>MisFinanzas</span></div>'
             '<h1 id="lg-title">¿Olvidó su contraseña?</h1><p class="lg-sub">Por seguridad, las contraseñas no se pueden consultar ni enviar por correo. Un administrador puede asignarle una nueva.</p>'
             '<ol class="lg-steps"><li>Comuníquese con un administrador del sistema e indíquele su nombre de usuario.</li>'
             '<li>El administrador la restablece en <strong>Seguridad → Mantenimiento de usuarios</strong>.</li>'
@@ -186,15 +242,21 @@ def option_rows(rows, selected: int | None, kind: str | None = None) -> str:
     return ''.join(result)
 
 
-def layout(content: str, *, subtitle: str = '') -> str:
+def layout(content: str, *, subtitle: str = '', selection: bool = False) -> str:
     # Opciones de administración visibles solo para administradores (las rutas se protegen aparte).
-    security_links = ('<a href="/admin/usuarios">Mantenimiento de usuarios</a><a href="/perfiles">Mantenimiento de perfiles</a>'
-                      if request_is_admin() else '')
-    return f'''<!doctype html>
+    security_links = ('<a href="/admin/usuarios">Mantenimiento de usuarios</a>'
+                      if request_is_admin() and not auth.STANDARD_USER_MODE else '')
+    name, role = request_ctx.identity()
+    identity = (f'<div class="session-identity" aria-label="Usuario conectado"><span class="session-name">{e(name)}</span></div>' if name else '')
+    selected_profile=request_ctx.profile()
+    guest=bool(selected_profile and not selected_profile['es_propietario'])
+    profiles_label='Mis perfiles' if guest else 'Administrar perfiles / integrantes'
+    profile_bar=(f'<section class="notice-strip profile-strip"><span>Perfil financiero: <strong>{e(selected_profile["nombre"])}</strong> · {"Propietario" if selected_profile["es_propietario"] else "Invitado"}</span><a href="/perfiles/elegir">Cambiar perfil</a><a href="/perfiles">{profiles_label}</a></section>' if selected_profile and not selection else '')
+    html = f'''<!doctype html>
 <html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Finanzas Familiares · Grupo 5</title><link rel="stylesheet" href="/static/styles.css"></head>
-<body><header class="topbar"><div class="shell top-inner"><div class="brand"><span class="brand-icon">₡</span><span><strong>Finanzas Familiares</strong><small>Proyecto open source · Grupo 5</small></span></div><span class="top-badge">SQLite · MVP local</span></div></header>
-<main class="shell"><nav class="main-nav" aria-label="Menú principal"><a class="nav-home" href="/">⌂ Resumen</a><details class="nav-group"><summary>Operaciones</summary><div class="nav-drop"><a href="/">Ingresos y gastos</a><a href="/admin/transferencias">Transferencias</a><a href="/admin/movimientos_ahorro">Movimientos de ahorro</a><a href="/comprobantes">Comprobantes</a></div></details><details class="nav-group"><summary>Planificación</summary><div class="nav-drop"><a href="/admin/presupuestos">Presupuestos</a><a href="/admin/metas_ahorro">Metas de ahorro</a><a href="/admin/alertas">Alertas</a></div></details><details class="nav-group"><summary>Catálogos</summary><div class="nav-drop"><a href="/admin/cuentas">Cuentas</a><a href="/admin/categorias">Categorías</a><a href="/admin/monedas">Monedas</a></div></details><details class="nav-group"><summary>Seguridad</summary><div class="nav-drop">{security_links}<a href="/admin/cambiar-clave">Cambiar contraseña</a></div></details><form method="post" action="/logout" style="display:inline"><button type="submit">Cerrar sesión</button></form></nav><section class="hero"><div><p class="eyebrow">PANEL FINANCIERO</p><h1>Un panorama claro de tu dinero.</h1><p>Movimientos, presupuestos y alertas en una sola página. {e(subtitle)}</p></div><span class="hero-art" aria-hidden="true">↗</span></section>{content}</main>
+<title>MisFinanzas · Grupo 5</title><link rel="icon" type="image/png" href="/static/logo.png"><link rel="stylesheet" href="/static/styles.css"></head>
+<body><header class="topbar"><div class="shell top-inner"><div class="brand"><img class="app-logo" src="/static/logo.png" alt="Logo de MisFinanzas" width="64" height="64"><span><strong>MisFinanzas</strong><small>Proyecto open source · Grupo 5</small></span></div>{identity}</div></header>
+<main class="shell"><nav class="main-nav" aria-label="Menú principal"><a class="nav-home" href="/">⌂ Resumen</a><details class="nav-group"><summary>Operaciones</summary><div class="nav-drop"><a href="/">Ingresos y gastos</a><a href="/admin/transferencias">Transferencias</a><a href="/admin/movimientos_ahorro">Movimientos de ahorro</a><a href="/comprobantes">Comprobantes</a></div></details><details class="nav-group"><summary>Planificación</summary><div class="nav-drop"><a href="/admin/presupuestos">Presupuestos</a><a href="/admin/metas_ahorro">Metas de ahorro</a><a href="/admin/alertas">Alertas</a></div></details><details class="nav-group"><summary>Catálogos</summary><div class="nav-drop"><a href="/admin/cuentas">Cuentas</a><a href="/admin/categorias">Categorías</a><a href="/admin/monedas">Monedas</a></div></details><details class="nav-group"><summary>Seguridad</summary><div class="nav-drop">{security_links}<a href="/admin/cambiar-clave">Cambiar contraseña</a></div></details><form method="post" action="/logout" style="display:inline"><button type="submit">Cerrar sesión</button></form></nav>{profile_bar}<section class="hero"><div><p class="eyebrow">PANEL FINANCIERO</p><h1>Un panorama claro de tu dinero.</h1><p>Movimientos, presupuestos y alertas en una sola página. {e(subtitle)}</p></div><span class="hero-art" aria-hidden="true">↗</span></section>{content}</main>
 <footer class="shell footer">Datos de demostración ficticios · Sin cuentas reales · UNA · II-2026</footer>
 <script>
 const tipo = document.getElementById('tipo'); const categoria = document.getElementById('id_categoria');
@@ -219,6 +281,15 @@ for(const g of grupos)g.addEventListener('toggle',()=>{{if(g.open)for(const o of
 document.addEventListener('click',ev=>{{for(const g of grupos)if(g.open&&!g.contains(ev.target))g.open=false;}});
 document.addEventListener('keydown',ev=>{{if(ev.key==='Escape')for(const g of grupos)g.open=false;}});
 </script></body></html>'''
+    if guest:
+        for route,label in (('presupuestos','Presupuestos'),('metas_ahorro','Metas de ahorro'),('cuentas','Cuentas'),('categorias','Categorías'),('monedas','Monedas')):
+            html=html.replace(f'href="/admin/{route}">{label}</a>',f'href="/admin/{route}">{label} · Consulta</a>')
+        html=html.replace('<summary>Catálogos</summary>','<summary>Consultas</summary>')
+    if selection:
+        html=re.sub(r'<nav class="main-nav".*?</nav>','',html,flags=re.S)
+        html=re.sub(r'<section class="hero">.*?</section>','',html,flags=re.S)
+        html=html.replace('Proyecto open source · Grupo 5','Bienvenido, '+e(name))
+    return html
 
 
 def dashboard_page(query: dict) -> str:
@@ -237,11 +308,14 @@ def dashboard_page(query: dict) -> str:
         pass
     categories, accounts = data['categories'], data['accounts']
     with db.connect() as c:
-        account_currency = {str(r['id_cuenta']): r['codigo_iso'] for r in c.execute('SELECT a.id_cuenta,m.codigo_iso FROM cuentas a JOIN monedas m ON m.id_moneda=a.id_moneda')}
+        can_manage=bool(profiles.access(c)['es_propietario'])
+        account_currency = {str(r['id_cuenta']): r['codigo_iso'] for r in c.execute('SELECT a.id_cuenta,m.codigo_iso FROM cuentas a JOIN monedas m ON m.id_moneda=a.id_moneda WHERE a.id_perfil=current_profile_id()')}
+    if movement_edit and not can_manage:
+        raise profiles.AccessDenied('Solo el propietario puede editar movimientos existentes.')
 
     kind = movement_edit['tipo'] if movement_edit else 'gasto'
     cat_selected = movement_edit['id_categoria'] if movement_edit else None
-    acc_selected = movement_edit['id_cuenta'] if movement_edit else accounts[0]['id_cuenta']
+    acc_selected = movement_edit['id_cuenta'] if movement_edit else (accounts[0]['id_cuenta'] if accounts else None)
     amount = f"{movement_edit['monto_centimos']/100:.2f}" if movement_edit else ''
     tx_date = movement_edit['fecha'] if movement_edit else today.isoformat()
     currency_selected = account_currency.get(str(acc_selected), 'CRC')
@@ -274,12 +348,12 @@ def dashboard_page(query: dict) -> str:
         metric_rows.append(f'<tr><td>{e(code)}</td><td>{inc/100:,.2f}</td><td>{exp/100:,.2f}</td><td>{(inc-exp)/100:,.2f}</td></tr>')
     metrics_html = '<section class="panel"><h2>Resumen mensual por moneda</h2><p>Los montos no se suman entre monedas diferentes.</p><div class="table-scroll"><table><thead><tr><th>Moneda</th><th>Ingresos</th><th>Gastos</th><th>Balance</th></tr></thead><tbody>' + (''.join(metric_rows) or '<tr><td colspan="4">Sin movimientos este mes</td></tr>') + '</tbody></table></div></section>'
     with db.connect() as c:
-        active=extension.active_profile(c)
-        alert_count=c.execute('SELECT COUNT(*) FROM alertas WHERE id_usuario=? AND leida=0',(active,)).fetchone()[0]
+        active=extension.current_profile_id(c)
+        alert_count=c.execute('SELECT COUNT(*) FROM alertas WHERE id_perfil=? AND leida=0',(active,)).fetchone()[0]
     balances=''.join(f'<tr><td>{e(name)}</td><td>{e(code)}</td><td>{amount/100:,.2f}</td></tr>' for name,code,amount in finance.all_balances())
     content = f'''
     <section class="panel"><h2>Saldos por cuenta</h2><p>Incluye ingresos, gastos, transferencias y ahorros. Cada saldo está en su propia moneda.</p><table><tr><th>Cuenta</th><th>Moneda</th><th>Saldo</th></tr>{balances}</table></section>
-    <section class="notice-strip"><span>🔔 <strong>{alert_count}</strong> alertas pendientes</span><a href="/admin/alertas">Ver alertas →</a><span>Perfil activo: <strong>{e(extension.profile_name())}</strong></span>{'<a href="/perfiles">Cambiar perfil</a>' if request_is_admin() else ''}</section>
+    <section class="notice-strip"><span>🔔 <strong>{alert_count}</strong> alertas pendientes</span><a href="/admin/alertas">Ver alertas →</a></section>
     <form class="period" method="get"><label>Período <input type="month" name="periodo" value="{year:04d}-{month:02d}" aria-label="Mes de consulta" onchange="const a=this.value.split('-');document.getElementById('anio').value=a[0];document.getElementById('mes').value=Number(a[1]);this.form.submit()"></label>
     <input type="hidden" id="anio" name="anio" value="{year}"><input type="hidden" id="mes" name="mes" value="{month}"><button class="secondary" type="submit">Actualizar</button></form>
     {metrics_html}
@@ -300,9 +374,12 @@ def dashboard_page(query: dict) -> str:
     <p class="help">Una alerta aparece al alcanzar el 80 % del presupuesto de una categoría.</p></div></article></section>
     <section class="panel table-panel"><div class="panel-title"><div><p class="eyebrow">HISTORIAL</p><h2>Movimientos del período</h2></div><span class="pill neutral">Últimos 100</span></div>
     <div class="table-scroll"><table><thead><tr><th>Descripción / categoría</th><th>Fecha</th><th>Monto</th><th>Acciones</th></tr></thead><tbody>{rows}</tbody></table></div></section>
-    <section class="foot-note">Prototipo académico local · perfiles sin contraseña ni aislamiento de seguridad · No exponer a Internet.</section>
+    <section class="foot-note">Prototipo académico local · No exponer a Internet.</section>
     '''
-    return layout(content, subtitle='Datos sintéticos para la demostración del curso.')
+    if not can_manage:
+        content=re.sub(r'<div class="subform">.*?</div>','<p class="help">El propietario administra los presupuestos.</p>',content,flags=re.S)
+        content=re.sub(r'<td class="actions">.*?</td>','<td>Consulta</td>',content,flags=re.S)
+    return layout(content, subtitle='')
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -344,7 +421,7 @@ class Handler(BaseHTTPRequestHandler):
             if entry and entry[1]>time.time():
                 user=user_by_name(entry[0])
                 if user and user["active"]:
-                    SESSIONS[token]=(entry[0],time.time()+8*3600)
+                    SESSIONS[token]=(entry[0],time.time()+8*3600,*entry[2:])
                     return True
             SESSIONS.pop(token,None)
         return False
@@ -355,60 +432,82 @@ class Handler(BaseHTTPRequestHandler):
 
     def is_admin(self):
         user=self.current_user()
-        return bool(user and user['role']=='admin' and user['active'])
+        return auth.is_system_admin(user)
 
     def auth_redirect(self):
         self.redirect_to('/login')
 
     def prepare_request(self):
         """Fija el rol de esta solicitud para que layout() oculte las opciones de administración."""
-        request_ctx.set_admin(self.authenticated() and self.is_admin())
+        request_ctx.set_user_id(1)
+        authenticated = self.authenticated()
+        user = self.current_user() if authenticated else None
+        request_ctx.set_user_id(user['id_usuario'] if user else 1)
+        request_ctx.set_admin(auth.is_system_admin(user))
+        request_ctx.set_identity(user['name'] if user else '', user['role_name'] if user else '')
+        if user:
+            token=self.session_token()
+            with AUTH_LOCK:
+                entry=SESSIONS.get(token)
+                selected=entry[2] if entry and len(entry)>2 else None
+            if selected is not None:
+                with db.connect() as c:
+                    try: selected_profile=profiles.access(c,selected)
+                    except profiles.AccessDenied: selected_profile=None
+                request_ctx.set_profile(selected_profile)
+                if selected_profile is None:
+                    with AUTH_LOCK:
+                        if token in SESSIONS: SESSIONS[token]=SESSIONS[token][:2]
 
+    @controlled_request
     def do_GET(self) -> None:
         self.prepare_request()
         path = urlsplit(self.path)
         route = internal_path(path.path)
-        try:
-            if route == '/login':
-                return self.redirect_to('/') if self.authenticated() else self.respond(200,login_page().encode('utf-8'))
-            if route == '/olvide-clave':
-                return self.respond(200,forgot_password_page().encode('utf-8'))
-            if route != '/static/styles.css' and not self.authenticated(): return self.auth_redirect()
-            if route == '/admin/usuarios':
-                if not self.is_admin(): return self.respond(403,forbidden_page())
-                return self.respond(200,users_page(editing=parse_qs(path.query).get('editar',[''])[0]).encode('utf-8'))
-            if route == '/admin/cambiar-clave': return self.respond(200,change_password_page().encode('utf-8'))
-            if route == '/static/styles.css':
-                return self.respond(200, CSS_PATH.read_bytes(), 'text/css; charset=utf-8')
-            if route == '/perfiles':
-                if not self.is_admin(): return self.respond(403,forbidden_page())
-                return self.respond(200, extension.profiles_page().encode('utf-8'))
-            if route == '/comprobantes':
-                return self.respond(200, extension.receipts_page().encode('utf-8'))
-            if m := re.fullmatch(r'/comprobantes/(\d+)/archivo',route):
-                receipt=extension.receipt_file(int(m.group(1)))
-                if receipt is None: return self.respond(404,b'Archivo no encontrado','text/plain')
-                data,mime=receipt
-                return self.respond(200,data,mime)
-            if route == '/health':
-                with db.connect() as connection:
-                    ver = connection.execute('SELECT sqlite_version()').fetchone()[0]
-                    tables = connection.execute('SELECT COUNT(*) FROM sqlite_master WHERE type="table"').fetchone()[0]
-                return self.respond(200, json.dumps({'status':'ok','motor':'SQLite','version':ver,'tablas':tables}).encode(), 'application/json')
-            if m := re.fullmatch(r'/admin/([a-z_]+)', route):
-                edit_id=int(parse_qs(path.query).get('editar',['0'])[0]) or None
-                return self.respond(200, extension.page(m.group(1),edit_id).encode('utf-8'))
-            if route in ('/', '/index.html'):
-                query = parse_qs(path.query)
-                return self.respond(200, dashboard_page(query).encode('utf-8'))
-            return self.respond(404, layout('<section class="panel"><h2>Página no encontrada</h2><a href="/">Volver al inicio</a></section>').encode())
-        except sqlite3.Error:
-            logger.exception('Error SQLite durante GET %s',route)
-            return self.respond(503,error_page('Base de datos no disponible','No se pudo consultar la información en este momento.'))
-        except Exception:
-            logger.exception('Error inesperado durante GET %s',route)
-            return self.respond(500,error_page('Error temporal','No fue posible completar la solicitud.'))
+        if route == '/login':
+            message='Cuenta creada correctamente. Ya puedes iniciar sesión.' if parse_qs(path.query).get('registro')==['ok'] else ''
+            return self.redirect_to('/') if self.authenticated() else self.respond(200,login_page(message=message).encode('utf-8'))
+        if route == '/registro':
+            return self.redirect_to('/perfiles/elegir') if self.authenticated() else self.respond(200,registration_page().encode('utf-8'))
+        if route == '/olvide-clave':
+            return self.respond(200,forgot_password_page().encode('utf-8'))
+        if route not in ('/static/styles.css', '/static/logo.png') and not self.authenticated(): return self.auth_redirect()
+        if route == '/perfiles/elegir':
+            return self.respond(200,profiles.selection_page().encode('utf-8'))
+        if not request_ctx.profile() and route not in ('/perfiles','/admin/usuarios','/admin/cambiar-clave','/health','/static/styles.css','/static/logo.png'):
+            return self.redirect_to('/perfiles/elegir')
+        if route == '/perfiles':
+            return self.respond(200,profiles.page().encode('utf-8'))
+        if route == '/admin/usuarios':
+            if not self.is_admin(): return self.respond(403,forbidden_page())
+            return self.respond(200,users_page(editing=parse_qs(path.query).get('editar',[''])[0]).encode('utf-8'))
+        if route == '/admin/cambiar-clave': return self.respond(200,change_password_page().encode('utf-8'))
+        if route == '/static/logo.png':
+            return self.respond(200, CSS_PATH.with_name('logo.png').read_bytes(), 'image/png')
+        if route == '/static/styles.css':
+            return self.respond(200, CSS_PATH.read_bytes(), 'text/css; charset=utf-8')
+        if route == '/comprobantes':
+            return self.respond(200, extension.receipts_page().encode('utf-8'))
+        if m := re.fullmatch(r'/comprobantes/(\d+)/archivo',route):
+            receipt=extension.receipt_file(int(m.group(1)))
+            if receipt is None: return self.respond(404,b'Archivo no encontrado','text/plain')
+            data,mime=receipt
+            return self.respond(200,data,mime)
+        if route == '/health':
+            with db.connect() as connection:
+                ver = connection.execute('SELECT sqlite_version()').fetchone()[0]
+                tables = connection.execute('SELECT COUNT(*) FROM sqlite_master WHERE type="table"').fetchone()[0]
+            return self.respond(200, json.dumps({'status':'ok','motor':'SQLite','version':ver,'tablas':tables}).encode(), 'application/json')
+        if m := re.fullmatch(r'/admin/([a-z_]+)', route):
+            if m.group(1)=='roles': return self.respond(404,error_page('Página no disponible','El rol se administra directamente en cada usuario.'))
+            edit_id=int(parse_qs(path.query).get('editar',['0'])[0]) or None
+            return self.respond(200, extension.page(m.group(1),edit_id).encode('utf-8'))
+        if route in ('/', '/index.html'):
+            query = parse_qs(path.query)
+            return self.respond(200, dashboard_page(query).encode('utf-8'))
+        return self.respond(404, layout('<section class="panel"><h2>Página no encontrada</h2><a href="/">Volver al inicio</a></section>').encode())
 
+    @controlled_request
     def do_POST(self) -> None:
         self.prepare_request()
         path = internal_path(urlsplit(self.path).path)
@@ -420,23 +519,34 @@ class Handler(BaseHTTPRequestHandler):
                 with AUTH_LOCK: SESSIONS.pop(self.session_token(),None)
                 self.send_response(303);self.send_header('Location',external_path('/login'));self.send_header('Set-Cookie',f'finanzas_session=; HttpOnly; SameSite=Strict; Path={app_base_path() or chr(47)}; Max-Age=0');self.send_header('Content-Length','0');self.end_headers();return
             payload=self.rfile.read(length)
+            if path == '/registro':
+                if self.authenticated(): return self.redirect_to('/perfiles/elegir')
+                form={k:v[0] for k,v in parse_qs(payload.decode('utf-8'),keep_blank_values=True).items()}
+                try: auth.register(form)
+                except ValueError as exc:
+                    return self.respond(400,registration_page(str(exc),form).encode('utf-8'))
+                return self.redirect_to('/login?registro=ok')
             if path == '/login':
                 form={k:v[0] for k,v in parse_qs(payload.decode('utf-8')).items()}
                 creds=user_by_name(form.get('usuario',''))
                 if creds and creds['active'] and hmac.compare_digest(form.get('usuario',''),creds['username']) and hmac.compare_digest(hash_password(form.get('contrasena',''),creds['salt']),creds['hash']):
                     token=secrets.token_urlsafe(32)
                     with AUTH_LOCK: SESSIONS[token]=(creds["username"],time.time()+8*3600)
-                    self.send_response(303);self.send_header('Location',external_path('/'));self.send_header('Set-Cookie',f'finanzas_session={token}; HttpOnly; SameSite=Strict; Path={app_base_path() or chr(47)}; Max-Age=28800');self.send_header('Content-Length','0');self.end_headers();return
+                    self.send_response(303);self.send_header('Location',external_path('/perfiles/elegir'));self.send_header('Set-Cookie',f'finanzas_session={token}; HttpOnly; SameSite=Strict; Path={app_base_path() or chr(47)}; Max-Age=28800');self.send_header('Content-Length','0');self.end_headers();return
                 return self.respond(401,login_page('Usuario o contraseña incorrectos').encode('utf-8'))
             if not self.authenticated(): return self.auth_redirect()
+            if not request_ctx.profile() and not path.startswith('/perfiles/') and path not in ('/admin/usuarios/guardar','/admin/cambiar-clave'):
+                return self.redirect_to('/perfiles/elegir')
             if path == '/admin/usuarios/guardar':
                 if not self.is_admin(): return self.respond(403,forbidden_page())
                 form={k:v[0] for k,v in parse_qs(payload.decode('utf-8'),keep_blank_values=True).items()}
                 username=form.get('username','').strip(); name=form.get('name','').strip()
-                role=form.get('role'); active=form.get('active')=='1'; password=form.get('password','')
+                submitted_role=form.get('role','')
+                role='admin' if submitted_role=='administrador' else 'usuario'
+                active=form.get('active')=='1'; password=form.get('password','')
                 with AUTH_LOCK:
                     users=credentials(); existing=next((u for u in users if u['username']==username),None)
-                    if not re.fullmatch(r'[A-Za-z0-9_.-]{1,40}',username) or not 1<=len(name)<=100 or role not in ('admin','usuario') or (password and not 8<=len(password)<=128) or (not existing and not password):
+                    if not re.fullmatch(r'[A-Za-z0-9_.-]{1,40}',username) or not 1<=len(name)<=100 or submitted_role not in ('administrador','usuario') or (password and not 8<=len(password)<=128) or (not existing and not password):
                         return self.respond(400,users_page('Revise los datos y la contraseña (mínimo 8 caracteres).',True).encode())
                     if existing and existing['role']=='admin' and existing['active'] and (role!='admin' or not active) and sum(u['role']=='admin' and u['active'] for u in users)<=1:
                         return self.respond(400,users_page('Debe existir al menos un administrador activo.',True).encode())
@@ -469,16 +579,40 @@ class Handler(BaseHTTPRequestHandler):
                 return self.redirect_to('/comprobantes')
             posted = parse_qs(payload.decode('utf-8'), keep_blank_values=True)
             form = {key: vals[0] for key, vals in posted.items()}
-            if path == '/perfiles/seleccionar':
-                if not self.is_admin(): return self.respond(403,forbidden_page())
-                extension.select_profile(form)
+            if path=='/perfiles/crear':
+                pid=profiles.create(form.get('nombre',''))
+                with AUTH_LOCK:
+                    entry=SESSIONS[self.session_token()]
+                    SESSIONS[self.session_token()]=(entry[0],entry[1],pid)
+                return self.redirect_to('/perfiles/elegir')
+            if path=='/perfiles/seleccionar':
+                pid=int(form.get('id_perfil','0'))
+                with db.connect() as c: profiles.access(c,pid)
+                with AUTH_LOCK:
+                    entry=SESSIONS[self.session_token()]
+                    SESSIONS[self.session_token()]=(entry[0],entry[1],pid)
+                return self.redirect_to('/')
+            if m := re.fullmatch(r'/perfiles/(\d+)/(guardar|invitar|eliminar)',path):
+                pid=int(m[1])
+                if m[2]=='guardar': profiles.rename(pid,form.get('nombre',''))
+                elif m[2]=='invitar': profiles.invite(pid,form.get('username',''))
+                else: profiles.delete(pid)
                 return self.redirect_to('/perfiles')
+            if m := re.fullmatch(r'/perfiles/(\d+)/integrantes/(\d+)/eliminar',path):
+                profiles.remove_member(int(m[1]),int(m[2]))
+                return self.redirect_to('/perfiles')
+            if m := re.fullmatch(r'/alertas/(\d+)/leida',path):
+                with db.connect() as c:
+                    profiles.access(c)
+                    c.execute('UPDATE alertas SET leida=1 WHERE id_alerta=? AND id_perfil=?',(int(m[1]),request_ctx.profile_id()))
+                return self.redirect_to('/admin/alertas')
             if m := re.fullmatch(r'/comprobantes/(\d+)/eliminar',path):
                 extension.delete_receipt(int(m.group(1)))
                 return self.redirect_to('/comprobantes')
             if m := re.fullmatch(r'/admin/([a-z_]+)(?:/(\d+))?/(guardar|eliminar)', path):
                 table,item_id,action=m.group(1),int(m.group(2)) if m.group(2) else None,m.group(3)
-                if table=='usuarios' and not self.is_admin(): return self.respond(403,forbidden_page())
+                if table=='roles': return self.respond(404,error_page('Página no disponible','El rol se administra directamente en cada usuario.'))
+                if table in ('usuarios',) and not self.is_admin(): return self.respond(403,forbidden_page())
                 if action=='eliminar':
                     if item_id is None: raise ValueError('Falta el identificador')
                     extension.delete(table,item_id)
@@ -502,17 +636,13 @@ class Handler(BaseHTTPRequestHandler):
             extension.refresh_alerts()
             self.redirect()
         except (ValueError, UnicodeDecodeError) as exc:
+            if isinstance(exc, UnicodeDecodeError) or str(exc).startswith('invalid literal'):
+                raise ValueError('Formato incorrecto') from exc
             self.respond(400, layout(f'<section class="panel"><h2>Revise los datos</h2><p>{e(exc)}</p><p><a href="/">Volver al inicio</a></p></section>').encode('utf-8'))
-        except sqlite3.Error:
-            logger.exception('Error SQLite durante POST %s',path)
-            self.respond(503,error_page('No se pudo guardar','La base de datos no está disponible. No se confirmó el registro; compruebe los datos antes de reintentar.'))
-        except Exception:
-            logger.exception('Error inesperado durante POST %s',path)
-            self.respond(500,error_page('No se pudo completar la operación','Ocurrió un problema inesperado.'))
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description='Finanzas Familiares - Grupo 5')
+    parser = argparse.ArgumentParser(description='MisFinanzas - Grupo 5')
     parser.add_argument('--host', default='127.0.0.1', help='Escuchar solo en localhost por defecto')
     parser.add_argument('--port', default=8000, type=int)
     args = parser.parse_args()
@@ -520,10 +650,10 @@ def main() -> None:
         db.init_db()
         extension.init()
         credentials()
-    except (sqlite3.Error, OSError) as exc:
+        server = ThreadingHTTPServer((args.host, args.port), Handler)
+    except Exception:
         logger.exception('Error al iniciar aplicación')
-        parser.exit(1,'No se pudo iniciar: revise el acceso a SQLite y el archivo logs/errores.log.\n')
-    server = ThreadingHTTPServer((args.host, args.port), Handler)
+        parser.exit(1,'No se pudo iniciar la aplicación. Revise la base de datos, el puerto y el registro de errores.\n')
     print(f'Aplicación local: http://{args.host}:{args.port}/')
     print(f'Conexión SQLite: {db.db_path()}')
     try:

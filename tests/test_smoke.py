@@ -99,16 +99,18 @@ class TestHttp(unittest.TestCase):
 
     def logged_in(self):
         opener = build_opener(HTTPCookieProcessor(CookieJar()))
-        payload = urlencode({'usuario': 'admin', 'contrasena': 'Admin12345!'}).encode()
+        payload = urlencode({'usuario': 'admin', 'contrasena': 'admin123!'}).encode()
         with opener.open(Request(self.base + '/login', data=payload), timeout=3) as result:
             self.assertEqual(result.status, 200)
+        with opener.open(Request(self.base + '/perfiles/seleccionar', data=urlencode({'id_perfil':'1'}).encode()),timeout=3) as result:
+            self.assertEqual(result.status,200)
         return opener
 
     def test_http_200_and_health(self):
         opener = self.logged_in()
         with opener.open(self.base + '/') as result:
             body = result.read().decode('utf-8')
-            self.assertIn('Finanzas Familiares',body)
+            self.assertIn('MisFinanzas',body)
             self.assertEqual(result.status,200)
         with opener.open(self.base + '/health') as result:
             self.assertIn('"status": "ok"',result.read().decode('utf-8'))

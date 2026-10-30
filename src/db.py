@@ -3,15 +3,44 @@ from __future__ import annotations
 
 import os
 import sqlite3
-from contextlib import contextmanager
+import time
+import sys
+import traceback
+from contextlib import contextmanager, closing
 from collections.abc import Iterator
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 SCHEMA = ROOT / 'src' / 'schema.sql'
 DEFAULT_DB = ROOT / 'data' / 'finanzas.sqlite3'
+BUSY_TIMEOUT_MS = 3000
+OPERATION_TIMEOUT_SECONDS = 8
+
+
+@contextmanager
+def cli_errors():
+    """Evita trazas sin controlar al ejecutar herramientas desde la terminal."""
+    try:
+        yield
+    except Exception:
+        try:
+            logs = db_path().parent / 'logs'
+            logs.mkdir(parents=True, exist_ok=True)
+            from logging.handlers import RotatingFileHandler
+            import logging
+            handler = RotatingFileHandler(logs / 'errores_scripts.log', maxBytes=2_000_000,
+                                          backupCount=3, encoding='utf-8')
+            try:
+                handler.emit(logging.LogRecord('finanzas.scripts', logging.ERROR, __file__, 0,
+                    traceback.format_exc(), (), None))
+            finally:
+                handler.close()
+        except OSError:
+            pass
+        print('No se pudo completar la operación. Revise los datos, el acceso a SQLite y el registro de errores antes de intentarlo nuevamente.', file=sys.stderr)
+        raise SystemExit(1) from None
 
 
 def db_path() -> Path:
@@ -20,64 +49,54 @@ def db_path() -> Path:
     return path.resolve()
 
 
-class ProfileConnection(sqlite3.Connection):
-    """Local demo profile routing for legacy statements (not authentication)."""
-    def execute(self, sql, parameters=()):
-        if not getattr(self,'profile_routing_disabled',False):
-            try:
-                active=super().execute("SELECT valor FROM app_config WHERE clave='perfil_activo'").fetchone()
-                uid=int(active[0]) if active else 1
-            except sqlite3.OperationalError:
-                uid=1
-            if uid != 1:
-                sql=sql.replace('id_usuario=1',f'id_usuario={uid}').replace('id_usuario = 1',f'id_usuario = {uid}')
-                sql=sql.replace('VALUES (1,',f'VALUES ({uid},').replace('VALUES(1,',f'VALUES({uid},')
-        return super().execute(sql,parameters)
-
 @contextmanager
 def connect() -> Iterator[sqlite3.Connection]:
     """Contexto transaccional que también cierra la conexión al finalizar."""
     path = db_path()
     path.parent.mkdir(parents=True, exist_ok=True)
-    connection = sqlite3.connect(str(path), timeout=10, factory=ProfileConnection)
+    connection = sqlite3.connect(str(path), timeout=BUSY_TIMEOUT_MS / 1000)
     try:
+        from src.request_ctx import user_id, profile_id
+        connection.create_function('current_user_id', 0, user_id)
+        connection.create_function('current_profile_id', 0, profile_id)
         connection.row_factory = sqlite3.Row
         connection.execute('PRAGMA foreign_keys = ON')
-        connection.execute('PRAGMA busy_timeout = 5000')
+        connection.execute(f'PRAGMA busy_timeout = {BUSY_TIMEOUT_MS}')
+        deadline = time.monotonic() + OPERATION_TIMEOUT_SECONDS
+        connection.set_progress_handler(lambda: int(time.monotonic() >= deadline), 1000)
         with connection:
             yield connection
     finally:
+        connection.set_progress_handler(None, 0)
         connection.close()
 
 
 def init_db() -> None:
+    path = db_path()
+    if path.exists():
+        with closing(sqlite3.connect(path.as_uri() + '?mode=ro', uri=True)) as source:
+            columns = {r[1] for r in source.execute('PRAGMA table_info(usuarios)')}
+            financial_columns={r[1] for r in source.execute('PRAGMA table_info(cuentas)')}
+            rate_columns={r[1] for r in source.execute('PRAGMA table_info(tipos_cambio)')}
+            if columns and ('username' not in columns or 'id_rol' in columns or 'id_usuario' in financial_columns or 'valor' in rate_columns):
+                backup = path.with_name(path.stem + '.antes-usuarios-' + datetime.now().strftime('%Y%m%d-%H%M%S-%f') + '.sqlite3')
+                with closing(sqlite3.connect(backup)) as destination:
+                    deadline = time.monotonic() + OPERATION_TIMEOUT_SECONDS
+                    def backup_progress(status, remaining, total):
+                        if time.monotonic() >= deadline:
+                            raise TimeoutError('Tiempo de respaldo agotado')
+                    source.backup(destination, pages=128, progress=backup_progress, sleep=0.05)
     with connect() as connection:
-        connection.profile_routing_disabled=True
         connection.execute('PRAGMA journal_mode = WAL')
         connection.executescript(SCHEMA.read_text(encoding='utf-8'))
-        connection.execute(
-            'INSERT OR IGNORE INTO usuarios (id_usuario, nombre) VALUES (1, ?)',
-            ('Familia de demostración',),
-        )
-        for nombre, tipo in [
-            ('Salario', 'ingreso'), ('Otros ingresos', 'ingreso'),
-            ('Alimentación', 'gasto'), ('Transporte', 'gasto'),
-            ('Vivienda', 'gasto'), ('Servicios', 'gasto'),
-            ('Entretenimiento', 'gasto'), ('Salud', 'gasto'),
-        ]:
-            connection.execute(
-                'INSERT OR IGNORE INTO categorias (id_usuario, nombre, tipo) VALUES (1, ?, ?)',
-                (nombre, tipo),
-            )
-        connection.execute(
-            "INSERT OR IGNORE INTO cuentas (id_usuario, nombre) VALUES (1, 'Cuenta principal')"
-        )
-        connection.execute(
-            "INSERT OR IGNORE INTO cuentas (id_usuario, nombre) VALUES (1, 'Efectivo')"
-        )
-
-    from src import extension
+        from src import auth
+        auth.init(connection)
+    from src import extension, profiles
     extension.init()
+    profiles.init()
+    from src.finance import init_quotes
+    init_quotes()
+
 
 def parse_money(value: str) -> int:
     """Conserva centavos como entero para evitar inexactitudes de coma flotante."""
@@ -108,18 +127,18 @@ def validate_date(value: str) -> str:
 def choices() -> tuple[list[sqlite3.Row], list[sqlite3.Row]]:
     with connect() as db:
         return (
-            db.execute('SELECT * FROM categorias WHERE id_usuario=1 ORDER BY tipo, nombre').fetchall(),
-            db.execute('SELECT * FROM cuentas WHERE id_usuario=1 ORDER BY nombre').fetchall(),
+            db.execute('SELECT * FROM categorias WHERE id_perfil=current_profile_id() ORDER BY tipo, nombre').fetchall(),
+            db.execute('SELECT * FROM cuentas WHERE id_perfil=current_profile_id() ORDER BY nombre').fetchall(),
         )
 
 
 def validate_category_account(db: sqlite3.Connection, category_id: int, account_id: int, kind: str) -> None:
     category = db.execute(
-        'SELECT 1 FROM categorias WHERE id_categoria = ? AND id_usuario=1 AND tipo = ?',
+        'SELECT 1 FROM categorias WHERE id_categoria = ? AND id_perfil=current_profile_id() AND tipo = ?',
         (category_id, kind),
     ).fetchone()
     account = db.execute(
-        'SELECT 1 FROM cuentas WHERE id_cuenta = ? AND id_usuario=1',
+        'SELECT 1 FROM cuentas WHERE id_cuenta = ? AND id_perfil=current_profile_id()',
         (account_id,),
     ).fetchone()
     if not category or not account:
@@ -139,10 +158,12 @@ def save_movement(form: dict, movement_id: int | None = None) -> None:
         raise ValueError('Seleccione una cuenta y categoría válidas.') from None
     description = str(form.get('descripcion', '')).strip()[:160]
     with connect() as db:
+        from src.profiles import require_write
+        require_write(db,'movimientos',editing=movement_id is not None)
         validate_category_account(db, category_id, account_id, kind)
         from src.finance import account_balance
         credited = amount_cents
-        old=db.execute('SELECT * FROM movimientos WHERE id_movimiento=? AND id_usuario=1',(movement_id,)).fetchone() if movement_id else None
+        old=db.execute('SELECT * FROM movimientos WHERE id_movimiento=? AND id_perfil=current_profile_id()',(movement_id,)).fetchone() if movement_id else None
         available=account_balance(db,account_id)
         if old and old['id_cuenta']==account_id:
             available-= (1 if old['tipo']=='ingreso' else -1)*(old['monto_acreditado_centimos'] if old['monto_acreditado_centimos'] is not None else old['monto_centimos'])
@@ -150,14 +171,14 @@ def save_movement(form: dict, movement_id: int | None = None) -> None:
         if movement_id is None:
             db.execute(
                 '''INSERT INTO movimientos
-                (id_usuario, id_cuenta, id_categoria, tipo, monto_centimos, fecha, descripcion,monto_acreditado_centimos)
-                VALUES (1, ?, ?, ?, ?, ?, ?, ?)''', args,
+                (id_perfil, id_cuenta, id_categoria, tipo, monto_centimos, fecha, descripcion,monto_acreditado_centimos)
+                VALUES (current_profile_id(), ?, ?, ?, ?, ?, ?, ?)''', args,
             )
         else:
             cursor = db.execute(
                 '''UPDATE movimientos SET id_cuenta=?, id_categoria=?, tipo=?,
                    monto_centimos=?, fecha=?, descripcion=?,monto_acreditado_centimos=?
-                   WHERE id_movimiento=? AND id_usuario=1''', (*args, movement_id),
+                   WHERE id_movimiento=? AND id_perfil=current_profile_id()''', (*args, movement_id),
             )
             if cursor.rowcount != 1:
                 raise ValueError('No se encontró el movimiento.')
@@ -165,13 +186,15 @@ def save_movement(form: dict, movement_id: int | None = None) -> None:
 
 def remove_movement(movement_id: int) -> None:
     with connect() as db:
-        db.execute('DELETE FROM movimientos WHERE id_movimiento=? AND id_usuario=1', (movement_id,))
+        from src.profiles import require_write
+        require_write(db,'movimientos',editing=True)
+        db.execute('DELETE FROM movimientos WHERE id_movimiento=? AND id_perfil=current_profile_id()', (movement_id,))
 
 
 def get_movement(movement_id: int) -> sqlite3.Row | None:
     with connect() as db:
         return db.execute(
-            'SELECT * FROM movimientos WHERE id_movimiento=? AND id_usuario=1',
+            'SELECT * FROM movimientos WHERE id_movimiento=? AND id_perfil=current_profile_id()',
             (movement_id,),
         ).fetchone()
 
@@ -188,16 +211,18 @@ def save_budget(form: dict) -> None:
     if not (2020 <= year <= 2100 and 1 <= month <= 12):
         raise ValueError('Período fuera de rango.')
     with connect() as db:
+        from src.profiles import require_write
+        require_write(db,'presupuestos')
         allowed = db.execute(
-            "SELECT 1 FROM categorias WHERE id_categoria=? AND id_usuario=1 AND tipo='gasto'",
+            "SELECT 1 FROM categorias WHERE id_categoria=? AND id_perfil=current_profile_id() AND tipo='gasto'",
             (category_id,),
         ).fetchone()
         if not allowed:
             raise ValueError('Solo se permiten presupuestos para categorías de gastos.')
         db.execute(
-            '''INSERT INTO presupuestos (id_usuario, id_categoria, anio, mes, monto_limite_centimos,id_moneda)
-            VALUES (1, ?, ?, ?, ?, ?)
-            ON CONFLICT (id_usuario, id_categoria, anio, mes)
+            '''INSERT INTO presupuestos (id_perfil, id_categoria, anio, mes, monto_limite_centimos,id_moneda)
+            VALUES (current_profile_id(), ?, ?, ?, ?, ?)
+            ON CONFLICT (id_perfil, id_categoria, anio, mes)
             DO UPDATE SET monto_limite_centimos=excluded.monto_limite_centimos,id_moneda=excluded.id_moneda''',
             (category_id, year, month, amount_cents,moneda or db.execute("SELECT id_moneda FROM monedas WHERE codigo_iso='CRC'").fetchone()[0]),
         )
@@ -209,12 +234,12 @@ def dashboard(year: int, month: int) -> dict:
         tx = db.execute('''SELECT m.*, c.nombre AS categoria, a.nombre AS cuenta
             FROM movimientos m JOIN categorias c ON c.id_categoria=m.id_categoria
             JOIN cuentas a ON a.id_cuenta=m.id_cuenta
-            WHERE m.id_usuario=1 AND m.fecha>=? AND m.fecha<?
+            WHERE m.id_perfil=current_profile_id() AND m.fecha>=? AND m.fecha<?
             ORDER BY m.fecha DESC, m.id_movimiento DESC LIMIT 100''', (start, end)).fetchall()
         sums = db.execute('''SELECT m.tipo, mo.codigo_iso, COALESCE(SUM(m.monto_centimos),0) AS total
             FROM movimientos m JOIN cuentas a ON a.id_cuenta=m.id_cuenta
             JOIN monedas mo ON mo.id_moneda=a.id_moneda
-            WHERE m.id_usuario=1 AND m.fecha>=? AND m.fecha<?
+            WHERE m.id_perfil=current_profile_id() AND m.fecha>=? AND m.fecha<?
             GROUP BY m.tipo,mo.codigo_iso''', (start,end)).fetchall()
         totals_by_currency = {}
         for r in sums:
@@ -223,20 +248,20 @@ def dashboard(year: int, month: int) -> dict:
                   'gasto': totals_by_currency.get('CRC',{}).get('gasto',0)}
         raw_budgets=db.execute("""SELECT p.*,c.nombre AS categoria,mo.simbolo FROM presupuestos p
             JOIN categorias c ON c.id_categoria=p.id_categoria JOIN monedas mo ON mo.id_moneda=p.id_moneda
-            WHERE p.id_usuario=1 AND p.anio=? AND p.mes=? ORDER BY c.nombre""",(year,month)).fetchall()
+            WHERE p.id_perfil=current_profile_id() AND p.anio=? AND p.mes=? ORDER BY c.nombre""",(year,month)).fetchall()
         from src.finance import historical_conversion
         crc=db.execute("SELECT id_moneda FROM monedas WHERE codigo_iso='CRC'").fetchone()[0]
         budget_rows=[]
         for b in raw_budgets:
-            moves=db.execute("SELECT m.monto_centimos,m.fecha,a.id_moneda FROM movimientos m JOIN cuentas a ON a.id_cuenta=m.id_cuenta WHERE m.id_usuario=1 AND m.id_categoria=? AND m.tipo='gasto' AND m.fecha>=? AND m.fecha<?",(b['id_categoria'],start,end)).fetchall()
+            moves=db.execute("SELECT m.monto_centimos,m.fecha,a.id_moneda FROM movimientos m JOIN cuentas a ON a.id_cuenta=m.id_cuenta WHERE m.id_perfil=current_profile_id() AND m.id_categoria=? AND m.tipo='gasto' AND m.fecha>=? AND m.fecha<?",(b['id_categoria'],start,end)).fetchall()
             spent=0
             missing=0
             for m in moves:
                 try: spent+=historical_conversion(db,m['id_moneda'],b['id_moneda'],m['monto_centimos'],m['fecha'])
                 except ValueError: missing+=1
             budget_rows.append(dict(categoria=b['categoria'],limite=b['monto_limite_centimos'],gastado=spent,simbolo=b['simbolo'],missing=missing))
-        categories = db.execute('SELECT * FROM categorias WHERE id_usuario=1 ORDER BY tipo, nombre').fetchall()
-        accounts = db.execute('SELECT * FROM cuentas WHERE id_usuario=1 ORDER BY nombre').fetchall()
+        categories = db.execute('SELECT * FROM categorias WHERE id_perfil=current_profile_id() ORDER BY tipo, nombre').fetchall()
+        accounts = db.execute('SELECT * FROM cuentas WHERE id_perfil=current_profile_id() ORDER BY nombre').fetchall()
     return dict(
         movements=tx, income=values.get('ingreso',0), expense=values.get('gasto',0),
         budgets=budget_rows, categories=categories, accounts=accounts, totals_by_currency=totals_by_currency,

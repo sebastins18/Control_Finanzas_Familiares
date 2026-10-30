@@ -71,4 +71,6 @@ def main():
 
 
 if __name__ == '__main__':
-    raise SystemExit(main())
+    from src.db import cli_errors
+    with cli_errors():
+        raise SystemExit(main())

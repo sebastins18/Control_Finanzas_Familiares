@@ -63,6 +63,8 @@ class Seguimiento2HttpCrud(unittest.TestCase):
             'usuario': 'admin', 'contrasena': 'ClaveSoloParaPruebas2026!'
         })
         self.assertEqual(code, 200)
+        self.assertTrue(uri.endswith('/finanzas/perfiles/elegir'), uri)
+        code, html, uri = self.post('/perfiles/seleccionar', {'id_perfil':'1'})
         self.assertTrue(uri.endswith('/finanzas/'), uri)
         self.assertIn('PANEL FINANCIERO', html.upper())
 

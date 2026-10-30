@@ -2,6 +2,14 @@
 
 **Universidad Nacional · Tópicos Avanzados de Bases de Datos · II-2026**
 
+**Actualización de usuarios y roles:** las cuentas de acceso se guardan ahora en
+SQLite (tabla `usuarios`, con campo `rol` limitado a `administrador` o `usuario`).
+No existe tabla ni mantenimiento de roles. Los perfiles financieros y sus invitados
+se administran por separado: [modelo y permisos actuales](docs/perfiles_financieros.md). Una base nueva
+crea `admin` / `admin123!`; al migrar se conservan las contraseñas existentes.
+Consulta [usuarios, roles y migración](docs/usuarios_roles.md) para el modelo actual.
+Las secciones V17 y las bitácoras inferiores documentan la versión anterior.
+
 Aplicación web de demostración en Python y SQLite para registrar movimientos financieros familiares, planificar presupuestos y consultar saldos. El objetivo es un MVP open source reproducible y medible, no un servicio bancario ni una aplicación apta para introducir datos financieros reales.
 
 ## Funciones de la versión integrada V17
