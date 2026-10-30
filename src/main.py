@@ -36,4 +36,6 @@ def check_connection(path=None):
 
 
 if __name__ == "__main__":
-    print(f"Conexión SQLite OK. Versión: {check_connection()}")
+    from src.db import cli_errors
+    with cli_errors():
+        print(f"Conexión SQLite OK. Versión: {check_connection()}")

@@ -16,11 +16,11 @@ def bulk_load(count=1000, seed=5):
         raise ValueError('La carga debe contener entre 1 y 100000 movimientos')
     db.init_db()
     with db.connect() as connection:
-        if connection.execute("SELECT COUNT(*) FROM movimientos WHERE descripcion LIKE 'SIM-S2-%'").fetchone()[0]:
+        if connection.execute("SELECT COUNT(*) FROM movimientos WHERE id_perfil=1 AND descripcion LIKE 'SIM-S2-%'").fetchone()[0]:
             return 0
         profile=1
-        acc=connection.execute('SELECT id_cuenta FROM cuentas WHERE id_usuario=? ORDER BY id_cuenta LIMIT 1',(profile,)).fetchone()
-        categories=connection.execute("SELECT id_categoria FROM categorias WHERE id_usuario=? AND tipo='gasto' ORDER BY id_categoria",(profile,)).fetchall()
+        acc=connection.execute('SELECT id_cuenta FROM cuentas WHERE id_perfil=? ORDER BY id_cuenta LIMIT 1',(profile,)).fetchone()
+        categories=connection.execute("SELECT id_categoria FROM categorias WHERE id_perfil=? AND tipo='gasto' ORDER BY id_categoria",(profile,)).fetchall()
         if not acc or not categories:
             raise RuntimeError('Inicializar cuentas y categorías antes de cargar movimientos')
         rng=Random(seed)
@@ -33,7 +33,7 @@ def bulk_load(count=1000, seed=5):
                        (initial+timedelta(days=rng.randrange(365))).isoformat(),
                        f'SIM-S2-{n+1:06d}')
         connection.executemany("""INSERT INTO movimientos
-            (id_usuario,id_cuenta,id_categoria,tipo,monto_centimos,fecha,descripcion)
+            (id_perfil,id_cuenta,id_categoria,tipo,monto_centimos,fecha,descripcion)
             VALUES(?,?,?,?,?,?,?)""",records())
     return count
 
@@ -47,4 +47,6 @@ def main():
     print(f'Carga S2: {inserted} movimientos nuevos en transacción SQLite; {"ya existían" if not inserted else "creados correctamente"}.')
 
 if __name__=='__main__':
-    main()
+    from src.db import cli_errors
+    with cli_errors():
+        main()

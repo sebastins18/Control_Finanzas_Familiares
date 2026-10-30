@@ -18,3 +18,38 @@ def set_admin(value: bool) -> None:
 def is_admin() -> bool:
     """True solo si la solicitud en curso pertenece a un administrador activo."""
     return bool(getattr(_ctx, 'admin', False))
+
+
+def set_user_id(value):
+    _ctx.user_id = int(value)
+    _ctx.profile = None
+
+
+def user_id():
+    return getattr(_ctx, 'user_id', 1)
+
+
+def set_identity(name='', role=''):
+    _ctx.identity = (str(name), str(role))
+
+
+def identity():
+    return getattr(_ctx, 'identity', ('', ''))
+
+
+def set_profile(profile):
+    _ctx.profile = dict(profile) if profile else None
+
+
+def profile_id():
+    profile=getattr(_ctx,'profile',None)
+    return profile['id_perfil'] if profile else user_id()
+
+
+def profile():
+    return getattr(_ctx,'profile',None)
+
+
+def is_owner():
+    selected=profile()
+    return bool(selected and selected['es_propietario'])

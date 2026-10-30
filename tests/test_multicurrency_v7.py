@@ -17,7 +17,7 @@ class MulticurrencyTests(unittest.TestCase):
             self.usd=c.execute("SELECT id_moneda FROM monedas WHERE codigo_iso='USD'").fetchone()[0]
             self.cat=c.execute("SELECT id_categoria FROM categorias WHERE tipo='gasto' LIMIT 1").fetchone()[0]
             self.crc_account=c.execute("SELECT id_cuenta FROM cuentas LIMIT 1").fetchone()[0]
-            c.execute("INSERT INTO cuentas(id_usuario,nombre,id_moneda,saldo_inicial_centimos) VALUES(1,'USD test',?,100000)",(self.usd,))
+            c.execute("INSERT INTO cuentas(id_perfil,nombre,id_moneda,saldo_inicial_centimos) VALUES(1,'USD test',?,100000)",(self.usd,))
             self.usd_account=c.execute("SELECT id_cuenta FROM cuentas WHERE nombre='USD test'").fetchone()[0]
         self.today=date.today().isoformat()
     def tearDown(self):
@@ -31,11 +31,11 @@ class MulticurrencyTests(unittest.TestCase):
         self.assertEqual(d['totals_by_currency']['USD']['gasto'],2500)
     def test_transfer_between_currencies(self):
         with db.connect() as c:
-            c.execute('INSERT INTO tipos_cambio(id_moneda_origen,id_moneda_destino,fecha,valor) VALUES(?,?,?,?)',
+            c.execute('INSERT INTO tipos_cambio(id_moneda_base,id_moneda_cotizada,fecha,cotizacion) VALUES(?,?,?,?)',
                       (self.usd,self.crc,self.today,'500'))
         extension.save('transferencias', {'id_cuenta_origen':str(self.usd_account),
             'id_cuenta_destino':str(self.crc_account),'monto_origen_centimos':'10',
-            'fecha':self.today,'descripcion':'Cambio de prueba','tipo_cambio_manual':'500'})
+            'fecha':self.today,'descripcion':'Cambio de prueba','cotizacion':'500'})
         with db.connect() as c:
             t=c.execute('SELECT * FROM transferencias').fetchone()
             self.assertEqual(t['monto_origen_centimos'],1000)
@@ -43,7 +43,7 @@ class MulticurrencyTests(unittest.TestCase):
             self.assertIsNotNone(t['id_tipo_cambio'])
     def test_budget_converts_from_actual_account_currency(self):
         with db.connect() as c:
-            c.execute('INSERT INTO tipos_cambio(id_moneda_origen,id_moneda_destino,fecha,valor) VALUES(?,?,?,?)',
+            c.execute('INSERT INTO tipos_cambio(id_moneda_base,id_moneda_cotizada,fecha,cotizacion) VALUES(?,?,?,?)',
                       (self.usd,self.crc,self.today,'500'))
         db.save_movement({'tipo':'gasto','monto':'10','fecha':self.today,'id_categoria':str(self.cat),'id_cuenta':str(self.usd_account)})
         db.save_budget({'id_categoria':str(self.cat),'anio':str(date.today().year),
