@@ -59,7 +59,14 @@ CONFIG = {
  'movimientos_ahorro': ('Movimientos de ahorro','movimientos_ahorro','id_movimiento_ahorro',[('id_meta','Meta','ref:metas_ahorro'),('id_cuenta','Cuenta','ref:cuentas'),('tipo','Tipo','choice:aporte,retiro'),('monto_centimos','Monto','money'),('fecha','Fecha','date')]),
 }
 
+MONTH_NAMES=('Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre')
+
 def h(v): return escape(str(v if v is not None else ''),quote=True)
+
+def label_for_column(table,key,label):
+    """Encabezado de columna: el nombre del campo, con el nombre visible de la cotización."""
+    if table=='transferencias' and key=='id_tipo_cambio': return 'Cotización aplicada'
+    return label
 def label_for(table,row):
     if table=='presupuestos': return f"{row['anio']}/{row['mes']:02d} · {row['categoria_nombre']}"
     if table=='alertas': return f"Presupuesto {row['id_presupuesto']} · {row['umbral']}%"
@@ -253,27 +260,36 @@ def page(table, edit_id=None):
             field=f'<input name="{key}" type="{typ}"{step} value="{h(default)}" required>'
         inputs+=f'<label>{h(label)}{field}</label>'
     action=f'/admin/{table}/{edit_id}/guardar' if item else f'/admin/{table}/guardar'
+    headers=''.join(f'<th>{h(label_for_column(table,key,label))}</th>' for key,label,kind in fields)
     trs=''
     for r in rows:
         rid=r[pk]
-        details=[]
+        cells=[]
         for key,label,kind in fields:
             value=r[key]
             if table=='alertas' and key=='id_presupuesto':
                 budget=next((b for b in refs['presupuestos'] if b['id_presupuesto']==value),None)
                 value=label_for('presupuestos',budget) if budget else 'Presupuesto no disponible'
+            elif table=='presupuestos' and key=='mes':
+                value=MONTH_NAMES[int(value)-1] if value else ''
+            elif kind.startswith('ref:'):
+                ref_table=kind.split(':',1)[1]
+                target=next((x for x in refs[ref_table] if x[CONFIG[ref_table][2]]==value),None)
+                if target is None: value='No disponible'
+                elif ref_table=='monedas': value=target['nombre']
+                else: value=label_for(ref_table,target)
             elif table=='transferencias' and key=='id_tipo_cambio':
                 label='Cotización aplicada'
                 quote=next((q for q in refs['tipos_cambio'] if q['id_tipo_cambio']==value),None)
                 value=finance.quote_label(quote) if quote else 'Misma moneda'
             elif kind=='money': value=f'{value/100:.2f}'
             elif kind in ('checkbox','boolean'): value='Sí' if value else 'No'
-            details.append(f'{label}: {h(value)}')
-        summary=' · '.join(details)
-        actions=(f'<a href="/admin/{table}?editar={rid}">Editar</a> <form method="post" action="/admin/{table}/{rid}/eliminar" style="display:inline"><button type="submit" onclick="return confirm(\'¿Eliminar registro?\')">Eliminar</button></form>' if allow_edit else '')
+            cells.append(f'<td data-label="{h(label)}">{h(value)}</td>')
+        actions=(f'<a class="btn btn-neutral btn-sm" href="/admin/{table}?editar={rid}">Editar</a><form method="post" action="/admin/{table}/{rid}/eliminar"><button class="btn btn-danger btn-sm" type="submit" onclick="return confirm(\'¿Eliminar registro?\')">Eliminar</button></form>' if allow_edit else '')
         if table=='alertas' and not r['leida']:
-            actions+=f'<form method="post" action="/alertas/{rid}/leida"><button>Marcar como leída</button></form>'
-        trs+=f'<tr><td class="registro-detalle">{summary}</td><td>{actions}</td></tr>'
+            actions+=f'<form method="post" action="/alertas/{rid}/leida"><button class="btn btn-neutral btn-sm" type="submit">Marcar como leída</button></form>'
+        actions=f'<div class="row-actions">{actions}</div>' if actions else ''
+        trs+=f'<tr>{"".join(cells)}<td class="row-actions-cell">{actions}</td></tr>'
     if table=='transferencias':
         with db.connect() as fxdb:
             account_info={str(r['id_cuenta']):{'currency':r['codigo_iso'],'id':r['id_moneda']} for r in fxdb.execute('SELECT a.id_cuenta,a.id_moneda,m.codigo_iso FROM cuentas a JOIN monedas m ON m.id_moneda=a.id_moneda WHERE a.id_perfil=?',(current_profile_id(fxdb),))}
@@ -315,9 +331,9 @@ def page(table, edit_id=None):
             form_section='<p class="muted">Puedes consultar y registrar nuevas operaciones. El propietario puede editar o eliminar registros existentes.</p>'+form_section
         else:
             title='Consulta de '+title.lower()
-    body=f'<section class="panel"><p><a href="/">← Panel principal</a></p><h2>{h(title)}</h2>{form_section}</section><section class="panel table-panel"><h2>Registros</h2><div class="table-scroll"><table><thead><tr><th>Detalle</th><th>Acciones</th></tr></thead><tbody>{trs or "<tr><td>No hay registros</td></tr>"}</tbody></table></div></section>'
+    body=f'<section class="panel"><p><a href="/">← Panel principal</a></p><h2>{h(title)}</h2>{form_section}</section><section class="panel table-panel"><h2>Registros</h2><div class="table-scroll"><table class="records"><thead><tr>{headers}<th class="row-actions-head">Acciones</th></tr></thead><tbody>{trs or f'<tr><td colspan="{len(fields)+1}" class="empty">No hay registros</td></tr>'}</tbody></table></div></section>'
     if not allow_edit and table!='alertas':
-        body=body.replace('<th>Acciones</th>','').replace('<td></td>','')
+        body=body.replace('<th class="row-actions-head">Acciones</th>','').replace('<td class="row-actions-cell"></td>','')
     return layout(body)
 
 
@@ -411,7 +427,7 @@ def receipts_page():
         expenses=c.execute("SELECT id_movimiento,fecha,descripcion,monto_centimos FROM movimientos WHERE id_perfil=? AND tipo='gasto' ORDER BY fecha DESC LIMIT 250",(user,)).fetchall()
         files=c.execute('SELECT co.id_comprobante,co.tipo_mime,co.fecha_subida,m.descripcion FROM comprobantes co JOIN movimientos m ON m.id_movimiento=co.id_movimiento WHERE m.id_perfil=? ORDER BY co.id_comprobante DESC',(user,)).fetchall()
     options=''.join(f'<option value="{r[0]}">{h(r[1])} · {h(r[2] or "Gasto")} · {r[3]/100:.2f} CRC</option>' for r in expenses)
-    trs=''.join(f'<tr><td>{h(r[3])}</td><td>{h(r[1])}</td><td>{h(r[2])}</td><td><a target="_blank" rel="noopener" href="/comprobantes/{r[0]}/archivo">Ver</a> <form method="post" action="/comprobantes/{r[0]}/eliminar" style="display:inline"><button onclick="return confirm(\'¿Eliminar comprobante?\')">Eliminar</button></form></td></tr>' for r in files)
+    trs=''.join(f'<tr><td>{h(r[3])}</td><td>{h(r[1])}</td><td>{h(r[2])}</td><td><a class="btn btn-success btn-sm" target="_blank" rel="noopener" href="/comprobantes/{r[0]}/archivo">Ver</a> <form method="post" action="/comprobantes/{r[0]}/eliminar" style="display:inline"><button class="btn btn-danger btn-sm" onclick="return confirm(\'¿Eliminar comprobante?\')">Eliminar</button></form></td></tr>' for r in files)
     if not allow_delete:
         import re
         trs=re.sub(r'<form method="post".*?</form>','',trs,flags=re.S)

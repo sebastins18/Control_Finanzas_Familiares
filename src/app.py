@@ -130,7 +130,7 @@ def users_page(message='',error=False,editing=''):
     users=credentials()
     selected=next((u for u in users if u['username']==editing),None)
     notice=('<p role="alert" style="color:'+('#b91c1c' if error else '#166534')+'">'+e(message)+'</p>') if message else ''
-    rows=''.join('<tr><td>'+e(u['username'])+'</td><td>'+e(u['name'])+'</td><td>'+e(u['role_name'])+'</td><td>'+('Activo' if u['active'] else 'Inactivo')+'</td><td><a href="/admin/usuarios?editar='+e(u['username'])+'">Editar</a></td></tr>' for u in users)
+    rows=''.join('<tr><td>'+e(u['username'])+'</td><td>'+e(u['name'])+'</td><td>'+e(u['role_name'])+'</td><td>'+('Activo' if u['active'] else 'Inactivo')+'</td><td><a class="btn btn-neutral btn-sm" href="/admin/usuarios?editar='+e(u['username'])+'">Editar</a></td></tr>' for u in users)
     role_options = ''.join(f'<option value="{value}" {"selected" if (selected and selected["role_name"]==value) or (not selected and value=="usuario") else ""}>{label}</option>' for value,label in (('administrador','Administrador'),('usuario','Usuario')))
     form=f"""<form method="post" action="/admin/usuarios/guardar" class="form-grid">
     <label>Usuario<input name="username" maxlength="40" pattern="[A-Za-z0-9_.-]+" value="{e(selected['username']) if selected else ''}" {'readonly' if selected else 'required'}></label>
@@ -251,7 +251,7 @@ def layout(content: str, *, subtitle: str = '', selection: bool = False) -> str:
     if request_ctx.is_quality_admin():
         security_links += '<a href="/admin/calidad">Calidad y pruebas</a>'
     name, role = request_ctx.identity()
-    identity = (f'<div class="session-identity" aria-label="Usuario conectado"><span class="session-name">{e(name)}</span></div>' if name else '')
+    identity = (f'<div class="session-identity" aria-label="Usuario conectado"><span class="session-name">{e(name)}</span><form method="post" action="/logout" class="session-logout"><button type="submit">Cerrar sesión</button></form></div>' if name else '')
     selected_profile=request_ctx.profile()
     guest=bool(selected_profile and not selected_profile['es_propietario'])
     profiles_label='Mis perfiles' if guest else 'Administrar perfiles / integrantes'
@@ -260,7 +260,7 @@ def layout(content: str, *, subtitle: str = '', selection: bool = False) -> str:
 <html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>MisFinanzas · Grupo 5</title><link rel="icon" type="image/png" href="/static/logo.png"><link rel="stylesheet" href="/static/styles.css"></head>
 <body><header class="topbar"><div class="shell top-inner"><div class="brand"><img class="app-logo" src="/static/logo.png" alt="Logo de MisFinanzas" width="64" height="64"><span><strong>MisFinanzas</strong><small>Proyecto open source · Grupo 5</small></span></div>{identity}</div></header>
-<main class="shell"><nav class="main-nav" aria-label="Menú principal"><a class="nav-home" href="/">⌂ Resumen</a><details class="nav-group"><summary>Operaciones</summary><div class="nav-drop"><a href="/">Ingresos y gastos</a><a href="/admin/transferencias">Transferencias</a><a href="/admin/movimientos_ahorro">Movimientos de ahorro</a><a href="/comprobantes">Comprobantes</a></div></details><details class="nav-group"><summary>Planificación</summary><div class="nav-drop"><a href="/admin/presupuestos">Presupuestos</a><a href="/admin/metas_ahorro">Metas de ahorro</a><a href="/admin/alertas">Alertas</a></div></details><details class="nav-group"><summary>Catálogos</summary><div class="nav-drop"><a href="/admin/cuentas">Cuentas</a><a href="/admin/categorias">Categorías</a><a href="/admin/monedas">Monedas</a></div></details><details class="nav-group"><summary>Seguridad</summary><div class="nav-drop">{security_links}<a href="/admin/cambiar-clave">Cambiar contraseña</a></div></details><form method="post" action="/logout" style="display:inline"><button type="submit">Cerrar sesión</button></form></nav>{profile_bar}<section class="hero"><div><p class="eyebrow">PANEL FINANCIERO</p><h1>Un panorama claro de tu dinero.</h1><p>Movimientos, presupuestos y alertas en una sola página. {e(subtitle)}</p></div><span class="hero-art" aria-hidden="true">↗</span></section>{content}</main>
+<main class="shell"><nav class="main-nav" aria-label="Menú principal"><a class="nav-home" href="/">⌂ Resumen</a><details class="nav-group"><summary>Operaciones</summary><div class="nav-drop"><a href="/">Ingresos y gastos</a><a href="/admin/transferencias">Transferencias</a><a href="/admin/movimientos_ahorro">Movimientos de ahorro</a><a href="/comprobantes">Comprobantes</a></div></details><details class="nav-group"><summary>Planificación</summary><div class="nav-drop"><a href="/admin/presupuestos">Presupuestos</a><a href="/admin/metas_ahorro">Metas de ahorro</a><a href="/admin/alertas">Alertas</a></div></details><details class="nav-group"><summary>Catálogos</summary><div class="nav-drop"><a href="/admin/cuentas">Cuentas</a><a href="/admin/categorias">Categorías</a><a href="/admin/monedas">Monedas</a></div></details><details class="nav-group"><summary>Seguridad</summary><div class="nav-drop">{security_links}<a href="/admin/cambiar-clave">Cambiar contraseña</a></div></details></nav>{profile_bar}<section class="hero"><div><p class="eyebrow">PANEL FINANCIERO</p><h1>Un panorama claro de tu dinero.</h1><p>Movimientos, presupuestos y alertas en una sola página. {e(subtitle)}</p></div><span class="hero-art" aria-hidden="true">↗</span></section>{content}</main>
 <footer class="shell footer">Datos de demostración ficticios · Sin cuentas reales · UNA · II-2026</footer>
 <script>
 const tipo = document.getElementById('tipo'); const categoria = document.getElementById('id_categoria');
@@ -358,8 +358,8 @@ def dashboard_page(query: dict) -> str:
         desc = tx['descripcion'] or tx['categoria']
         rows += f'''<tr><td><strong>{e(desc)}</strong><small>{e(tx['categoria'])} · {e(tx['cuenta'])}</small></td>
         <td>{e(tx['fecha'])}</td><td class="amount {css_class}">{symbol}{tx['monto_centimos']/100:,.2f} {e(account_currency.get(str(tx['id_cuenta']), ''))}</td>
-        <td class="actions"><a href="/?editar={tx['id_movimiento']}&anio={year}&mes={month}">Editar</a>
-        <form method="post" action="/movimientos/{tx['id_movimiento']}/eliminar"><button class="link-danger" data-confirm="true" type="submit">Eliminar</button></form></td></tr>'''
+        <td class="actions"><a class="btn btn-neutral btn-sm" href="/?editar={tx['id_movimiento']}&anio={year}&mes={month}">Editar</a>
+        <form method="post" action="/movimientos/{tx['id_movimiento']}/eliminar"><button class="btn btn-danger btn-sm" data-confirm="true" type="submit">Eliminar</button></form></td></tr>'''
     if not rows:
         rows = '<tr><td colspan="4" class="empty">Aún no hay movimientos en el período seleccionado.</td></tr>'
     metric_rows = []

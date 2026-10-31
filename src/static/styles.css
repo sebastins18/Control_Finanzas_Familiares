@@ -425,3 +425,50 @@ body:not(.login-body) .notice-strip{background:#eaf1fa}
 /* Botones de acción del panel de calidad: iluminación al pasar el cursor, igual que el resto de la app */
 body:not(.login-body) .quality-form button{transition:transform .15s,background .2s,box-shadow .2s}
 body:not(.login-body) .quality-form button:hover:not([disabled]){transform:translateY(-1px);box-shadow:inset 0 0 14px rgba(45,95,159,.45),inset 0 1px 0 rgba(255,255,255,.35)}
+
+
+/* Cerrar sesión dentro de la cabecera, junto al nombre del usuario conectado */
+.session-logout{margin:2px 0 0}
+.session-logout button{min-height:30px;padding:4px 12px;font-size:12px}
+
+/* ===== Sistema de diseño: tokens (Paso 1) ===== */
+:root{
+  --danger:#8a2419;--danger-soft:#fbd9d3;--danger-edge:rgba(185,71,61,.45);
+  --success:#0f5e54;--success-soft:#d7f0ea;--success-edge:rgba(18,107,90,.35);
+  --neutral:#1c2f52;--neutral-soft:#eaf0f9;--neutral-edge:rgba(20,40,80,.22);
+  --radius:12px;--shadow-1:0 6px 14px -10px rgba(20,40,80,.4);
+  --space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;
+}
+
+/* ===== Sistema de botones (Paso 2): base .btn y variantes ===== */
+body:not(.login-body) .btn{display:inline-flex;align-items:center;justify-content:center;gap:var(--space-1);min-height:34px;padding:6px 14px;border-radius:var(--radius);border:1px solid var(--neutral-edge);font:inherit;font-size:13px;font-weight:700;line-height:1.2;white-space:nowrap;text-decoration:none;cursor:pointer;box-shadow:var(--shadow-1),inset 0 1px 0 #fff;transition:transform .15s,background .2s,box-shadow .2s}
+body:not(.login-body) .btn:hover{text-decoration:none;transform:translateY(-1px)}
+body:not(.login-body) .btn:active{transform:translateY(0);box-shadow:inset 0 2px 4px rgba(20,40,80,.2)}
+body:not(.login-body) .btn:focus-visible{outline:none;box-shadow:0 0 0 4px rgba(45,95,159,.3)}
+body:not(.login-body) .btn-neutral{color:var(--neutral);background:linear-gradient(135deg,#fff,var(--neutral-soft))}
+body:not(.login-body) .btn-neutral:hover{background:linear-gradient(135deg,#fff,#dde8f6)}
+body:not(.login-body) .btn-success{color:var(--success);background:linear-gradient(135deg,#f1fbf8,var(--success-soft));border-color:var(--success-edge)}
+body:not(.login-body) .btn-success:hover{background:linear-gradient(135deg,#f1fbf8,#c4e8df)}
+body:not(.login-body) .btn-danger{color:var(--danger);background:linear-gradient(135deg,#fff5f3,var(--danger-soft));border-color:var(--danger-edge)}
+body:not(.login-body) .btn-danger:hover{background:linear-gradient(135deg,#fff,#f6c4bc)}
+body:not(.login-body) .btn-primary{color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.25);background:linear-gradient(135deg,#2d5f9f,#2a7f78);border-color:rgba(20,40,80,.12)}
+body:not(.login-body) .btn-primary:hover{background:linear-gradient(135deg,#25528c,#236d67)}
+body:not(.login-body) .btn-ghost{color:var(--neutral);background:transparent;border-color:transparent;box-shadow:none}
+body:not(.login-body) .btn-ghost:hover{background:rgba(45,95,159,.1)}
+body:not(.login-body) .btn-sm{min-height:30px;padding:4px 12px;font-size:12px}
+
+/* Acciones de fila: botones alineados horizontalmente en el mismo eje */
+.row-actions{display:flex;align-items:center;flex-wrap:wrap;gap:var(--space-2)}
+.row-actions form{margin:0;display:flex}
+.row-actions .btn{white-space:nowrap}
+
+
+/* Tabla de registros: una columna por campo y acciones fijas a la derecha */
+table.records{table-layout:auto}
+table.records th,table.records td{padding:var(--space-3) var(--space-4);vertical-align:middle;white-space:nowrap}
+table.records td{overflow-wrap:anywhere;white-space:normal}
+table.records .row-actions-head,table.records .row-actions-cell{width:1%;white-space:nowrap;text-align:right}
+table.records .row-actions{justify-content:flex-end;flex-wrap:nowrap}
+table.records .row-actions form{display:inline-flex}
+
+
