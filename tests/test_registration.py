@@ -14,13 +14,14 @@ from urllib.parse import urlencode
 from urllib.request import HTTPCookieProcessor, Request, build_opener
 
 from src import app, auth, db, profiles, request_ctx
+from tests.helpers_admin import TEST_ADMIN_PASSWORD
 
 
 class RegistrationTests(unittest.TestCase):
     def setUp(self):
         self.tmp=tempfile.TemporaryDirectory()
         self.env=patch.dict(os.environ,{'DB_PATH':str(Path(self.tmp.name)/'test.sqlite3'),
-                                      'APP_BASE_PATH':'','FINANZAS_INITIAL_ADMIN_PASSWORD':''})
+                                      'APP_BASE_PATH':'','FINANZAS_INITIAL_ADMIN_PASSWORD':TEST_ADMIN_PASSWORD})
         self.env.start()
         request_ctx.set_user_id(1)
         app.SESSIONS.clear()
@@ -125,7 +126,7 @@ class RegistrationTests(unittest.TestCase):
 
     def test_standard_user_mode_hides_roles_and_disables_user_management(self):
         self.assertTrue(auth.STANDARD_USER_MODE)
-        with self.post({'usuario':'admin','contrasena':'admin123!'},'/login') as r:r.read()
+        with self.post({'usuario':'admin','contrasena':TEST_ADMIN_PASSWORD},'/login') as r:r.read()
         with self.post({'id_perfil':1},'/perfiles/seleccionar') as r:
             html=r.read().decode()
             self.assertIn('session-name',html)
@@ -140,7 +141,7 @@ class RegistrationTests(unittest.TestCase):
         with caught.exception as r:self.assertEqual(r.code,403)
         with self.client.open(self.base+'/admin/cambiar-clave',timeout=5) as r:
             self.assertIn('Cambiar mi contraseña',r.read().decode())
-        with self.post({'actual':'admin123!','nueva':'ClaveNueva123!','confirmar':'ClaveNueva123!'},'/admin/cambiar-clave') as r:r.read()
+        with self.post({'actual':TEST_ADMIN_PASSWORD,'nueva':'ClaveNueva123!','confirmar':'ClaveNueva123!'},'/admin/cambiar-clave') as r:r.read()
         with self.post({'usuario':'admin','contrasena':'ClaveNueva123!'},'/login') as r:
             self.assertTrue(r.url.endswith('/perfiles/elegir'))
         with db.connect() as c:

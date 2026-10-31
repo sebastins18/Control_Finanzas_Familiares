@@ -13,12 +13,14 @@ from http.cookiejar import CookieJar
 
 from src import db
 from src.app import Handler, currency
+from tests.helpers_admin import TEST_ADMIN_PASSWORD
 
 
 class TestFinanzas(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
-        self.env_patch = patch.dict(os.environ, {'DB_PATH': str(Path(self.tmp.name) / 'test.sqlite3')})
+        self.env_patch = patch.dict(os.environ, {'DB_PATH': str(Path(self.tmp.name) / 'test.sqlite3'),
+                                                 'FINANZAS_INITIAL_ADMIN_PASSWORD': TEST_ADMIN_PASSWORD})
         self.env_patch.start()
         db.init_db()
         with db.connect() as cx:
@@ -99,7 +101,7 @@ class TestHttp(unittest.TestCase):
 
     def logged_in(self):
         opener = build_opener(HTTPCookieProcessor(CookieJar()))
-        payload = urlencode({'usuario': 'admin', 'contrasena': 'admin123!'}).encode()
+        payload = urlencode({'usuario': 'admin', 'contrasena': TEST_ADMIN_PASSWORD}).encode()
         with opener.open(Request(self.base + '/login', data=payload), timeout=3) as result:
             self.assertEqual(result.status, 200)
         with opener.open(Request(self.base + '/perfiles/seleccionar', data=urlencode({'id_perfil':'1'}).encode()),timeout=3) as result:

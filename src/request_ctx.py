@@ -20,6 +20,15 @@ def is_admin() -> bool:
     return bool(getattr(_ctx, 'admin', False))
 
 
+def set_quality_admin(value: bool) -> None:
+    _ctx.quality_admin = bool(value)
+
+
+def is_quality_admin() -> bool:
+    """True si la solicitud pertenece a un administrador activo (panel de calidad)."""
+    return bool(getattr(_ctx, 'quality_admin', False))
+
+
 def set_user_id(value):
     _ctx.user_id = int(value)
     _ctx.profile = None

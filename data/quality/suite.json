@@ -1,0 +1,233 @@
+{
+ "generado": "2026-10-30T17:54:22",
+ "segundos": 57.6,
+ "entorno": {
+  "python": "3.12.0",
+  "sqlite": "3.42.0",
+  "sistema": "Windows"
+ },
+ "total": 85,
+ "exito": true,
+ "archivos": [
+  {
+   "archivo": "test_auth_sqlite",
+   "tests": 4,
+   "ok": 4,
+   "fallos": 0,
+   "errores": 0,
+   "omitidos": 0,
+   "segundos": 3.563,
+   "problemas": [],
+   "descripcion": "Autenticación SQLite, migración y permisos mediante solicitudes HTTP reales."
+  },
+  {
+   "archivo": "test_basepath_v17",
+   "tests": 1,
+   "ok": 1,
+   "fallos": 0,
+   "errores": 0,
+   "omitidos": 0,
+   "segundos": 0.869,
+   "problemas": [],
+   "descripcion": "Cobertura del reverse proxy para /finanzas en CRNube."
+  },
+  {
+   "archivo": "test_bulk_seed_s2",
+   "tests": 2,
+   "ok": 2,
+   "fallos": 0,
+   "errores": 0,
+   "omitidos": 0,
+   "segundos": 0.196,
+   "problemas": [],
+   "descripcion": "La carga masiva se confirma o revierte como una transacción."
+  },
+  {
+   "archivo": "test_connection",
+   "tests": 2,
+   "ok": 2,
+   "fallos": 0,
+   "errores": 0,
+   "omitidos": 0,
+   "segundos": 0.34,
+   "problemas": [],
+   "descripcion": "Pruebas de conectividad SQLite del MVP (modelo real de cinco tablas)."
+  },
+  {
+   "archivo": "test_error_handling",
+   "tests": 8,
+   "ok": 8,
+   "fallos": 0,
+   "errores": 0,
+   "omitidos": 0,
+   "segundos": 6.934,
+   "problemas": [],
+   "descripcion": "Fallos reales de SQLite y errores durante autenticación: siempre una respuesta."
+  },
+  {
+   "archivo": "test_features_v4",
+   "tests": 3,
+   "ok": 3,
+   "fallos": 0,
+   "errores": 0,
+   "omitidos": 0,
+   "segundos": 0.616,
+   "problemas": [],
+   "descripcion": ""
+  },
+  {
+   "archivo": "test_fx_quotes",
+   "tests": 7,
+   "ok": 7,
+   "fallos": 0,
+   "errores": 0,
+   "omitidos": 0,
+   "segundos": 1.345,
+   "problemas": [],
+   "descripcion": "Cotización legible, dirección automática e historial inmutable."
+  },
+  {
+   "archivo": "test_http_crud_s2",
+   "tests": 4,
+   "ok": 4,
+   "fallos": 0,
+   "errores": 0,
+   "omitidos": 0,
+   "segundos": 3.659,
+   "problemas": [],
+   "descripcion": "S2: pruebas HTTP reales sobre SQLite temporal; no se toca la base del curso."
+  },
+  {
+   "archivo": "test_lazy_fx_v8",
+   "tests": 3,
+   "ok": 3,
+   "fallos": 0,
+   "errores": 0,
+   "omitidos": 0,
+   "segundos": 0.534,
+   "problemas": [],
+   "descripcion": "Pruebas actualizadas al modelo V17 de cambio manual sin API de divisas."
+  },
+  {
+   "archivo": "test_multicurrency_v7",
+   "tests": 3,
+   "ok": 3,
+   "fallos": 0,
+   "errores": 0,
+   "omitidos": 0,
+   "segundos": 0.554,
+   "problemas": [],
+   "descripcion": ""
+  },
+  {
+   "archivo": "test_profiles",
+   "tests": 10,
+   "ok": 10,
+   "fallos": 0,
+   "errores": 0,
+   "omitidos": 0,
+   "segundos": 15.259,
+   "problemas": [],
+   "descripcion": "Perfiles compartidos: aislamiento, sesiones e invitados por HTTP y SQLite."
+  },
+  {
+   "archivo": "test_quality_panel",
+   "tests": 9,
+   "ok": 9,
+   "fallos": 0,
+   "errores": 0,
+   "omitidos": 0,
+   "segundos": 5.33,
+   "problemas": [],
+   "descripcion": "Panel de calidad (/admin/calidad): acceso solo para administradores y ejecucion segura."
+  },
+  {
+   "archivo": "test_read_cache",
+   "tests": 3,
+   "ok": 3,
+   "fallos": 0,
+   "errores": 0,
+   "omitidos": 0,
+   "segundos": 2.55,
+   "problemas": [],
+   "descripcion": ""
+  },
+  {
+   "archivo": "test_registration",
+   "tests": 7,
+   "ok": 7,
+   "fallos": 0,
+   "errores": 0,
+   "omitidos": 0,
+   "segundos": 5.651,
+   "problemas": [],
+   "descripcion": "Registro público, unicidad y creación transaccional del perfil inicial."
+  },
+  {
+   "archivo": "test_s3_benchmark_smoke",
+   "tests": 2,
+   "ok": 2,
+   "fallos": 0,
+   "errores": 0,
+   "omitidos": 0,
+   "segundos": 0.172,
+   "problemas": [],
+   "descripcion": "Prueba de humo del benchmark S3: corre en pequeno y produce mediana, con y sin indices."
+  },
+  {
+   "archivo": "test_s3_connection_errors",
+   "tests": 3,
+   "ok": 3,
+   "fallos": 0,
+   "errores": 0,
+   "omitidos": 0,
+   "segundos": 2.444,
+   "problemas": [],
+   "descripcion": "Error de conexion (Seguimiento 3): que hace la aplicacion si SQLite no responde."
+  },
+  {
+   "archivo": "test_s3_invalid_data",
+   "tests": 4,
+   "ok": 4,
+   "fallos": 0,
+   "errores": 0,
+   "omitidos": 0,
+   "segundos": 3.366,
+   "problemas": [],
+   "descripcion": "Datos invalidos (Seguimiento 3): la aplicacion rechaza entradas incorrectas sin escribir."
+  },
+  {
+   "archivo": "test_s3_normal",
+   "tests": 1,
+   "ok": 1,
+   "fallos": 0,
+   "errores": 0,
+   "omitidos": 0,
+   "segundos": 0.934,
+   "problemas": [],
+   "descripcion": "Caso normal (Seguimiento 3): alta, edicion y borrado de un movimiento por HTTP."
+  },
+  {
+   "archivo": "test_smoke",
+   "tests": 8,
+   "ok": 8,
+   "fallos": 0,
+   "errores": 0,
+   "omitidos": 0,
+   "segundos": 2.618,
+   "problemas": [],
+   "descripcion": ""
+  },
+  {
+   "archivo": "test_sqlite_failure_v16",
+   "tests": 1,
+   "ok": 1,
+   "fallos": 0,
+   "errores": 0,
+   "omitidos": 0,
+   "segundos": 0.532,
+   "problemas": [],
+   "descripcion": ""
+  }
+ ]
+}

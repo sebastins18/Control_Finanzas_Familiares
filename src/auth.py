@@ -34,10 +34,15 @@ def init(connection):
     if 'username' in columns and connection.execute('SELECT 1 FROM usuarios WHERE username IS NOT NULL').fetchone():
         username_constraints(connection)
         return
-    for definition in (() if 'username' in columns else ('username TEXT', "rol TEXT NOT NULL DEFAULT 'usuario' CHECK(rol IN ('administrador','usuario'))",
-                       'activo INTEGER NOT NULL DEFAULT 0 CHECK(activo IN (0,1))',
-                       'password_salt TEXT', 'password_hash TEXT')):
-        connection.execute('ALTER TABLE usuarios ADD COLUMN ' + definition)
+    for column, definition in (
+            ('username', 'username TEXT'),
+            ('rol', "rol TEXT NOT NULL DEFAULT 'usuario' CHECK(rol IN ('administrador','usuario'))"),
+            ('activo', 'activo INTEGER NOT NULL DEFAULT 0 CHECK(activo IN (0,1))'),
+            ('password_salt', 'password_salt TEXT'),
+            ('password_hash', 'password_hash TEXT')):
+        if column not in columns:
+            connection.execute('ALTER TABLE usuarios ADD COLUMN ' + definition)
+            columns.add(column)
     connection.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_usuarios_username ON usuarios(username)')
     # Conserva los identificadores y sus relaciones financieras al migrar.
     for row in connection.execute('SELECT id_usuario FROM usuarios').fetchall():

@@ -1,8 +1,8 @@
 """Pruebas actualizadas al modelo V17 de cambio manual sin API de divisas."""
 from src import db, extension
-from test_multicurrency_v7 import MulticurrencyTests
+from tests.helpers_multicurrency import MulticurrencyBase
 
-class ManualFxTests(MulticurrencyTests):
+class ManualFxTests(MulticurrencyBase):
     def test_same_currency_does_not_require_rate(self):
         with db.connect() as c:
             c.execute('INSERT INTO cuentas(id_perfil,nombre,id_moneda,saldo_inicial_centimos) VALUES(1,?,?,?)',('CRC test',self.crc,0))

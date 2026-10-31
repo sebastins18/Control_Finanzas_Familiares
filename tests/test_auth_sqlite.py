@@ -16,6 +16,7 @@ from urllib.parse import urlencode
 from urllib.request import HTTPCookieProcessor, Request, build_opener
 
 from src import app, auth, db, extension, request_ctx
+from tests.helpers_admin import TEST_ADMIN_PASSWORD
 
 
 class AuthSQLiteTests(unittest.TestCase):
@@ -25,7 +26,7 @@ class AuthSQLiteTests(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.path = Path(self.tmp.name) / 'test.sqlite3'
         self.env = patch.dict(os.environ, {'DB_PATH': str(self.path),
-            'APP_BASE_PATH': '', 'FINANZAS_INITIAL_ADMIN_PASSWORD': ''})
+            'APP_BASE_PATH': '', 'FINANZAS_INITIAL_ADMIN_PASSWORD': TEST_ADMIN_PASSWORD})
         self.env.start()
         request_ctx.set_user_id(1)
         app.SESSIONS.clear()
@@ -40,8 +41,8 @@ class AuthSQLiteTests(unittest.TestCase):
     def test_defaults_and_idempotence(self):
         db.init_db()
         admin = app.user_by_name('admin')
-        self.assertEqual(admin['hash'], auth.hash_password('admin123!', admin['salt']))
-        self.assertNotEqual(admin['hash'], 'admin123!')
+        self.assertEqual(admin['hash'], auth.hash_password(TEST_ADMIN_PASSWORD, admin['salt']))
+        self.assertNotEqual(admin['hash'], TEST_ADMIN_PASSWORD)
         self.assertEqual(admin['role_name'], 'administrador')
         self.assertFalse((self.path.parent / 'login_credentials.json').exists())
         db.init_db()
@@ -114,7 +115,7 @@ class AuthSQLiteTests(unittest.TestCase):
             with opener.open(Request(base+path, data=urlencode(data).encode()), timeout=5) as r:
                 return r.read().decode()
 
-        def login(name='admin', password='admin123!'):
+        def login(name='admin', password=TEST_ADMIN_PASSWORD):
             post('/login', {'usuario':name, 'contrasena':password})
             uid=app.user_by_name(name)['id_usuario']
             with db.connect() as c:pid=c.execute('SELECT id_perfil FROM perfiles_financieros WHERE id_propietario=? ORDER BY id_perfil LIMIT 1',(uid,)).fetchone()[0]

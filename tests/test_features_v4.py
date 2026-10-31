@@ -5,6 +5,7 @@ from datetime import date
 from pathlib import Path
 from unittest.mock import patch
 from src import db, extension
+from tests.helpers_multicurrency import close_app_log_handlers
 
 class V4Features(unittest.TestCase):
     def setUp(self):
@@ -12,6 +13,7 @@ class V4Features(unittest.TestCase):
         self.env=patch.dict(os.environ,{'DB_PATH':str(Path(self.temp.name)/'test.db')})
         self.env.start();db.init_db()
     def tearDown(self):
+        close_app_log_handlers()
         self.env.stop();self.temp.cleanup()
     def test_budget_alerts_and_currency(self):
         with db.connect() as c:

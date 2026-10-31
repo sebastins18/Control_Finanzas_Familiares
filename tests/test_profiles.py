@@ -15,6 +15,7 @@ from urllib.parse import urlencode
 from urllib.request import HTTPCookieProcessor, Request, build_opener
 
 from src import app, auth, db, extension, profiles, request_ctx, finance
+from tests.helpers_admin import TEST_ADMIN_PASSWORD
 
 
 class ProfileTests(unittest.TestCase):
@@ -22,7 +23,7 @@ class ProfileTests(unittest.TestCase):
         self.tmp=tempfile.TemporaryDirectory()
         self.path=Path(self.tmp.name)/'test.sqlite3'
         self.env=patch.dict(os.environ,{'DB_PATH':str(self.path),'APP_BASE_PATH':'',
-                                      'FINANZAS_INITIAL_ADMIN_PASSWORD':''})
+                                      'FINANZAS_INITIAL_ADMIN_PASSWORD':TEST_ADMIN_PASSWORD})
         self.env.start()
         request_ctx.set_user_id(1)
         app.SESSIONS.clear()
@@ -37,7 +38,7 @@ class ProfileTests(unittest.TestCase):
         self.thread=threading.Thread(target=self.server.serve_forever,daemon=True)
         self.thread.start()
         self.base=f'http://127.0.0.1:{self.server.server_port}'
-        self.owner=self.client('admin','admin123!')
+        self.owner=self.client('admin',TEST_ADMIN_PASSWORD)
         self.guest=self.client('Miriam','Clave123!')
         self.outsider=self.client('OtraPersona','Clave123!')
 
@@ -100,7 +101,7 @@ class ProfileTests(unittest.TestCase):
 
     def test_two_sessions_of_same_account_keep_independent_profiles(self):
         pid=self.shared()
-        second_session=self.client('admin','admin123!')
+        second_session=self.client('admin',TEST_ADMIN_PASSWORD)
         self.assertNotIn('Perfil financiero: <strong>Hogar compartido',self.get(second_session))
         self.assertIn('Perfil financiero: <strong>Hogar compartido',self.get(self.owner))
         self.post(second_session,'/perfiles/seleccionar',{'id_perfil':pid})

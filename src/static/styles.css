@@ -4,7 +4,7 @@
 /* Menú principal v4: agrupado, responsivo y accesible */
 .main-nav{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:white;border:1px solid #dce7ef;border-radius:15px;padding:12px 16px;margin-top:16px;box-shadow:0 8px 26px rgba(13,45,65,.06);position:relative;z-index:5}
 .main-nav>a,.nav-group>summary{display:inline-flex;align-items:center;gap:6px;padding:11px 16px;border-radius:10px;color:#21374b;font-weight:700;font-size:13px;cursor:pointer;list-style:none;white-space:nowrap}
-.nav-group>summary::-webkit-details-marker{display:none}.nav-group>summary:after{content:'⌄';margin-left:6px;color:#748b9b}
+.nav-group>summary::-webkit-details-marker{display:none}.nav-group>summary::marker{content:''}.nav-group>summary:after{content:none}
 .main-nav>a:hover,.nav-group>summary:hover,.nav-group[open]>summary{background:#e8f3f2;color:#11665d;text-decoration:none}
 .main-nav .nav-home{background:#176a60;color:white}.main-nav .nav-home:hover{background:#115349;color:white}
 .nav-group{position:relative}.nav-drop{position:absolute;top:calc(100% + 6px);left:0;min-width:235px;background:white;border:1px solid #dae6e9;border-radius:13px;padding:8px;box-shadow:0 18px 35px rgba(13,38,55,.16);display:grid;gap:3px;z-index:20}
@@ -379,6 +379,11 @@ body:not(.login-body) .notice-strip{background:#eaf1fa}
 
 
 
+/* Iluminación que sigue al puntero (Liquid Glass). Solo con puntero fino; lo activa app.py. */
+.glow-track{--gx:50%;--gy:50%;position:relative;isolation:isolate}
+.glow-track::after{content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;pointer-events:none;opacity:0;background:radial-gradient(260px circle at var(--gx) var(--gy),rgba(255,255,255,.28),rgba(255,255,255,.08) 40%,transparent 70%);transition:opacity .3s}
+.glow-track:hover::after{opacity:1}
+@media(prefers-reduced-motion:reduce){.glow-track::after{transition:none}}
 .app-logo{display:block;width:64px;height:64px;object-fit:contain;flex-shrink:0;border-radius:12px;background:#fff}
 .app-logo-login{width:72px;height:72px;border-radius:16px}
 .lg-create{font-size:14px;text-align:center;margin:20px 0 10px;color:#64748b}
@@ -408,3 +413,15 @@ body:not(.login-body) .notice-strip{background:#eaf1fa}
 .profile-picker-footer form{margin:0}
 .profile-tabs button:focus-visible,.profile-option:focus-within,.profile-create summary:focus-visible{outline:2px solid #238579;outline-offset:3px}
 @media(max-width:560px){.profile-picker{padding:20px;margin:20px auto}.profile-option{padding:14px;gap:10px}.profile-picker h1{font-size:20px}}
+
+
+
+/* Panel de calidad: indicador de carga mientras corre una suite o medición */
+.quality-loading{display:flex;align-items:center;gap:14px;margin:14px 0;padding:14px 16px;border-radius:12px;background:#f5f8fc;border:1px solid rgba(20,40,80,.14)}
+.quality-loading p{margin:4px 0 0}
+.spinner{flex:0 0 auto;width:26px;height:26px;border-radius:50%;border:3px solid rgba(45,95,159,.2);border-top-color:#2d5f9f;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spinner{animation-duration:2.4s}}
+/* Botones de acción del panel de calidad: iluminación al pasar el cursor, igual que el resto de la app */
+body:not(.login-body) .quality-form button{transition:transform .15s,background .2s,box-shadow .2s}
+body:not(.login-body) .quality-form button:hover:not([disabled]){transform:translateY(-1px);box-shadow:inset 0 0 14px rgba(45,95,159,.45),inset 0 1px 0 rgba(255,255,255,.35)}

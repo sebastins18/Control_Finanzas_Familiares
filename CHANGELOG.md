@@ -35,3 +35,12 @@
 - Cobertura HTTP S2 incrementada de 29 a 33 casos de prueba en revisión aislada; sin cambios de funcionalidad ni migraciones.
 - Incorporado generador de evidencia no destructiva con SQLite temporal, guía de demo paso a paso y GitHub Actions.
 - Este registro **no** altera la etiqueta `v0.2.0` ya entregada.
+
+## Sesión 30/10/2026 — Arranque, panel de calidad y documentación
+
+- Corregido el arranque cuando la migración de `usuarios` intentaba añadir de nuevo la columna `username` (`src/auth.py`).
+- Indicador de carga y estado «Iniciando…» en el panel de calidad `/admin/calidad`, con iluminación al pasar el cursor en sus botones.
+- Página `/olvide-clave` sin cambios funcionales: la recuperación de contraseña sigue siendo solo por administrador (D-012).
+- Actualizados `docs/seguimientos/S3.md` (registro de cambios) y `docs/decisiones.md` (D-011 a D-013).
+- Salidas temporales de arranque añadidas a `.gitignore`.
+

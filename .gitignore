@@ -54,3 +54,23 @@ node_modules/
 # Evidencia generada localmente por scripts.evidencia_s2
 evidencia_s2_local.md
 evidencia_s2_ci.md
+
+# Salidas temporales de arranque y pruebas manuales en la raíz
+app_out.txt
+app_err.txt
+server_out.txt
+server_err.txt
+_server_out.txt
+_server_err.txt
+git_info.txt
+git_state.txt
+staged_check.txt
+data/quality/
+suite_run.log
+suite_err.log
+test_result.txt
+test_summary.txt
+test_out.txt
+quality_test_out.txt
+render_check.txt
+startup_out.txt

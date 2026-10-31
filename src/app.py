@@ -32,7 +32,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlencode, urlsplit
 
-from src import db, extension, finance, request_ctx, auth, profiles
+from src import db, extension, finance, request_ctx, auth, profiles, read_cache, quality
 
 LOG_DIR=db.db_path().parent / 'logs'
 logger=logging.getLogger('finanzas')
@@ -98,6 +98,8 @@ def controlled_request(method):
             logger.exception('Error inesperado durante %s', self.command)
             status, title, message = 500, 'No se pudo completar la operación', 'Ocurrió un problema inesperado. Compruebe el resultado antes de volver a intentarlo.'
         try:
+            if status == 503 and self.command == 'GET' and self.serve_stale():
+                return
             return self.respond(status, error_page(title, message))
         except (OSError, TimeoutError):
             logger.info('No se pudo entregar la respuesta de error al cliente')
@@ -246,6 +248,8 @@ def layout(content: str, *, subtitle: str = '', selection: bool = False) -> str:
     # Opciones de administración visibles solo para administradores (las rutas se protegen aparte).
     security_links = ('<a href="/admin/usuarios">Mantenimiento de usuarios</a>'
                       if request_is_admin() and not auth.STANDARD_USER_MODE else '')
+    if request_ctx.is_quality_admin():
+        security_links += '<a href="/admin/calidad">Calidad y pruebas</a>'
     name, role = request_ctx.identity()
     identity = (f'<div class="session-identity" aria-label="Usuario conectado"><span class="session-name">{e(name)}</span></div>' if name else '')
     selected_profile=request_ctx.profile()
@@ -275,11 +279,27 @@ for(const form of document.querySelectorAll('form[method="post"]')){{
   }});
 }}
 for(const b of document.querySelectorAll('[data-confirm]'))b.addEventListener('click',ev=>{{if(!confirm('¿Eliminar este movimiento?'))ev.preventDefault();}});
-// Menú principal: un solo desplegable abierto a la vez; se cierra al hacer clic fuera o con Escape.
+// Menú principal: se abre al pasar el cursor (hover) y se cierra al salir; un solo desplegable abierto a la vez.
+// Teclado y pantallas táctiles siguen funcionando con clic/Enter gracias al <summary> nativo.
 const grupos=[...document.querySelectorAll('.main-nav details.nav-group')];
-for(const g of grupos)g.addEventListener('toggle',()=>{{if(g.open)for(const o of grupos)if(o!==g)o.open=false;}});
+const finHover=window.matchMedia('(hover:hover) and (pointer:fine)');
+for(const g of grupos){{
+  g.addEventListener('toggle',()=>{{if(g.open)for(const o of grupos)if(o!==g)o.open=false;}});
+  if(finHover.matches){{
+    g.addEventListener('mouseenter',()=>{{clearTimeout(g._cierre);g.open=true;}});
+    g.addEventListener('mouseleave',()=>{{g._cierre=setTimeout(()=>{{g.open=false;}},120);}});
+    g.querySelector('summary').addEventListener('click',ev=>ev.preventDefault());
+  }}
+}}
 document.addEventListener('click',ev=>{{for(const g of grupos)if(g.open&&!g.contains(ev.target))g.open=false;}});
 document.addEventListener('keydown',ev=>{{if(ev.key==='Escape')for(const g of grupos)g.open=false;}});
+// Iluminación que sigue al puntero en las superficies Liquid Glass.
+if(finHover.matches&&!window.matchMedia('(prefers-reduced-motion: reduce)').matches){{
+  for(const s of document.querySelectorAll('.main-nav,.panel,.metric,.hero,.lg-card')){{
+    s.classList.add('glow-track');
+    s.addEventListener('pointermove',ev=>{{const r=s.getBoundingClientRect();s.style.setProperty('--gx',(ev.clientX-r.left)+'px');s.style.setProperty('--gy',(ev.clientY-r.top)+'px');}});
+  }}
+}}
 </script></body></html>'''
     if guest:
         for route,label in (('presupuestos','Presupuestos'),('metas_ahorro','Metas de ahorro'),('cuentas','Cuentas'),('categorias','Categorías'),('monedas','Monedas')):
@@ -383,10 +403,45 @@ def dashboard_page(query: dict) -> str:
 
 
 class Handler(BaseHTTPRequestHandler):
-    def respond(self, status: int, body: bytes, content_type: str = 'text/html; charset=utf-8') -> None:
+    CACHEABLE_ROUTES = ('/admin/cuentas', '/admin/categorias', '/admin/monedas', '/admin/presupuestos', '/admin/metas_ahorro')
+
+    def read_cache_key(self):
+        """Clave por sesión y perfil para páginas de catálogo sin parámetros; None si no es cacheable."""
+        if self.command != 'GET':
+            return None
+        parsed = urlsplit(self.path)
+        route = internal_path(parsed.path)
+        if parsed.query or route not in self.CACHEABLE_ROUTES:
+            return None
+        token = self.session_token()
+        with AUTH_LOCK:
+            entry = SESSIONS.get(token)
+        if not entry or entry[1] <= time.time():
+            return None
+        return (token, entry[2] if len(entry) > 2 else None, route)
+
+    def serve_stale(self) -> bool:
+        """Con SQLite caído, sirve la última copia de un catálogo con aviso visible. Nunca escribe."""
+        key = self.read_cache_key()
+        hit = read_cache.fetch(key) if key else None
+        if not hit:
+            return False
+        body, age = hit
+        body = body.replace(b'<main class="shell">', b'<main class="shell">' + read_cache.stale_banner(age), 1)
+        self.respond(200, body, headers={'X-Datos-Desactualizados': str(age)}, cache=False)
+        return True
+
+    def respond(self, status: int, body: bytes, content_type: str = 'text/html; charset=utf-8',
+                headers=None, cache: bool = True) -> None:
         if content_type.startswith('text/html'):
+            if cache and status == 200:
+                key = self.read_cache_key()
+                if key:
+                    read_cache.store(key, body)
             body = prefix_html(body)
         self.send_response(status)
+        for name, value in (headers or {}).items():
+            self.send_header(name, value)
         self.send_header('Content-Type', content_type)
         self.send_header('Content-Length', str(len(body)))
         self.send_header('X-Content-Type-Options', 'nosniff')
@@ -434,6 +489,11 @@ class Handler(BaseHTTPRequestHandler):
         user=self.current_user()
         return auth.is_system_admin(user)
 
+    def is_quality_admin(self):
+        """Panel de calidad: administrador activo, independiente del modo temporal de usuarios."""
+        user=self.current_user()
+        return bool(user and user['role']=='admin' and user['active'])
+
     def auth_redirect(self):
         self.redirect_to('/login')
 
@@ -444,6 +504,7 @@ class Handler(BaseHTTPRequestHandler):
         user = self.current_user() if authenticated else None
         request_ctx.set_user_id(user['id_usuario'] if user else 1)
         request_ctx.set_admin(auth.is_system_admin(user))
+        request_ctx.set_quality_admin(bool(user and user['role']=='admin' and user['active']))
         request_ctx.set_identity(user['name'] if user else '', user['role_name'] if user else '')
         if user:
             token=self.session_token()
@@ -482,6 +543,14 @@ class Handler(BaseHTTPRequestHandler):
             if not self.is_admin(): return self.respond(403,forbidden_page())
             return self.respond(200,users_page(editing=parse_qs(path.query).get('editar',[''])[0]).encode('utf-8'))
         if route == '/admin/cambiar-clave': return self.respond(200,change_password_page().encode('utf-8'))
+        if route == '/admin/calidad':
+            if not self.is_quality_admin(): return self.respond(403,forbidden_page())
+            notices={'iniciado':'Trabajo iniciado. La página se actualiza sola al terminar.',
+                     'ocupado':'Ya hay un trabajo en ejecución. Espere a que termine.',
+                     'error':'No se pudo iniciar el trabajo. Revise el registro de errores del servidor.'}
+            notice=notices.get(parse_qs(path.query).get('aviso',[''])[0],'')
+            body=layout(quality.content(quality.csrf_token(self.session_token()),notice)).encode('utf-8')
+            return self.respond(200,body,cache=False)
         if route == '/static/logo.png':
             return self.respond(200, CSS_PATH.with_name('logo.png').read_bytes(), 'image/png')
         if route == '/static/styles.css':
@@ -537,6 +606,13 @@ class Handler(BaseHTTPRequestHandler):
             if not self.authenticated(): return self.auth_redirect()
             if not request_ctx.profile() and not path.startswith('/perfiles/') and path not in ('/admin/usuarios/guardar','/admin/cambiar-clave'):
                 return self.redirect_to('/perfiles/elegir')
+            if path == '/admin/calidad/ejecutar':
+                if not self.is_quality_admin(): return self.respond(403,forbidden_page())
+                form={k:v[0] for k,v in parse_qs(payload.decode('utf-8'),keep_blank_values=True).items()}
+                if not quality.csrf_valid(self.session_token(),form.get('csrf','')):
+                    return self.respond(403,error_page('Solicitud no válida','El formulario caducó. Recargue la página e intente de nuevo.'))
+                outcome=quality.start(form.get('job',''))
+                return self.redirect_to('/admin/calidad?aviso='+{'started':'iniciado','busy':'ocupado'}.get(outcome,'error'))
             if path == '/admin/usuarios/guardar':
                 if not self.is_admin(): return self.respond(403,forbidden_page())
                 form={k:v[0] for k,v in parse_qs(payload.decode('utf-8'),keep_blank_values=True).items()}

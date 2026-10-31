@@ -18,6 +18,7 @@ from urllib.parse import urlencode
 from urllib.request import HTTPCookieProcessor, Request, build_opener
 
 from src import app, db, request_ctx
+from tests.helpers_admin import TEST_ADMIN_PASSWORD
 
 
 class ErrorHandlingTests(unittest.TestCase):
@@ -25,7 +26,7 @@ class ErrorHandlingTests(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.path = Path(self.tmp.name) / 'test.sqlite3'
         self.env = patch.dict(os.environ, {'DB_PATH':str(self.path), 'APP_BASE_PATH':'',
-            'FINANZAS_INITIAL_ADMIN_PASSWORD':''})
+            'FINANZAS_INITIAL_ADMIN_PASSWORD': TEST_ADMIN_PASSWORD})
         self.env.start()
         request_ctx.set_user_id(1)
         db.init_db()
@@ -34,7 +35,7 @@ class ErrorHandlingTests(unittest.TestCase):
         self.thread.start()
         self.base = f'http://127.0.0.1:{self.server.server_port}'
         self.opener = build_opener(HTTPCookieProcessor(CookieJar()))
-        self.post('/login', {'usuario':'admin','contrasena':'admin123!'})
+        self.post('/login', {'usuario':'admin','contrasena':TEST_ADMIN_PASSWORD})
         self.post('/perfiles/seleccionar',{'id_perfil':1})
 
     def tearDown(self):
