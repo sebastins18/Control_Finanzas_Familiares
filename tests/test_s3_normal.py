@@ -74,7 +74,7 @@ class S3NormalCaseTests(S3HttpBase):
         self.post(self.form(), '/movimientos')
         with db.connect() as c:
             movement_id = c.execute("SELECT id_movimiento FROM movimientos WHERE descripcion='S3 caso normal'").fetchone()[0]
-        self.assertIn('S3 caso normal', self.get('/'))
+        self.assertIn('S3 caso normal', self.get('/?anio=2026&mes=10'))
 
         self.post(self.form('2000.00', 'S3 editado'), f'/movimientos/{movement_id}/actualizar')
         with db.connect() as c:
