@@ -134,3 +134,37 @@
 - **Justificación:** la base temporal evita modificar datos existentes; los datos sintéticos con usuario, perfil, cuenta y categoría permiten respetar las relaciones. Publicar las cinco muestras y la mediana permite examinar la variación local sin depender de una sola observación. Las comprobaciones de integridad y de resultados evitan presentar tiempos de consultas vacías o datos inválidos como evidencia funcional.
 - **Impacto o limitación:** el reporte existente usa Python 3.15.0 y SQLite 3.53.4 en Windows, con 1000 movimientos iniciales y 1005 finales; sus medianas son 2.401600 ms para inserción confirmada, 1.135100 ms para consulta y 0.266100 ms para suma. Son mediciones locales de SQLite: no miden la respuesta web, red, autenticación, proxy, Virtualmin ni el despliegue. Se reutiliza la conexión y no se reinicia la caché; las consultas se miden después de las cinco inserciones. El esquema base conserva sus índices, pero no hay comparación experimental con índices eliminados ni con otros motores. El benchmark no llama a `db.init_db()` ni activa WAL; no representa toda la configuración de la aplicación. La base temporal se elimina y la evidencia existente se protege contra sobrescritura.
 - **Evidencia verificable:** [scripts/benchmark_s3.py](../scripts/benchmark_s3.py), generación, cronometraje y validaciones; [mediciones S3](seguimientos/mediciones_s3.md), cinco tiempos por operación, medianas, versiones, conteos, `foreign_key_check` sin violaciones e `integrity_check=ok`. [Pruebas S3](seguimientos/pruebas_s3.md) documenta pruebas funcionales separadas: los 6.367 segundos de la suite no son una medición de rendimiento de SQLite.
+
+## D-018 — Integración de las dos versiones del Seguimiento 3
+
+- **Fecha:** 03/11/2026.
+- **Decisión:** al fusionar `origin/main` (S3 de Diego Fonseca, `8b7be34`) con la rama de trabajo, conservar en los nombres originales `scripts/benchmark_s3.py` y `docs/seguimientos/S3.md` de la rama de trabajo, porque las pruebas (`test_s3_benchmark_smoke`) y el panel de calidad dependen de ellos; guardar la versión de Diego como `scripts/benchmark_s3_diego.py` y `docs/seguimientos/S3_diego.md`. Las decisiones D-006 a D-009 de Diego se renumeraron como D-014 a D-017 y se actualizaron sus referencias en `S3_diego.md`.
+- **Alternativas:** elegir una sola versión y descartar la otra.
+- **Justificación:** no se pierde trabajo de ningún integrante y la suite sigue pasando.
+- **Límite:** quedan dos scripts de medición con salidas distintas (`S3_mediciones.md` y `mediciones_s3.md`); conviene que el equipo decida cuál se presenta.
+
+## D-019 — Consultas y reportes de solo lectura acotados al perfil
+
+- **Fecha:** 03/11/2026.
+- **Decisión:** historial filtrable y paginado, reporte anual y exportación CSV en un módulo propio (`src/reportes.py`), solo lectura, con todos los filtros como parámetros SQL y `current_profile_id()` en cada consulta. Los totales se agrupan por moneda y nunca se suman monedas distintas. Los CSV llevan BOM UTF-8 y neutralizan textos que empiezan con `=`, `+`, `-` o `@` (inyección de fórmulas).
+- **Alternativas:** ampliar el panel mensual existente (limitado a 100 movimientos por mes); convertir montos a una moneda común.
+- **Justificación:** el panel no permite buscar ni ver más de un mes; convertir monedas exigiría cotizaciones que el perfil quizá no tiene. Las consultas usan `idx_movimientos_fecha_tipo` (verificado con `EXPLAIN QUERY PLAN`).
+- **Evidencia:** [tests/test_historial_reportes.py](../tests/test_historial_reportes.py) (paginación, filtros, comodines literales, filtros inválidos → 400, aislamiento entre perfiles, CSV).
+
+## D-020 — Movimientos recurrentes con generación explícita e idempotente
+
+- **Fecha:** 03/11/2026.
+- **Decisión:** plantillas en `movimientos_recurrentes` y registro de ocurrencias en `recurrentes_generados` con clave primaria `(id_recurrente, periodo)`. La generación ocurre solo al pulsar **Generar pendientes**, en una transacción, con tope de 500 por ejecución. El día del mes se limita a 1–28.
+- **Alternativas:** generar al abrir el panel (escritura implícita en un GET); recordar solo el último período generado; permitir días 29–31.
+- **Justificación:** coherente con D-010 (sin escrituras automáticas ni duplicados): la restricción de la base impide repetir un mes incluso con solicitudes simultáneas, y borrar un movimiento generado no hace que reaparezca. Los días 1–28 existen en todos los meses.
+- **Impacto:** dos tablas nuevas creadas con `CREATE TABLE IF NOT EXISTS`; no se modifican tablas existentes. Se verificó la actualización y la vuelta atrás sobre una base de la versión `997ad10`.
+- **Evidencia:** [tests/test_historial_reportes.py](../tests/test_historial_reportes.py), clase `RecurringTests`; [docs/consultas_reportes_recurrentes.md](consultas_reportes_recurrentes.md).
+
+## D-021 — Rediseño de formularios sin cambiar el contrato con el servidor
+
+- **Fecha:** 03/11/2026.
+- **Decisión:** los controles nuevos son elementos nativos que envían los mismos nombres y valores que los anteriores: radios para Gasto/Ingreso y Aporte/Retiro, checkbox seguido de un campo oculto `0` para Activo/Leída (el servidor toma el primer valor), `type="number"` con punto decimal para montos. El brillo y las animaciones son solo presentación, se desactivan con `prefers-reduced-motion` y cada cambio de estilo está en un bloque autocontenido de `styles.css`.
+- **Alternativas:** montos con formato local (`25 000,00`), que `db.parse_money` rechaza; controles construidos solo con JavaScript.
+- **Justificación:** sin JavaScript los formularios siguen funcionando, y no hace falta tocar validaciones ni rutas.
+- **Evidencia:** [tests/test_formularios_v2.py](../tests/test_formularios_v2.py) lee el HTML real de cada formulario, lo envía como un navegador y comprueba lo guardado en SQLite. Suite completa: 103/103 en Python 3.11 y 3.12.
+- **Límite:** el aspecto visual (incluido el ancho de teléfono) no tiene pruebas automáticas; requiere revisión manual en el navegador.

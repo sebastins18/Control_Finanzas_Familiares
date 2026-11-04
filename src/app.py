@@ -25,14 +25,14 @@ import logging
 from logging.handlers import RotatingFileHandler
 import re
 from functools import wraps
-from datetime import date
+from datetime import date, timedelta
 from html import escape
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlencode, urlsplit
 
-from src import db, extension, finance, request_ctx, auth, profiles, read_cache, quality
+from src import db, extension, finance, request_ctx, auth, profiles, read_cache, quality, reportes, recurrentes
 
 LOG_DIR=db.db_path().parent / 'logs'
 logger=logging.getLogger('finanzas')
@@ -260,14 +260,45 @@ def layout(content: str, *, subtitle: str = '', selection: bool = False) -> str:
 <html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>MisFinanzas · Grupo 5</title><link rel="icon" type="image/png" href="/static/logo.png"><link rel="stylesheet" href="/static/styles.css"></head>
 <body><header class="topbar"><div class="shell top-inner"><div class="brand"><img class="app-logo" src="/static/logo.png" alt="Logo de MisFinanzas" width="64" height="64"><span><strong>MisFinanzas</strong><small>Proyecto open source · Grupo 5</small></span></div>{identity}</div></header>
-<main class="shell"><nav class="main-nav" aria-label="Menú principal"><a class="nav-home" href="/">⌂ Resumen</a><details class="nav-group"><summary>Operaciones</summary><div class="nav-drop"><a href="/">Ingresos y gastos</a><a href="/admin/transferencias">Transferencias</a><a href="/admin/movimientos_ahorro">Movimientos de ahorro</a><a href="/comprobantes">Comprobantes</a></div></details><details class="nav-group"><summary>Planificación</summary><div class="nav-drop"><a href="/admin/presupuestos">Presupuestos</a><a href="/admin/metas_ahorro">Metas de ahorro</a><a href="/admin/alertas">Alertas</a></div></details><details class="nav-group"><summary>Catálogos</summary><div class="nav-drop"><a href="/admin/cuentas">Cuentas</a><a href="/admin/categorias">Categorías</a><a href="/admin/monedas">Monedas</a></div></details><details class="nav-group"><summary>Seguridad</summary><div class="nav-drop">{security_links}<a href="/admin/cambiar-clave">Cambiar contraseña</a></div></details></nav>{profile_bar}<section class="hero"><div><p class="eyebrow">PANEL FINANCIERO</p><h1>Un panorama claro de tu dinero.</h1><p>Movimientos, presupuestos y alertas en una sola página. {e(subtitle)}</p></div><span class="hero-art" aria-hidden="true">↗</span></section>{content}</main>
+<main class="shell"><nav class="main-nav" aria-label="Menú principal"><a class="nav-home" href="/">⌂ Resumen</a><details class="nav-group"><summary>Operaciones</summary><div class="nav-drop"><a href="/">Ingresos y gastos</a><a href="/historial">Historial y búsqueda</a><a href="/admin/movimientos_recurrentes">Movimientos recurrentes</a><a href="/admin/transferencias">Transferencias</a><a href="/admin/movimientos_ahorro">Movimientos de ahorro</a><a href="/comprobantes">Comprobantes</a></div></details><details class="nav-group"><summary>Planificación</summary><div class="nav-drop"><a href="/admin/presupuestos">Presupuestos</a><a href="/admin/metas_ahorro">Metas de ahorro</a><a href="/admin/alertas">Alertas</a><a href="/reportes/anual">Reporte anual</a></div></details><details class="nav-group"><summary>Catálogos</summary><div class="nav-drop"><a href="/admin/cuentas">Cuentas</a><a href="/admin/categorias">Categorías</a><a href="/admin/monedas">Monedas</a></div></details><details class="nav-group"><summary>Seguridad</summary><div class="nav-drop">{security_links}<a href="/admin/cambiar-clave">Cambiar contraseña</a></div></details></nav>{profile_bar}<section class="hero"><div><p class="eyebrow">PANEL FINANCIERO</p><h1>Un panorama claro de tu dinero.</h1><p>Movimientos, presupuestos y alertas en una sola página. {e(subtitle)}</p></div><span class="hero-art" aria-hidden="true">↗</span></section>{content}</main>
 <footer class="shell footer">Datos de demostración ficticios · Sin cuentas reales · UNA · II-2026</footer>
 <script>
-const tipo = document.getElementById('tipo'); const categoria = document.getElementById('id_categoria');
-function filtrar(){{if(!tipo||!categoria)return; const all=[...categoria.options];
- let visible=all.filter(o=>o.dataset.tipo===tipo.value); for(const o of all)o.hidden=o.dataset.tipo!==tipo.value;
+// Categorías según el tipo elegido (botones Gasto / Ingreso del formulario de movimiento).
+const tipos=[...document.querySelectorAll('input[name="tipo"][data-filtra-categoria]')]; const categoria = document.getElementById('id_categoria');
+function filtrar(){{const elegido=tipos.find(t=>t.checked); if(elegido&&elegido.form)elegido.form.dataset.tipo=elegido.value; if(!elegido||!categoria)return; const all=[...categoria.options];
+ let visible=all.filter(o=>o.dataset.tipo===elegido.value); for(const o of all)o.hidden=o.dataset.tipo!==elegido.value;
  if(!visible.includes(categoria.selectedOptions[0])&&visible.length)categoria.value=visible[0].value;}}
-if(tipo){{tipo.addEventListener('change',filtrar);filtrar();}}
+for(const t of tipos){{t.addEventListener('change',filtrar);t.form.addEventListener('reset',()=>setTimeout(filtrar));}}
+filtrar();
+// Indicador deslizante en selectores segmentados y pestañas. Solo presentación: no cambia qué se envía.
+for(const g of document.querySelectorAll('.segmented,.profile-tabs')){{
+  const thumb=document.createElement('span');thumb.className='seg-thumb';thumb.setAttribute('aria-hidden','true');
+  g.prepend(thumb);g.classList.add('con-indicador');
+  const activo=()=>g.classList.contains('segmented')?g.querySelector('input:checked+label'):g.querySelector('[aria-selected="true"]');
+  const mover=animar=>{{const a=activo();if(!a||!a.offsetWidth){{thumb.style.opacity='0';return;}}
+    if(!animar)thumb.classList.add('sin-transicion');
+    thumb.style.opacity='1';thumb.style.width=a.offsetWidth+'px';thumb.style.height=a.offsetHeight+'px';
+    thumb.style.transform='translate('+a.offsetLeft+'px,'+a.offsetTop+'px)';
+    const entrada=a.previousElementSibling;thumb.dataset.valor=(entrada&&entrada.tagName==='INPUT'?entrada.value:a.dataset.group)||'';
+    if(!animar){{void thumb.offsetWidth;thumb.classList.remove('sin-transicion');}}}};
+  g.addEventListener('change',()=>mover(true));
+  new MutationObserver(()=>mover(true)).observe(g,{{subtree:true,attributes:true,attributeFilter:['aria-selected']}});
+  const f=g.closest('form');if(f)f.addEventListener('reset',()=>setTimeout(()=>mover(true)));
+  if(window.ResizeObserver)new ResizeObserver(()=>mover(false)).observe(g);
+  mover(false);
+}}
+// Atajos de fecha: solo rellenan el campo; el servidor valida la fecha igual que antes.
+const isoLocal=d=>{{const c=new Date(d);c.setMinutes(c.getMinutes()-c.getTimezoneOffset());return c.toISOString().slice(0,10);}};
+for(const b of document.querySelectorAll('[data-fecha][data-objetivo]'))b.addEventListener('click',()=>{{const d=new Date();
+ if(b.dataset.fecha==='ayer')d.setDate(d.getDate()-1); if(b.dataset.fecha==='inicio')d.setDate(1);
+ const campo=document.getElementById(b.dataset.objetivo); if(campo){{campo.value=isoLocal(d);campo.dispatchEvent(new Event('input',{{bubbles:true}}));}}}});
+// Campo numérico con − y +: respeta min y max del propio campo.
+for(const s of document.querySelectorAll('[data-stepper]')){{const campo=s.querySelector('input');
+ for(const b of s.querySelectorAll('button[data-paso]'))b.addEventListener('click',()=>{{const min=Number(campo.min||-Infinity),max=Number(campo.max||Infinity);
+  const v=Math.min(max,Math.max(min,(Number(campo.value)||0)+Number(b.dataset.paso)));campo.value=v;campo.dispatchEvent(new Event('input',{{bubbles:true}}));}});}}
+// Contador de caracteres.
+for(const c of document.querySelectorAll('[data-contador]')){{const out=document.getElementById(c.dataset.contador);const max=c.maxLength;
+ const upd=()=>{{if(out)out.textContent=c.value.length+' / '+max;}};c.addEventListener('input',upd);if(c.form)c.form.addEventListener('reset',()=>setTimeout(upd));}}
 // Impide dobles envíos por clics repetidos; no realiza reintentos automáticos.
 for(const form of document.querySelectorAll('form[method="post"]')){{
   form.addEventListener('submit',ev=>{{
@@ -293,12 +324,19 @@ for(const g of grupos){{
 }}
 document.addEventListener('click',ev=>{{for(const g of grupos)if(g.open&&!g.contains(ev.target))g.open=false;}});
 document.addEventListener('keydown',ev=>{{if(ev.key==='Escape')for(const g of grupos)g.open=false;}});
-// Iluminación que sigue al puntero en las superficies Liquid Glass.
+// Iluminación que sigue al puntero: paneles, tarjetas y botones. Un solo listener delegado, a lo sumo una vez por cuadro.
+// Se excluyen los botones de controles compuestos y todo lo del menú desplegable (posición absoluta).
 if(finHover.matches&&!window.matchMedia('(prefers-reduced-motion: reduce)').matches){{
-  for(const s of document.querySelectorAll('.main-nav,.panel,.metric,.hero,.lg-card')){{
+  const brillo='.main-nav,.panel,.metric,.hero,.lg-card,.table-panel,.btn,.primary,.secondary,.quick-dates button,.form-actions button';
+  for(const s of document.querySelectorAll(brillo)){{
+    if(s.closest('.nav-drop,.stepper,.session-logout'))continue;
     s.classList.add('glow-track');
-    s.addEventListener('pointermove',ev=>{{const r=s.getBoundingClientRect();s.style.setProperty('--gx',(ev.clientX-r.left)+'px');s.style.setProperty('--gy',(ev.clientY-r.top)+'px');}});
   }}
+  let ultimo=null,pendiente=false;
+  document.addEventListener('pointermove',ev=>{{ultimo=ev;if(pendiente)return;pendiente=true;
+    requestAnimationFrame(()=>{{pendiente=false;const t=ultimo.target;let el=t&&t.closest?t.closest('.glow-track'):null;
+      while(el){{const r=el.getBoundingClientRect();el.style.setProperty('--gx',(ultimo.clientX-r.left)+'px');el.style.setProperty('--gy',(ultimo.clientY-r.top)+'px');
+        el=el.parentElement?el.parentElement.closest('.glow-track'):null;}}}});}},{{passive:true}});
 }}
 </script></body></html>'''
     if guest:
@@ -329,7 +367,12 @@ def dashboard_page(query: dict) -> str:
     categories, accounts = data['categories'], data['accounts']
     with db.connect() as c:
         can_manage=bool(profiles.access(c)['es_propietario'])
-        account_currency = {str(r['id_cuenta']): r['codigo_iso'] for r in c.execute('SELECT a.id_cuenta,m.codigo_iso FROM cuentas a JOIN monedas m ON m.id_moneda=a.id_moneda WHERE a.id_perfil=current_profile_id()')}
+        account_rows = c.execute('SELECT a.id_cuenta,m.codigo_iso,m.simbolo FROM cuentas a JOIN monedas m ON m.id_moneda=a.id_moneda WHERE a.id_perfil=current_profile_id()').fetchall()
+        account_currency = {str(r['id_cuenta']): r['codigo_iso'] for r in account_rows}
+        # Solo lectura: moneda y saldo de cada cuenta para el prefijo del monto y la ayuda del formulario.
+        account_info = {str(r['id_cuenta']): {'codigo': r['codigo_iso'], 'simbolo': r['simbolo'],
+                                              'saldo': finance.format_amount(finance.account_balance(c, r['id_cuenta']), r['simbolo'])}
+                        for r in account_rows}
     if movement_edit and not can_manage:
         raise profiles.AccessDenied('Solo el propietario puede editar movimientos existentes.')
 
@@ -339,6 +382,8 @@ def dashboard_page(query: dict) -> str:
     amount = f"{movement_edit['monto_centimos']/100:.2f}" if movement_edit else ''
     tx_date = movement_edit['fecha'] if movement_edit else today.isoformat()
     currency_selected = account_currency.get(str(acc_selected), 'CRC')
+    selected_info = account_info.get(str(acc_selected), {'simbolo': '', 'saldo': '—'})
+    account_json = json.dumps(account_info).replace('</', '<\\/')
     description = movement_edit['descripcion'] if movement_edit else ''
     action = f'/movimientos/{movement_edit["id_movimiento"]}/actualizar' if movement_edit else '/movimientos'
     budget_html = ''
@@ -370,29 +415,42 @@ def dashboard_page(query: dict) -> str:
     with db.connect() as c:
         active=extension.current_profile_id(c)
         alert_count=c.execute('SELECT COUNT(*) FROM alertas WHERE id_perfil=? AND leida=0',(active,)).fetchone()[0]
+        recurring_count=len(recurrentes.pending(c))
+    start_day=f'{year:04d}-{month:02d}-01'
+    end_day=(date(year+(month==12),month%12+1,1)-timedelta(days=1)).isoformat()
+    recurring_strip=(f'<section class="notice-strip"><span>🔁 <strong>{recurring_count}</strong> movimientos recurrentes pendientes</span><a href="/admin/movimientos_recurrentes">Revisar y generar →</a></section>' if recurring_count else '')
     balances=''.join(f'<tr><td>{e(name)}</td><td>{e(code)}</td><td>{amount/100:,.2f}</td></tr>' for name,code,amount in finance.all_balances())
     content = f'''
     <section class="panel"><h2>Saldos por cuenta</h2><p>Incluye ingresos, gastos, transferencias y ahorros. Cada saldo está en su propia moneda.</p><table><tr><th>Cuenta</th><th>Moneda</th><th>Saldo</th></tr>{balances}</table></section>
-    <section class="notice-strip"><span>🔔 <strong>{alert_count}</strong> alertas pendientes</span><a href="/admin/alertas">Ver alertas →</a></section>
+    <section class="notice-strip"><span>🔔 <strong>{alert_count}</strong> alertas pendientes</span><a href="/admin/alertas">Ver alertas →</a></section>{recurring_strip}
     <form class="period" method="get"><label>Período <input type="month" name="periodo" value="{year:04d}-{month:02d}" aria-label="Mes de consulta" onchange="const a=this.value.split('-');document.getElementById('anio').value=a[0];document.getElementById('mes').value=Number(a[1]);this.form.submit()"></label>
     <input type="hidden" id="anio" name="anio" value="{year}"><input type="hidden" id="mes" name="mes" value="{month}"><button class="secondary" type="submit">Actualizar</button></form>
     {metrics_html}
-    <section class="columns"><article class="panel"><div class="panel-title"><div><p class="eyebrow">REGISTRO</p><h2>{'Editar movimiento' if movement_edit else 'Nuevo movimiento'}</h2></div>{'<a href="/">Cancelar</a>' if movement_edit else ''}</div>
-    <form action="{action}" method="post" class="form-grid"><label>Tipo<select name="tipo" id="tipo"><option value="gasto" {'selected' if kind=='gasto' else ''}>Gasto</option><option value="ingreso" {'selected' if kind=='ingreso' else ''}>Ingreso</option></select></label>
-    <label>Monto (<span id="moneda-monto">{e(currency_selected)}</span>)<input name="monto" type="number" min="0.01" step="0.01" required value="{e(amount)}" placeholder="25000.00"></label>
-    <label>Categoría<select name="id_categoria" id="id_categoria" required>{option_rows(categories, cat_selected)}</select></label>
-    <label>Cuenta<select name="id_cuenta" id="cuenta-movimiento" required>{option_rows(accounts, acc_selected)}</select></label>
-    <p class="help span2">El ingreso o gasto se registra directamente en la moneda de la cuenta, sin conversión.</p>
-    <script>const monedasCuentas={__import__('json').dumps(account_currency)};const cuentaMov=document.getElementById('cuenta-movimiento');const cambiarMoneda=()=>document.getElementById('moneda-monto').textContent=monedasCuentas[cuentaMov.value]||'—';cuentaMov.addEventListener('change',cambiarMoneda);cambiarMoneda();</script>
-    <label>Fecha<input name="fecha" type="date" required value="{e(tx_date)}"></label>
-    <label>Descripción<input name="descripcion" maxlength="160" value="{e(description)}" placeholder="Ej. Compras del supermercado"></label>
-    <button type="submit" class="primary span2">{'Guardar cambios' if movement_edit else 'Agregar movimiento'}</button></form></article>
+    <section class="columns"><article class="panel"><div class="panel-title"><div><p class="eyebrow">REGISTRO</p><h2>{'Editar movimiento' if movement_edit else 'Nuevo movimiento'}</h2></div><a href="/historial">Ver historial</a></div>
+    <form action="{action}" method="post" class="form-card"><div class="form-grid">
+    <fieldset class="field span2"><legend class="field-label">Tipo de movimiento</legend><div class="segmented">
+      <input type="radio" name="tipo" id="tipo-gasto" value="gasto" data-filtra-categoria {'checked' if kind=='gasto' else ''}><label for="tipo-gasto">− Gasto</label>
+      <input type="radio" name="tipo" id="tipo-ingreso" value="ingreso" data-filtra-categoria {'checked' if kind=='ingreso' else ''}><label for="tipo-ingreso">+ Ingreso</label></div></fieldset>
+    <div class="field span2"><label for="monto-movimiento">Monto</label>
+      <div class="input-group input-money lg"><span class="addon prefix" id="simbolo-monto" aria-hidden="true">{e(selected_info['simbolo'])}</span><input id="monto-movimiento" name="monto" type="number" inputmode="decimal" min="0.01" step="0.01" required value="{e(amount)}" placeholder="0.00" aria-describedby="monto-ayuda"><span class="addon suffix" id="moneda-monto">{e(currency_selected)}</span></div>
+      <p class="field-hint" id="monto-ayuda">Se registra en la moneda de la cuenta, sin conversión. Máximo dos decimales.</p></div>
+    <div class="field"><label for="id_categoria">Categoría</label><select name="id_categoria" id="id_categoria" required>{option_rows(categories, cat_selected)}</select></div>
+    <div class="field"><label for="cuenta-movimiento">Cuenta</label><select name="id_cuenta" id="cuenta-movimiento" required aria-describedby="saldo-cuenta">{option_rows(accounts, acc_selected)}</select>
+      <p class="field-hint" id="saldo-cuenta">Saldo disponible: <span id="saldo-valor">{e(selected_info['saldo'])}</span></p></div>
+    <div class="field"><label for="fecha-movimiento">Fecha</label><input id="fecha-movimiento" name="fecha" type="date" required value="{e(tx_date)}"></div>
+    <div class="field"><span class="field-label" id="atajos-fecha">Atajos de fecha</span><div class="quick-dates" role="group" aria-labelledby="atajos-fecha"><button type="button" data-fecha="hoy" data-objetivo="fecha-movimiento">Hoy</button><button type="button" data-fecha="ayer" data-objetivo="fecha-movimiento">Ayer</button><button type="button" data-fecha="inicio" data-objetivo="fecha-movimiento">Inicio de mes</button></div></div>
+    <div class="field span2"><label for="descripcion-movimiento">Descripción <span class="optional">· Opcional</span></label><input id="descripcion-movimiento" name="descripcion" maxlength="160" value="{e(description)}" placeholder="Ej. Compras del supermercado" data-contador="contador-descripcion">
+      <p class="field-hint"><span>Si queda vacía, se muestra la categoría.</span><span id="contador-descripcion" aria-live="polite">{len(description)} / 160</span></p></div>
+    </div>
+    <div class="form-actions">{'<a class="btn btn-neutral" href="/">Cancelar</a>' if movement_edit else '<button class="btn btn-ghost" type="reset">Limpiar</button>'}<button type="submit" class="btn btn-primary">{'Guardar cambios' if movement_edit else 'Agregar movimiento'}</button></div>
+    <script>const cuentasInfo={account_json};const cuentaMov=document.getElementById('cuenta-movimiento');const cambiarMoneda=()=>{{const i=cuentasInfo[cuentaMov.value]||{{}};document.getElementById('moneda-monto').textContent=i.codigo||'—';document.getElementById('simbolo-monto').textContent=i.simbolo||'';document.getElementById('saldo-valor').textContent=i.saldo||'—';}};cuentaMov.addEventListener('change',cambiarMoneda);cuentaMov.form.addEventListener('reset',()=>setTimeout(cambiarMoneda));cambiarMoneda();</script>
+    </form></article>
     <article class="panel"><div class="panel-title"><div><p class="eyebrow">CONTROL MENSUAL</p><h2>Presupuestos y alertas</h2></div></div>{budget_html}
     <div class="subform"><h3>Crear o actualizar límite</h3><form method="post" action="/presupuestos" class="form-grid"><label class="span2">Categoría<select name="id_categoria" required>{option_rows(categories, None, 'gasto')}</select></label>
     <label>Monto máximo (moneda elegida)<input name="monto_limite" type="number" min="0.01" step="0.01" placeholder="50000.00" required></label>
     <label>Moneda del presupuesto<select name="id_moneda">{extension.currency_options()}</select></label><input type="hidden" name="anio" value="{year}"><input type="hidden" name="mes" value="{month}"><button class="primary" type="submit">Guardar límite</button></form>
     <p class="help">Una alerta aparece al alcanzar el 80 % del presupuesto de una categoría.</p></div></article></section>
-    <section class="panel table-panel"><div class="panel-title"><div><p class="eyebrow">HISTORIAL</p><h2>Movimientos del período</h2></div><span class="pill neutral">Últimos 100</span></div>
+    <section class="panel table-panel"><div class="panel-title"><div><p class="eyebrow">HISTORIAL</p><h2>Movimientos del período</h2></div><div class="row-actions"><span class="pill neutral">Últimos 100</span><a class="btn btn-neutral btn-sm" href="/historial?desde={start_day}&amp;hasta={end_day}">Ver historial completo →</a></div></div>
     <div class="table-scroll"><table><thead><tr><th>Descripción / categoría</th><th>Fecha</th><th>Monto</th><th>Acciones</th></tr></thead><tbody>{rows}</tbody></table></div></section>
     <section class="foot-note">Prototipo académico local · No exponer a Internet.</section>
     '''
@@ -450,6 +508,29 @@ class Handler(BaseHTTPRequestHandler):
             self.send_header('Retry-After', '30')
         self.end_headers()
         self.wfile.write(body)
+
+    def serve_report(self, route, query):
+        """Historial, reporte anual y sus CSV. Un filtro inválido muestra su motivo (400)."""
+        try:
+            if route == '/historial.csv':
+                return self.respond(200, reportes.history_csv(query), 'text/csv; charset=utf-8',
+                                    headers={'Content-Disposition': 'attachment; filename="movimientos.csv"'})
+            if route == '/reportes/anual.csv':
+                year = reportes.parse_year(query)
+                return self.respond(200, reportes.annual_csv(query), 'text/csv; charset=utf-8',
+                                    headers={'Content-Disposition': f'attachment; filename="reporte_anual_{year}.csv"'})
+            if route == '/reportes/anual':
+                return self.respond(200, reportes.annual_page(query).encode('utf-8'))
+            notice = ''
+            if 'generados' in query:
+                try: created, remaining = int(query['generados'][0]), int(query.get('restantes', ['0'])[0])
+                except ValueError: created, remaining = 0, 0
+                notice = f'Se generaron {created} movimientos recurrentes.' + (f' Quedan {remaining} pendientes: vuelva a generar.' if remaining else '')
+                query = {}
+            return self.respond(200, reportes.history_page(query, notice).encode('utf-8'))
+        except ValueError as exc:
+            back = '/reportes/anual' if route.startswith('/reportes') else '/historial'
+            return self.respond(400, layout(f'<section class="panel"><h2>Revise los filtros</h2><p>{e(exc)}</p><p><a href="{back}">Volver</a></p></section>').encode('utf-8'))
 
     def redirect(self) -> None:
         self.send_response(HTTPStatus.SEE_OTHER)
@@ -567,6 +648,8 @@ class Handler(BaseHTTPRequestHandler):
                 ver = connection.execute('SELECT sqlite_version()').fetchone()[0]
                 tables = connection.execute('SELECT COUNT(*) FROM sqlite_master WHERE type="table"').fetchone()[0]
             return self.respond(200, json.dumps({'status':'ok','motor':'SQLite','version':ver,'tablas':tables}).encode(), 'application/json')
+        if route in ('/historial', '/historial.csv', '/reportes/anual', '/reportes/anual.csv'):
+            return self.serve_report(route, parse_qs(path.query))
         if m := re.fullmatch(r'/admin/([a-z_]+)', route):
             if m.group(1)=='roles': return self.respond(404,error_page('Página no disponible','El rol se administra directamente en cada usuario.'))
             edit_id=int(parse_qs(path.query).get('editar',['0'])[0]) or None
@@ -677,6 +760,10 @@ class Handler(BaseHTTPRequestHandler):
             if m := re.fullmatch(r'/perfiles/(\d+)/integrantes/(\d+)/eliminar',path):
                 profiles.remove_member(int(m[1]),int(m[2]))
                 return self.redirect_to('/perfiles')
+            if path == '/recurrentes/generar':
+                created, remaining = recurrentes.generate()
+                extension.refresh_alerts()
+                return self.redirect_to(f'/historial?generados={created}&restantes={remaining}')
             if m := re.fullmatch(r'/alertas/(\d+)/leida',path):
                 with db.connect() as c:
                     profiles.access(c)

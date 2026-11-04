@@ -182,7 +182,7 @@ def delete(pid):
             raise ValueError('Conserve al menos un perfil propio.')
         # Los perfiles se eliminan solo si no tienen información financiera.
         if any(c.execute(f'SELECT 1 FROM {t} WHERE id_perfil=? LIMIT 1',(pid,)).fetchone()
-               for t in ('movimientos','presupuestos','metas_ahorro','transferencias','alertas')):
+               for t in ('movimientos','presupuestos','metas_ahorro','transferencias','alertas','movimientos_recurrentes')):
             raise ValueError('No puede eliminar un perfil que contiene información financiera.')
         if c.execute('SELECT 1 FROM cuentas WHERE id_perfil=? AND saldo_inicial_centimos<>0',(pid,)).fetchone():
             raise ValueError('No puede eliminar un perfil con saldos iniciales.')
@@ -242,12 +242,18 @@ def selection_page():
           const form=document.getElementById('profile-selection'), enter=document.getElementById('enter-profile');
           const tabs=[...document.querySelectorAll('.profile-tabs [role="tab"]')];
           function update(){{enter.disabled=!form.querySelector('input[name="id_perfil"]:checked');}}
+          let current=null;
           function select(group){{
+            const order=tabs.map(tab=>tab.dataset.group), entering=current!==null&&current!==group;
+            const direction=order.indexOf(group)>order.indexOf(current)?'entra-der':'entra-izq';
             tabs.forEach(tab=>tab.setAttribute('aria-selected',String(tab.dataset.group===group)));
             form.querySelectorAll('.profile-group').forEach(panel=>{{
               panel.hidden=panel.dataset.group!==group;
               panel.querySelectorAll('input').forEach(input=>{{input.disabled=panel.hidden;if(panel.hidden)input.checked=false;}});
+              panel.classList.remove('entra-der','entra-izq');
+              if(entering&&!panel.hidden){{void panel.offsetWidth;panel.classList.add(direction);}}
             }});
+            current=group;
             update();
           }}
           tabs.forEach((tab,index)=>{{tab.addEventListener('click',()=>select(tab.dataset.group));

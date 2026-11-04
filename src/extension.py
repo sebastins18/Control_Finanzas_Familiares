@@ -9,7 +9,7 @@ from email.parser import BytesParser
 from email.policy import default
 from datetime import date
 from html import escape
-from src import db, finance
+from src import db, finance, recurrentes
 
 SCHEMA = '''
 CREATE TABLE IF NOT EXISTS monedas (id_moneda INTEGER PRIMARY KEY, codigo_iso TEXT NOT NULL UNIQUE, nombre TEXT NOT NULL, simbolo TEXT NOT NULL);
@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS alertas (id_alerta INTEGER PRIMARY KEY, id_presupuest
 CREATE TABLE IF NOT EXISTS comprobantes (id_comprobante INTEGER PRIMARY KEY, id_movimiento INTEGER NOT NULL REFERENCES movimientos(id_movimiento), ruta_archivo TEXT NOT NULL, tipo_mime TEXT NOT NULL, fecha_subida TEXT NOT NULL DEFAULT (datetime('now')));
 '''
 
-SCHEMA = finance.QUOTE_SCHEMA + ';\n' + SCHEMA
+SCHEMA = finance.QUOTE_SCHEMA + ';\n' + SCHEMA + recurrentes.SCHEMA
 
 
 def init():
@@ -57,6 +57,7 @@ CONFIG = {
  'transferencias': ('Transferencias','transferencias','id_transferencia',[('id_cuenta_origen','Cuenta origen','ref:cuentas'),('id_cuenta_destino','Cuenta destino','ref:cuentas'),('monto_origen_centimos','Monto origen','money'),('monto_destino_centimos','Monto destino','money'),('id_tipo_cambio','Tipo de cambio (opcional)','optional:tipos_cambio'),('fecha','Fecha','date'),('descripcion','Descripción','text')]),
  'alertas': ('Alertas','alertas','id_alerta',[('id_presupuesto','Presupuesto','ref:presupuestos'),('umbral','Umbral (%)','integer'),('fecha','Fecha','date'),('leida','Leída','boolean')]),
  'movimientos_ahorro': ('Movimientos de ahorro','movimientos_ahorro','id_movimiento_ahorro',[('id_meta','Meta','ref:metas_ahorro'),('id_cuenta','Cuenta','ref:cuentas'),('tipo','Tipo','choice:aporte,retiro'),('monto_centimos','Monto','money'),('fecha','Fecha','date')]),
+ 'movimientos_recurrentes': ('Movimientos recurrentes','movimientos_recurrentes','id_recurrente',[('descripcion','Descripción','text'),('tipo','Tipo','choice:ingreso,gasto'),('id_categoria','Categoría','ref:categorias'),('id_cuenta','Cuenta','ref:cuentas'),('monto_centimos','Monto','money'),('dia_mes','Día del mes (1-28)','integer'),('fecha_inicio','Desde','date'),('activo','Activo','boolean')]),
 }
 
 MONTH_NAMES=('Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre')
@@ -85,7 +86,7 @@ def all_rows(c, table):
             FROM tipos_cambio q JOIN monedas b ON b.id_moneda=q.id_moneda_base
             JOIN monedas m ON m.id_moneda=q.id_moneda_cotizada
             WHERE q.id_perfil=? ORDER BY q.id_tipo_cambio DESC''',(current_profile_id(c),)).fetchall()
-    owner=f' WHERE id_perfil={current_profile_id(c)}' if table in ('categorias','cuentas','metas_ahorro','transferencias','presupuestos','alertas','tipos_cambio') else ''
+    owner=f' WHERE id_perfil={current_profile_id(c)}' if table in ('categorias','cuentas','metas_ahorro','transferencias','presupuestos','alertas','tipos_cambio','movimientos_recurrentes') else ''
     if table=='movimientos_ahorro':
         owner=f' WHERE id_meta IN (SELECT id_meta FROM metas_ahorro WHERE id_perfil={current_profile_id(c)})'
     return c.execute(f'SELECT * FROM {table}{owner} ORDER BY 1 DESC').fetchall()
@@ -135,6 +136,9 @@ def save(table, form, item_id=None):
     if table=='cuentas' and values['saldo_inicial_centimos']<0: raise ValueError('Saldo inicial inválido')
     if table=='transferencias':
         if values['id_cuenta_origen']==values['id_cuenta_destino']: raise ValueError('Las cuentas deben ser distintas')
+    if table=='movimientos_recurrentes':
+        if not 1<=values['dia_mes']<=28: raise ValueError('El día del mes debe estar entre 1 y 28 para que exista en todos los meses.')
+        if not '2000-01-01'<=values['fecha_inicio']<='2100-12-31': raise ValueError('La fecha de inicio está fuera de rango.')
     with db.connect() as c:
         if item_id is not None and owned_row(c,table,item_id) is None:
             raise ValueError('Registro no encontrado')
@@ -186,10 +190,12 @@ def save(table, form, item_id=None):
             available=account_balance(c,values['id_cuenta_origen'])
             if old and old['id_cuenta_origen']==values['id_cuenta_origen']: available+=old['monto_origen_centimos']
             if available<values['monto_origen_centimos']: raise ValueError('Fondos insuficientes para transferir')
+        if table=='movimientos_recurrentes':
+            db.validate_category_account(c,values['id_categoria'],values['id_cuenta'],values['tipo'])
         if table=='categorias':
             old=c.execute('SELECT tipo FROM categorias WHERE id_categoria=?',(item_id,)).fetchone() if item_id else None
             if old and old[0]!=values['tipo'] and c.execute('SELECT 1 FROM movimientos WHERE id_categoria=? LIMIT 1',(item_id,)).fetchone(): raise ValueError('No se puede cambiar el tipo de una categoría utilizada')
-        if table in ('categorias','cuentas','metas_ahorro','transferencias','presupuestos','alertas'): values['id_perfil']=current_profile_id(c)
+        if table in ('categorias','cuentas','metas_ahorro','transferencias','presupuestos','alertas','movimientos_recurrentes'): values['id_perfil']=current_profile_id(c)
         if table=='alertas' and item_id is None:
             values['origen']='manual'
         cols=list(values)
@@ -210,6 +216,97 @@ def delete(table,item_id):
         cur=c.execute(f'DELETE FROM {table} WHERE {pk}=?',(item_id,))
         if not cur.rowcount: raise ValueError('Registro no encontrado')
 
+# Formularios agrupados por secciones (el resto usa una sola grilla). Los nombres de campo no cambian.
+FORM_SECTIONS = {
+    'movimientos_recurrentes': [
+        ('Qué se registra', 'Así aparecerá en el historial.', ('descripcion', 'tipo', 'id_categoria')),
+        ('Cuánto y desde dónde', 'En la moneda de la cuenta.', ('monto_centimos', 'id_cuenta')),
+        ('Cuándo', 'Nada se registra solo: usted genera los pendientes.', ('dia_mes', 'fecha_inicio', 'activo')),
+    ],
+}
+FIELD_HINTS = {
+    ('movimientos_recurrentes', 'dia_mes'): 'Entre 1 y 28: existe en todos los meses.',
+    ('movimientos_recurrentes', 'descripcion'): 'Aparece en cada movimiento generado.',
+    ('transferencias', 'monto_origen_centimos'): 'En la moneda de la cuenta de origen.',
+    ('alertas', 'umbral'): 'Solo 80 o 100.',
+}
+CHOICE_LABELS = {'ingreso': '+ Ingreso', 'gasto': '− Gasto', 'aporte': '+ Aporte', 'retiro': '− Retiro'}
+SWITCH_TEXT = {'activo': 'Plantilla activa', 'leida': 'Marcada como leída'}
+
+
+def render_field(table, key, label, kind, value, item, refs):
+    """HTML de un campo del mantenimiento genérico. Mantiene el `name` y los valores que espera save()."""
+    fid = f'f-{key}'
+    hint_text = FIELD_HINTS.get((table, key), '')
+    hint = f'<p class="field-hint" id="{fid}-ayuda">{h(hint_text)}</p>' if hint_text else ''
+    described = f' aria-describedby="{fid}-ayuda"' if hint_text else ''
+    optional = kind.startswith('optional:')
+    optional_tag = ' <span class="optional">· Opcional</span>' if optional else ''
+    label_html = f'<label for="{fid}">{h(label)}{optional_tag}</label>'
+    if kind == 'boolean':
+        selected_value = int(value) if item else (1 if key == 'activo' else 0)
+        # El checkbox va antes del oculto: con la casilla marcada el primer valor es 1; sin marcar solo llega 0.
+        return (f'<div class="field"><span class="field-label" id="{fid}-titulo">{h(label)}</span>'
+                f'<label class="switch"><input type="checkbox" id="{fid}" name="{key}" value="1" aria-labelledby="{fid}-titulo"{" checked" if selected_value else ""}>'
+                f'<span class="switch-ui" aria-hidden="true"></span><span>{h(SWITCH_TEXT.get(key, label))}</span></label>'
+                f'<input type="hidden" name="{key}" value="0">{hint}</div>')
+    if table == 'presupuestos' and key == 'mes':
+        selected_month = int(value) if item else date.today().month
+        options = ''.join(f'<option value="{n}" {"selected" if n == selected_month else ""}>{name}</option>' for n, name in enumerate(MONTH_NAMES, 1))
+        return f'<div class="field">{label_html}<select id="{fid}" name="mes" required>{options}</select>{hint}</div>'
+    if kind == 'checkbox':
+        return (f'<div class="field"><label class="switch"><input type="checkbox" id="{fid}" name="{key}" value="1"{" checked" if value else ""}>'
+                f'<span class="switch-ui" aria-hidden="true"></span><span>{h(label)}</span></label>{hint}</div>')
+    if kind.startswith('choice:'):
+        choices = kind[7:].split(',')
+        current = str(value) if item and str(value) in choices else choices[0]
+        if len(choices) <= 3:
+            radios = ''.join(f'<input type="radio" id="{fid}-{c}" name="{key}" value="{h(c)}" required{" checked" if c == current else ""}>'
+                             f'<label for="{fid}-{c}">{h(CHOICE_LABELS.get(c, c.capitalize()))}</label>' for c in choices)
+            return f'<fieldset class="field"><legend class="field-label">{h(label)}</legend><div class="segmented">{radios}</div>{hint}</fieldset>'
+        options = ''.join(f'<option value="{h(c)}" {"selected" if c == current else ""}>{h(c)}</option>' for c in choices)
+        return f'<div class="field">{label_html}<select id="{fid}" name="{key}" required{described}>{options}</select>{hint}</div>'
+    if kind.startswith(('ref:', 'optional:')):
+        ref_table = kind.split(':', 1)[1]
+        options = [(r[CONFIG[ref_table][2]], label_for(ref_table, r)) for r in refs[ref_table]]
+        opt = '<option value="">Seleccionar</option>' if optional else ''
+        opt += ''.join(f'<option value="{h(v)}" {"selected" if str(v) == str(value) else ""}>{h(n)}</option>' for v, n in options)
+        return f'<div class="field">{label_html}<select id="{fid}" name="{key}"{"" if optional else " required"}{described}>{opt}</select>{hint}</div>'
+    if kind == 'money':
+        shown = f'{value/100:.2f}' if item else ''
+        return (f'<div class="field">{label_html}<div class="input-group input-money"><input id="{fid}" name="{key}" type="number" inputmode="decimal" '
+                f'min="0" step="0.01" placeholder="0.00" value="{h(shown)}" required{described}></div>{hint}</div>')
+    if kind == 'integer' and table == 'movimientos_recurrentes' and key == 'dia_mes':
+        shown = value if item else 1
+        return (f'<div class="field">{label_html}<div class="input-group stepper" data-stepper>'
+                f'<button type="button" data-paso="-1" aria-label="Restar un día">−</button>'
+                f'<input id="{fid}" name="{key}" type="number" inputmode="numeric" min="1" max="28" step="1" value="{h(shown)}" required{described}>'
+                f'<button type="button" data-paso="1" aria-label="Sumar un día">+</button></div>{hint}</div>')
+    if kind == 'integer':
+        return f'<div class="field">{label_html}<input id="{fid}" name="{key}" type="number" step="1" value="{h(value)}" required{described}>{hint}</div>'
+    if kind == 'date':
+        shown = value if item else date.today().isoformat()
+        return f'<div class="field">{label_html}<input id="{fid}" name="{key}" type="date" value="{h(shown)}" required{described}>{hint}</div>'
+    counter = ''
+    extra = ''
+    if key == 'descripcion':
+        counter = f'<p class="field-hint"><span>{h(hint_text)}</span><span id="{fid}-contador" aria-live="polite">{len(str(value))} / 160</span></p>'
+        extra = f' data-contador="{fid}-contador"'
+        hint = ''
+    return (f'<div class="field{" span2" if key == "descripcion" else ""}">{label_html}<input id="{fid}" name="{key}" type="text" maxlength="160" '
+            f'value="{h(value)}" required{described}{extra}>{hint}{counter}</div>')
+
+
+RECURRING_SUMMARY = '''<div class="form-summary" role="status" aria-live="polite"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2d5f9f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 2l4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg><span id="resumen-recurrente">Complete los campos para ver el resumen.</span></div>
+<script>(()=>{const f=document.getElementById('f-dia_mes').form,out=document.getElementById('resumen-recurrente');
+const txt=s=>{const e=f.querySelector(s);return e&&e.selectedOptions&&e.selectedOptions[0]?e.selectedOptions[0].textContent:'';};
+const upd=()=>{const tipo=(f.querySelector('input[name="tipo"]:checked')||{}).value,monto=f.elements.monto_centimos.value,dia=f.elements.dia_mes.value,desde=f.elements.fecha_inicio.value,activo=f.querySelector('input[type=checkbox][name="activo"]');
+if(!monto||!dia||!desde){out.textContent='Complete los campos para ver el resumen.';return;}
+const n=Number(monto).toLocaleString('es-CR',{minimumFractionDigits:2,maximumFractionDigits:2});
+out.textContent=(activo&&!activo.checked?'Pausada: no generará movimientos. Al activarla, registrará ':'Se registrará ')+'un '+(tipo==='ingreso'?'ingreso':'gasto')+' de '+n+' el día '+dia+' de cada mes desde el '+desde+', en '+txt('[name="id_cuenta"]')+' ('+txt('[name="id_categoria"]')+').';};
+f.addEventListener('input',upd);f.addEventListener('change',upd);upd();})();</script>'''
+
+
 def page(table, edit_id=None):
     if table not in CONFIG: raise ValueError('Mantenimiento no disponible')
     title,_,pk,fields=CONFIG[table]
@@ -226,39 +323,14 @@ def page(table, edit_id=None):
         refs={t:all_rows(c,t) for _,_,kind in fields if (kind.startswith('ref:') or kind.startswith('optional:')) for t in [kind.split(':',1)[1]]}
     from src.app import layout
     inputs=''
+    field_html={}
     for key,label,kind in fields:
         if table=='transferencias' and key in ('monto_destino_centimos','id_tipo_cambio'):
             continue
         value=item[key] if item else ''
-        if kind=='boolean':
-            selected_value=int(value) if item else 0
-            options=''.join(f'<option value="{number}" {"selected" if number==selected_value else ""}>{name}</option>' for number,name in ((0,'No'),(1,'Sí')))
-            inputs+=f'<label>{h(label)}<select name="{key}" required>{options}</select></label>'
-            continue
-        if table=='presupuestos' and key=='mes':
-            months=('Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre')
-            selected_month=int(value) if item else date.today().month
-            options=''.join(f'<option value="{number}" {"selected" if number==selected_month else ""}>{name}</option>' for number,name in enumerate(months,1))
-            inputs+=f'<label>{h(label)}<select name="mes" required>{options}</select></label>'
-            continue
-        if kind=='checkbox':
-            checked=' checked' if value else ''
-            inputs+=f'<label style="display:flex;align-items:center;gap:10px"><input style="width:auto" type="checkbox" name="{key}" value="1"{checked}>{h(label)}</label>'
-            continue
-        if kind=='money' and item: value=f'{value/100:.2f}'
-        if kind.startswith(('ref:','optional:','choice:')):
-            if kind.startswith('choice:'): options=[(v,v) for v in kind[7:].split(',')]
-            else:
-                t=kind.split(':',1)[1]; options=[(r[CONFIG[t][2]],label_for(t,r)) for r in refs[t]]
-            opt='<option value="">Seleccionar</option>' if kind.startswith('optional:') else ''
-            opt+=''.join(f'<option value="{h(v)}" {"selected" if str(v)==str(value) else ""}>{h(n)}</option>' for v,n in options)
-            field=f'<select name="{key}" {"" if kind.startswith("optional:") else "required"}>{opt}</select>'
-        else:
-            typ='date' if kind=='date' else 'number' if kind in ('money','integer') else 'text'
-            step=' step="0.01"' if kind=='money' else ''
-            default=date.today().isoformat() if kind=='date' and not item else value
-            field=f'<input name="{key}" type="{typ}"{step} value="{h(default)}" required>'
-        inputs+=f'<label>{h(label)}{field}</label>'
+        html_field=render_field(table,key,label,kind,value,item,refs)
+        field_html[key]=html_field
+        inputs+=html_field
     action=f'/admin/{table}/{edit_id}/guardar' if item else f'/admin/{table}/guardar'
     headers=''.join(f'<th>{h(label_for_column(table,key,label))}</th>' for key,label,kind in fields)
     trs=''
@@ -325,12 +397,32 @@ def page(table, edit_id=None):
         }
         [origin,dest,amount,quote].forEach(x=>x.addEventListener('input',update));update();''' .replace('ACCOUNT_DATA',json.dumps(account_info))+'</script>'
 
-    form_section=(f'<h3>{"Editar" if item else "Nuevo"} registro</h3><form class="form-grid" method="post" action="{action}">{inputs}<button class="primary" type="submit">Guardar</button></form>' if allow_create else '<p class="muted">Consulta del perfil. Su propietario administra estos registros.</p>')
+    if table in FORM_SECTIONS:
+        groups=''
+        for section_title,section_help,keys in FORM_SECTIONS[table]:
+            body_fields=''.join(field_html[k] for k in keys if k in field_html)
+            if section_title=='Cuándo' and table=='movimientos_recurrentes':
+                body_fields+=f'<div class="span2">{RECURRING_SUMMARY}</div>'
+            sid=f'sec-{len(groups)}'
+            groups+=(f'<section class="form-section" aria-labelledby="{sid}"><div class="form-section-head"><h3 id="{sid}">{h(section_title)}</h3><p>{h(section_help)}</p></div>'
+                     f'<div class="form-grid">{body_fields}</div></section>')
+        form_body=groups
+    else:
+        form_body=f'<div class="form-grid">{inputs}</div>'
+    cancel=f'<a class="btn btn-neutral" href="/admin/{table}">Cancelar</a>' if item else '<button class="btn btn-ghost" type="reset">Limpiar</button>'
+    form_section=(f'<h3>{"Editar" if item else "Nuevo"} registro</h3><form class="form-card" method="post" action="{action}">{form_body}'
+                  f'<div class="form-actions">{cancel}<button class="btn btn-primary" type="submit">Guardar</button></div></form>'
+                  if allow_create else '<p class="muted">Consulta del perfil. Su propietario administra estos registros.</p>')
     if not allow_edit:
         if allow_create:
             form_section='<p class="muted">Puedes consultar y registrar nuevas operaciones. El propietario puede editar o eliminar registros existentes.</p>'+form_section
         else:
             title='Consulta de '+title.lower()
+    if table=='movimientos_recurrentes':
+        with db.connect() as permission_db:
+            from src.profiles import can_write
+            can_generate=can_write(permission_db,'movimientos')
+        form_section=recurrentes.panel_html(can_generate)+'<p class="help">Cada plantilla genera un movimiento por mes en el día indicado, desde la fecha de inicio. Si elimina un movimiento generado, ese mes no se vuelve a crear.</p>'+form_section
     empty_row=f'<tr><td colspan="{len(fields)+1}" class="empty">No hay registros</td></tr>'
     body=f'<section class="panel"><p><a href="/">← Panel principal</a></p><h2>{h(title)}</h2>{form_section}</section><section class="panel table-panel"><h2>Registros</h2><div class="table-scroll"><table class="records"><thead><tr>{headers}<th class="row-actions-head">Acciones</th></tr></thead><tbody>{trs or empty_row}</tbody></table></div></section>'
     if not allow_edit and table!='alertas':

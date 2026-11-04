@@ -44,3 +44,14 @@
 - Actualizados `docs/seguimientos/S3.md` (registro de cambios) y `docs/decisiones.md` (D-011 a D-013).
 - Salidas temporales de arranque añadidas a `.gitignore`.
 
+## v0.4.0 — 03/11/2026 (rama `changes-3-nov`)
+
+- **Integración:** `origin/main` (S3 de Diego Fonseca) fusionado con la rama de trabajo; versiones paralelas conservadas como `*_diego` y decisiones renumeradas (D-018).
+- **Correcciones:** compatibilidad con Python 3.11 (f-string anidada en `extension.page`, fallaba el CI); la prueba S3 de caso normal ya no depende del mes actual.
+- **Historial** (`/historial`): búsqueda y filtros por tipo, categoría, cuenta y fechas, paginación, totales por moneda y exportación CSV (D-019).
+- **Reporte anual** (`/reportes/anual`): totales mensuales por categoría y moneda, con CSV (D-019).
+- **Movimientos recurrentes:** plantillas mensuales y generación explícita e idempotente; tablas nuevas `movimientos_recurrentes` y `recurrentes_generados`, sin cambios en las existentes (D-020).
+- **Formularios rediseñados**, brillo que sigue al puntero en paneles y botones, e indicador animado en selectores y pestañas; mismos nombres y valores enviados al servidor (D-021).
+- **Datos de demostración:** `scripts/demo_temporal.py` crea y borra un perfil DEMO separado.
+- **Pruebas:** 103/103 en Python 3.11 y 3.12 (+18: `test_historial_reportes.py`, `test_formularios_v2.py`).
+- Detalle de uso: [docs/consultas_reportes_recurrentes.md](docs/consultas_reportes_recurrentes.md).

@@ -59,6 +59,9 @@ aceptación pendiente. Puede quitarles el acceso desde esa misma pantalla.
 | Crear o modificar cuentas, categorías, presupuestos y metas | Sí | No |
 | Crear, editar o eliminar alertas manuales | Sí | No |
 | Renombrar el perfil o administrar sus integrantes | Sí | No |
+| Consultar historial, reporte anual y exportar CSV | Sí | Sí |
+| Crear, editar o eliminar plantillas de movimientos recurrentes | Sí | No |
+| Generar los movimientos recurrentes pendientes | Sí | Sí |
 
 Los permisos se comprueban en el servidor, además de ocultar los controles que
 no correspondan. El rol global de administrador gestiona cuentas de acceso y el

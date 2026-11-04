@@ -472,3 +472,137 @@ table.records .row-actions{justify-content:flex-end;flex-wrap:nowrap}
 table.records .row-actions form{display:inline-flex}
 
 
+
+/* ===== Historial, paginación y reporte anual ===== */
+.filters{grid-template-columns:repeat(4,minmax(0,1fr))}
+.filter-actions{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2)}
+.pager{display:flex;align-items:center;justify-content:center;gap:var(--space-3);padding:var(--space-4) 0 0;font-size:13px}
+.num,td.amount{text-align:right;font-variant-numeric:tabular-nums}
+th.num{text-align:right}
+table.annual{min-width:1100px}
+table.annual td,table.annual th{padding:var(--space-2) var(--space-3)}
+table.annual .group-row th{text-align:left;padding-top:var(--space-4)}
+table.annual .subtotal-row td{font-weight:700;border-top:1px solid var(--neutral-edge)}
+@media(max-width:830px){.filters{grid-template-columns:1fr 1fr}}
+@media(max-width:560px){.filters{grid-template-columns:1fr}.filters .span2{grid-column:span 1}}
+
+/* ===== Formularios v2: sistema de campos (ver lienzo "Formularios MisFinanzas") =====
+   Bloque autocontenido: para volver al estado anterior basta con quitarlo. */
+:root{--field-h:44px;--field-radius:10px;--field-border:rgba(20,40,80,.22);--focus-ring:0 0 0 4px rgba(45,95,159,.2);--label:#34445e;--hint:#5b6b82;--error:#9c2f27;--error-border:#b0453b;--surface-2:#f1f4f8;--seg-bg:#eef2f7}
+body:not(.login-body) .form-grid{gap:18px 20px}
+body:not(.login-body) .form-grid label,body:not(.login-body) .field>label,body:not(.login-body) .field-label{font-size:13px;font-weight:650;color:var(--label);gap:6px;letter-spacing:0}
+body:not(.login-body) input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=hidden]),body:not(.login-body) select{min-height:var(--field-h);border-radius:var(--field-radius);font-size:15px;padding:0 12px;box-sizing:border-box}
+body:not(.login-body) select,body:not(.login-body) select:hover,body:not(.login-body) select:focus{-webkit-appearance:none;appearance:none;padding-right:38px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%235b6b82' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
+body:not(.login-body) input:user-invalid,body:not(.login-body) select:user-invalid,body:not(.login-body) [aria-invalid=true]{border-color:var(--error-border);box-shadow:0 0 0 4px rgba(176,69,59,.12)}
+.field{display:flex;flex-direction:column;gap:6px;min-width:0;margin:0;padding:0;border:0}
+.field>legend{padding:0;margin:0 0 6px}
+.field .optional{font-weight:500;color:var(--hint)}
+.field-hint{margin:0;font-size:12px;color:var(--hint);display:flex;justify-content:space-between;gap:12px}
+
+/* Monto con prefijo de moneda y grupos de campos */
+.input-group{display:flex;align-items:stretch;min-height:var(--field-h);border:1px solid var(--field-border);border-radius:var(--field-radius);background:#fff;overflow:hidden;box-shadow:inset 0 1px 2px rgba(20,40,80,.06)}
+.input-group:focus-within{border-color:#2d5f9f;box-shadow:var(--focus-ring)}
+.input-group .addon{display:flex;align-items:center;padding:0 12px;background:var(--surface-2);color:var(--label);font-weight:650;white-space:nowrap}
+.input-group .addon.prefix{border-right:1px solid rgba(20,40,80,.14)}
+.input-group .addon.suffix{background:transparent;color:var(--hint);font-size:12px;font-weight:700;letter-spacing:.06em}
+.input-group .sep{display:flex;align-items:center;color:var(--hint);padding:0 2px}
+body:not(.login-body) .input-group input:not([type=checkbox]):not([type=radio]),body:not(.login-body) .input-group input:hover,body:not(.login-body) .input-group input:focus{border:0;border-radius:0;box-shadow:none;background:transparent;flex:1 1 auto;min-width:0;outline:none}
+body:not(.login-body) .input-group.range input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=hidden]){padding:0 8px;font-size:14px}
+.input-money input{text-align:right;font-variant-numeric:tabular-nums;font-weight:650}
+.input-money.lg{min-height:60px}
+body:not(.login-body) .input-money.lg input{font-size:26px;font-weight:700;letter-spacing:-.02em}
+.input-money.lg .addon.prefix{font-size:20px;padding:0 16px}
+
+/* Selector segmentado (radios reales: envía el mismo valor que el select anterior) */
+.segmented{position:relative;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:4px;padding:4px;min-height:var(--field-h);box-sizing:border-box;background:var(--seg-bg);border-radius:var(--field-radius)}
+body:not(.login-body) .segmented input{position:absolute;opacity:0;width:1px;height:1px;min-height:0;margin:0;padding:0;pointer-events:none}
+body:not(.login-body) .segmented label{display:flex;flex-direction:row;align-items:center;justify-content:center;gap:6px;min-height:34px;padding:0 10px;border-radius:7px;border:1px solid transparent;font-size:14px;font-weight:600;color:var(--label);cursor:pointer;text-align:center}
+body:not(.login-body) .segmented label:hover{background:rgba(255,255,255,.6)}
+body:not(.login-body) .segmented input:checked+label{background:#fff;color:#16407a;font-weight:700;border-color:rgba(45,95,159,.35);box-shadow:0 2px 6px -2px rgba(20,40,80,.25)}
+body:not(.login-body) .segmented input[value=gasto]:checked+label,body:not(.login-body) .segmented input[value=retiro]:checked+label{color:#9c2f27;border-color:rgba(176,69,59,.35)}
+body:not(.login-body) .segmented input[value=ingreso]:checked+label,body:not(.login-body) .segmented input[value=aporte]:checked+label{color:#1d6b5f;border-color:rgba(47,143,131,.4)}
+body:not(.login-body) .segmented input:focus-visible+label{box-shadow:var(--focus-ring)}
+
+/* Interruptor (checkbox real + campo oculto con 0 cuando está apagado) */
+body:not(.login-body) .switch{position:relative;display:inline-flex;flex-direction:row;align-items:center;gap:12px;min-height:var(--field-h);cursor:pointer;font-size:15px;font-weight:500;color:#14213d}
+body:not(.login-body) .switch input{position:absolute;opacity:0;width:1px;height:1px;min-height:0;margin:0;padding:0}
+.switch-ui{position:relative;flex:none;width:44px;height:26px;border-radius:13px;background:#b9c3d1;box-shadow:inset 0 1px 2px rgba(0,0,0,.15);transition:background .2s}
+.switch-ui::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(20,40,80,.35);transition:left .2s}
+.switch input:checked+.switch-ui{background:#2a7f78}
+.switch input:checked+.switch-ui::after{left:21px}
+.switch input:focus-visible+.switch-ui{box-shadow:var(--focus-ring)}
+
+/* Campo numérico con botones − y + */
+.stepper{max-width:180px}
+body:not(.login-body) .stepper button{flex:none;width:44px;min-height:0;padding:0;border:0;border-radius:0;background:#f6f8fb;box-shadow:none;color:var(--label);font-size:18px;font-weight:600;text-shadow:none;transform:none}
+body:not(.login-body) .stepper button:hover{background:#eaf0f9;transform:none}
+.stepper button:first-child{border-right:1px solid rgba(20,40,80,.14)}
+.stepper button:last-child{border-left:1px solid rgba(20,40,80,.14)}
+body:not(.login-body) .stepper input{text-align:center;font-variant-numeric:tabular-nums;font-weight:650;-moz-appearance:textfield;appearance:textfield}
+.stepper input::-webkit-inner-spin-button,.stepper input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+
+/* Campo con icono (búsqueda) */
+.input-icon{position:relative}
+.input-icon svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);pointer-events:none}
+/* Misma cadena :not() que la regla general de campos, más .input-icon, para ganarle en especificidad. */
+body:not(.login-body) .input-icon input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=hidden]){padding-left:40px;width:100%}
+
+/* Atajos y etiquetas de filtro */
+.quick-dates{display:flex;gap:8px;flex-wrap:wrap;align-items:center;min-height:var(--field-h)}
+body:not(.login-body) .quick-dates button{min-height:34px;padding:0 14px;border-radius:17px;font-size:13px;font-weight:600;box-shadow:none}
+.chip{display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 8px 0 12px;border-radius:16px;border:1px solid rgba(45,95,159,.3);background:#eef3fb;color:#16407a;font-size:13px;font-weight:600}
+a.chip:hover{background:#e1eaf7;text-decoration:none}
+.active-filters{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:13px;color:var(--hint)}
+
+/* Estructura del formulario: secciones y pie de acciones */
+.form-card{display:flex;flex-direction:column;gap:22px}
+.form-section{display:grid;grid-template-columns:190px minmax(0,1fr);gap:24px;padding-bottom:22px;border-bottom:1px solid rgba(20,40,80,.1);min-width:0}
+.form-section:last-of-type{border-bottom:0;padding-bottom:0}
+.form-section-head h3{margin:0;font-size:15px;letter-spacing:-.01em}
+.form-section-head p{margin:4px 0 0;font-size:13px;color:var(--hint)}
+.form-actions{display:flex;justify-content:flex-end;align-items:center;gap:12px;flex-wrap:wrap;padding-top:18px;border-top:1px solid rgba(20,40,80,.1)}
+.form-actions .lead{margin:0 auto 0 0;font-size:14px;color:var(--label)}
+body:not(.login-body) .form-actions .btn{min-height:var(--field-h);padding:0 20px;font-size:15px}
+.form-summary{display:flex;gap:12px;align-items:flex-start;padding:14px 16px;border-radius:12px;background:#eef3fb;border:1px solid rgba(45,95,159,.22);color:#1c2f52;font-size:14px}
+.form-summary svg{flex:none}
+
+/* Filtros del historial */
+.filters-grid{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1.4fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1.7fr);gap:14px;align-items:end}
+@media(max-width:1100px){.filters-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.filters-grid .field-search{grid-column:span 2}}
+@media(max-width:720px){.form-section{grid-template-columns:1fr;gap:12px}}
+@media(max-width:560px){.filters-grid{grid-template-columns:1fr}.filters-grid .field-search{grid-column:span 1}.stepper{max-width:none}}
+@media(prefers-reduced-motion:reduce){.switch-ui,.switch-ui::after{transition:none}}
+
+/* ===== Brillo v2: el halo que sigue al puntero también se ve sobre superficies claras =====
+   Bloque autocontenido: quitarlo devuelve el brillo blanco original (solo visible en el hero). */
+.glow-track{--glow-1:rgba(45,95,159,.10);--glow-2:rgba(42,127,120,.04);--glow-size:260px}
+.glow-track::after{background:radial-gradient(var(--glow-size) circle at var(--gx) var(--gy),var(--glow-1),var(--glow-2) 40%,transparent 70%)}
+.glow-track.hero,.glow-track.lg-card,.glow-track.btn-primary,.glow-track.primary,.glow-track.nav-home{--glow-1:rgba(255,255,255,.28);--glow-2:rgba(255,255,255,.08)}
+.glow-track.btn,.glow-track.primary,.glow-track.secondary,button.glow-track{--glow-size:120px}
+.glow-track.btn-danger{--glow-1:rgba(176,69,59,.12);--glow-2:rgba(176,69,59,.04)}
+
+/* ===== Animaciones v1: indicador deslizante en selectores segmentados y pestañas =====
+   Lo activa el script de layout() agregando .con-indicador; sin JS se ve como antes. Quitar el bloque revierte. */
+:root{--ease-spring:cubic-bezier(.3,1.3,.5,1);--ease-out:cubic-bezier(.2,.8,.2,1)}
+.con-indicador{position:relative}
+.seg-thumb{position:absolute;top:0;left:0;z-index:0;border-radius:7px;background:#fff;border:1px solid rgba(45,95,159,.35);box-shadow:0 2px 6px -2px rgba(20,40,80,.25);pointer-events:none;will-change:transform;transition:transform .34s var(--ease-spring),width .34s var(--ease-spring),border-color .25s,box-shadow .25s,opacity .2s}
+.seg-thumb.sin-transicion{transition:none}
+.seg-thumb[data-valor=gasto],.seg-thumb[data-valor=retiro]{border-color:rgba(176,69,59,.4);box-shadow:0 2px 8px -2px rgba(176,69,59,.3)}
+.seg-thumb[data-valor=ingreso],.seg-thumb[data-valor=aporte]{border-color:rgba(47,143,131,.45);box-shadow:0 2px 8px -2px rgba(47,143,131,.3)}
+body:not(.login-body) .con-indicador label,body:not(.login-body) .con-indicador [role=tab]{position:relative;z-index:1;transition:color .25s,transform .15s}
+body:not(.login-body) .con-indicador label:active,body:not(.login-body) .con-indicador [role=tab]:active{transform:scale(.97)}
+body:not(.login-body) .segmented.con-indicador input:checked+label,body:not(.login-body) .segmented.con-indicador label:hover{background:transparent;border-color:transparent;box-shadow:none}
+body:not(.login-body) .profile-tabs.con-indicador [role=tab],body:not(.login-body) .profile-tabs.con-indicador [role=tab]:hover{background:transparent;border-color:transparent;box-shadow:none;transform:none}
+.profile-tabs .seg-thumb{border-radius:10px;border-color:rgba(20,40,80,.08);box-shadow:0 2px 8px rgba(23,60,86,.12)}
+
+/* Gasto / Ingreso: el símbolo del monto toma el color del tipo elegido */
+.input-money .addon.prefix{transition:background-color .3s var(--ease-out),color .3s var(--ease-out)}
+.form-card[data-tipo=gasto] .input-money .addon.prefix{background:#fbeeec;color:#9c2f27}
+.form-card[data-tipo=ingreso] .input-money .addon.prefix{background:#e6f4f0;color:#1d6b5f}
+
+/* Pestañas de perfil: el contenido entra desde el lado hacia el que se movió la persona */
+@keyframes tab-entra-der{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:none}}
+@keyframes tab-entra-izq{from{opacity:0;transform:translateX(-16px)}to{opacity:1;transform:none}}
+.profile-group.entra-der{animation:tab-entra-der .3s var(--ease-out)}
+.profile-group.entra-izq{animation:tab-entra-izq .3s var(--ease-out)}
+@media(prefers-reduced-motion:reduce){.seg-thumb,.con-indicador label,.con-indicador [role=tab],.input-money .addon.prefix{transition:none}.profile-group.entra-der,.profile-group.entra-izq{animation:none}}
