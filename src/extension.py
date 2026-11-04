@@ -331,7 +331,8 @@ def page(table, edit_id=None):
             form_section='<p class="muted">Puedes consultar y registrar nuevas operaciones. El propietario puede editar o eliminar registros existentes.</p>'+form_section
         else:
             title='Consulta de '+title.lower()
-    body=f'<section class="panel"><p><a href="/">← Panel principal</a></p><h2>{h(title)}</h2>{form_section}</section><section class="panel table-panel"><h2>Registros</h2><div class="table-scroll"><table class="records"><thead><tr>{headers}<th class="row-actions-head">Acciones</th></tr></thead><tbody>{trs or f'<tr><td colspan="{len(fields)+1}" class="empty">No hay registros</td></tr>'}</tbody></table></div></section>'
+    empty_row=f'<tr><td colspan="{len(fields)+1}" class="empty">No hay registros</td></tr>'
+    body=f'<section class="panel"><p><a href="/">← Panel principal</a></p><h2>{h(title)}</h2>{form_section}</section><section class="panel table-panel"><h2>Registros</h2><div class="table-scroll"><table class="records"><thead><tr>{headers}<th class="row-actions-head">Acciones</th></tr></thead><tbody>{trs or empty_row}</tbody></table></div></section>'
     if not allow_edit and table!='alertas':
         body=body.replace('<th class="row-actions-head">Acciones</th>','').replace('<td class="row-actions-cell"></td>','')
     return layout(body)
