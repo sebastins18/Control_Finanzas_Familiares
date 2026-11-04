@@ -52,6 +52,6 @@
 - **Reporte anual** (`/reportes/anual`): totales mensuales por categoría y moneda, con CSV (D-019).
 - **Movimientos recurrentes:** plantillas mensuales y generación explícita e idempotente; tablas nuevas `movimientos_recurrentes` y `recurrentes_generados`, sin cambios en las existentes (D-020).
 - **Formularios rediseñados**, brillo que sigue al puntero en paneles y botones, e indicador animado en selectores y pestañas; mismos nombres y valores enviados al servidor (D-021).
-- **Datos de demostración:** `scripts/demo_temporal.py` crea y borra un perfil DEMO separado.
+- **Datos de demostración:** `scripts/demo_temporal.py` (perfil DEMO separado) queda solo en el tag `v0.4.0`; en `main` se retiró para que el despliegue del servidor no incluya cargadores de datos ficticios.
 - **Pruebas:** 103/103 en Python 3.11 y 3.12 (+18: `test_historial_reportes.py`, `test_formularios_v2.py`).
 - Detalle de uso: [docs/consultas_reportes_recurrentes.md](docs/consultas_reportes_recurrentes.md).

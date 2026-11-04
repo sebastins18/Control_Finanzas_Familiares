@@ -79,7 +79,8 @@ anterior sigue arrancando sobre la base actualizada.
 
 ## Datos de prueba
 
-`python -m scripts.demo_temporal` crea el perfil **«DEMO · Datos de prueba»** (propietario `admin`)
-con unos 14 meses de movimientos ficticios, una cuenta en USD, plantillas recurrentes y
-presupuestos. `--borrar` lo elimina por completo. Respalda la base antes de cargar.
-**No usarlo contra la base del servidor.**
+`main` no incluye un cargador de datos de demostración, para que nada en el despliegue del
+servidor pueda insertar datos ficticios. Para una demo local, el script `scripts/demo_temporal.py`
+está en el tag `v0.4.0` (y en la rama `changes-3-nov`): crea el perfil **«DEMO · Datos de prueba»**
+y `--borrar` lo elimina. **No usarlo contra la base del servidor.** Para datos sintéticos en una
+base de prueba se mantienen `scripts/seed.py` y `scripts/seed_bulk_s2.py`, como indica el README.
