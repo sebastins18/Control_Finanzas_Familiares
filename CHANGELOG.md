@@ -55,3 +55,13 @@
 - **Datos de demostración:** `scripts/demo_temporal.py` (perfil DEMO separado) queda solo en el tag `v0.4.0`; en `main` se retiró para que el despliegue del servidor no incluya cargadores de datos ficticios.
 - **Pruebas:** 103/103 en Python 3.11 y 3.12 (+18: `test_historial_reportes.py`, `test_formularios_v2.py`).
 - Detalle de uso: [docs/consultas_reportes_recurrentes.md](docs/consultas_reportes_recurrentes.md).
+
+## v0.9.0-rc — S4 (6/11/2026, rama de preparación; tag aún pendiente)
+
+- Preparados la guía reproducible de instalación desde cero, `S4.md`, `portal.yml`, roadmap y guion de exposición con riesgos/evidencias pendientes.
+- Nueva comprobación de instalación limpia sobre SQLite temporal: init, seed idempotente, conexión, integridad, WAL, login HTTP y cabeceras.
+- Nuevo respaldo SQLite coherente con bases activas en WAL mediante `sqlite3.Connection.backup` y verificación de integridad/relaciones; nunca sobrescribe archivos.
+- Arranque de SQLite nuevo con prefijo web exige contraseña inicial de administrador de 12+ caracteres (evita `admin123!` en despliegues nuevos); bases ya existentes conservan el hash.
+- Cookies de sesión con `Secure` optativo mediante `FINANZAS_COOKIE_SECURE=1` bajo HTTPS; se añaden cabeceras `X-Frame-Options: DENY` y `Referrer-Policy: same-origin`.
+- Se amplía CI en Python 3.11/3.12 para validar S4; los resultados definitivos y el tag deben confirmarse después de ejecutar la rama en GitHub Actions.
+- No se declara demo/manual hecha por otro integrante, video publicado ni release `v1.0.0` hasta contar con evidencia auténtica.

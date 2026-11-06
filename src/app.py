@@ -504,6 +504,8 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header('Content-Length', str(len(body)))
         self.send_header('X-Content-Type-Options', 'nosniff')
         self.send_header('Cache-Control', 'no-store' if status >= 400 else 'private, no-cache')
+        self.send_header('X-Frame-Options', 'DENY')
+        self.send_header('Referrer-Policy', 'same-origin')
         if status >= 500:
             self.send_header('Retry-After', '30')
         self.end_headers()
@@ -659,6 +661,12 @@ class Handler(BaseHTTPRequestHandler):
             return self.respond(200, dashboard_page(query).encode('utf-8'))
         return self.respond(404, layout('<section class="panel"><h2>Página no encontrada</h2><a href="/">Volver al inicio</a></section>').encode())
 
+    @staticmethod
+    def secure_cookie_suffix():
+        # El proxy HTTPS termina TLS fuera de Python: activarlo con
+        # FINANZAS_COOKIE_SECURE=1 en la configuración del servidor.
+        return '; Secure' if os.environ.get('FINANZAS_COOKIE_SECURE') == '1' else ''
+
     @controlled_request
     def do_POST(self) -> None:
         self.prepare_request()
@@ -669,7 +677,7 @@ class Handler(BaseHTTPRequestHandler):
         try:
             if path == '/logout':
                 with AUTH_LOCK: SESSIONS.pop(self.session_token(),None)
-                self.send_response(303);self.send_header('Location',external_path('/login'));self.send_header('Set-Cookie',f'finanzas_session=; HttpOnly; SameSite=Strict; Path={app_base_path() or chr(47)}; Max-Age=0');self.send_header('Content-Length','0');self.end_headers();return
+                self.send_response(303);self.send_header('Location',external_path('/login'));self.send_header('Set-Cookie',f'finanzas_session=; HttpOnly; SameSite=Strict; Path={app_base_path() or chr(47)}; Max-Age=0{self.secure_cookie_suffix()}');self.send_header('Content-Length','0');self.end_headers();return
             payload=self.rfile.read(length)
             if path == '/registro':
                 if self.authenticated(): return self.redirect_to('/perfiles/elegir')
@@ -684,7 +692,7 @@ class Handler(BaseHTTPRequestHandler):
                 if creds and creds['active'] and hmac.compare_digest(form.get('usuario',''),creds['username']) and hmac.compare_digest(hash_password(form.get('contrasena',''),creds['salt']),creds['hash']):
                     token=secrets.token_urlsafe(32)
                     with AUTH_LOCK: SESSIONS[token]=(creds["username"],time.time()+8*3600)
-                    self.send_response(303);self.send_header('Location',external_path('/perfiles/elegir'));self.send_header('Set-Cookie',f'finanzas_session={token}; HttpOnly; SameSite=Strict; Path={app_base_path() or chr(47)}; Max-Age=28800');self.send_header('Content-Length','0');self.end_headers();return
+                    self.send_response(303);self.send_header('Location',external_path('/perfiles/elegir'));self.send_header('Set-Cookie',f'finanzas_session={token}; HttpOnly; SameSite=Strict; Path={app_base_path() or chr(47)}; Max-Age=28800{self.secure_cookie_suffix()}');self.send_header('Content-Length','0');self.end_headers();return
                 return self.respond(401,login_page('Usuario o contraseña incorrectos').encode('utf-8'))
             if not self.authenticated(): return self.auth_redirect()
             if not request_ctx.profile() and not path.startswith('/perfiles/') and path not in ('/admin/usuarios/guardar','/admin/cambiar-clave'):

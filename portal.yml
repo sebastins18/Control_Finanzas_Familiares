@@ -1,0 +1,16 @@
+# Ficha para el portal del curso. No se publican nombres sin autorización.
+nombre: Control de Finanzas Familiares
+resumen: MVP open source en Python y SQLite para registrar gastos, ingresos y presupuestos.
+problema: Los gastos e ingresos familiares dispersos dificultan conocer saldos y límites mensuales.
+usuarios: Familias y personas que necesitan registrar movimientos y presupuestos.
+motores: [SQLite]
+lenguaje: Python
+licencia: MIT
+repositorio: https://github.com/sebastins18/Control_Finanzas_Familiares
+demo_video: ""   # Pendiente de grabación y autorización para publicar el enlace.
+demo_url: https://diego01.grupo5.crnube.org/finanzas/login
+captura: ""      # Pendiente de subir captura auténtica sin credenciales o datos privados.
+grupo: 5
+dia: viernes
+periodo: II-2026
+autores_publicos: [] # Solicitar autorización expresa antes de publicar nombres.

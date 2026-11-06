@@ -204,3 +204,7 @@ La bitácora no acredita pruebas manuales S3 en Virtualmin, creación del tag `v
 - [ ] Revisar el cierre y crear y verificar el tag `v0.3.0` sobre la versión acordada. Su creación no se acredita en esta bitácora.
 
 No se asignan responsables ni se marcan estos pendientes como completados sin evidencia.
+
+## Verificación posterior — 6/11/2026
+
+El tag anotado `v0.3.0` **ya fue publicado** y apunta al commit `8b7be34`; las notas previas que indicaban "pendiente" describen el estado al redactarse este registro. El trabajo posterior S4 incorpora respaldo seguro con la API SQLite, sin alterar los tiempos de medición histórica.
