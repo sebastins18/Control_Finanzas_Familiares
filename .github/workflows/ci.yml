@@ -25,10 +25,14 @@ jobs:
         run: python -m unittest discover -s tests -v
       - name: Validar carga temporal y generar evidencia
         run: python -m scripts.evidencia_s2 --output evidencia_s2_ci.md --count 1000
+      - name: Validar instalacion limpia S4
+        run: python -m scripts.verify_clean_install_s4 --report evidencia_s4_ci.md
       - name: Adjuntar evidencia de ejecucion
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: evidencia-s2-python-${{ matrix.python-version }}
-          path: evidencia_s2_ci.md
+          path: |
+            evidencia_s2_ci.md
+            evidencia_s4_ci.md
           if-no-files-found: ignore

@@ -60,9 +60,18 @@ def init(connection):
         users = data.get('users', [dict(data, name='Administrador', role='admin', active=True)]) if isinstance(data, dict) else []
     admin = next((u for u in users if u['username'] == 'admin'), None)
     if admin is None:
+        initial_password = os.environ.get('FINANZAS_INITIAL_ADMIN_PASSWORD')
+        # En localhost se conserva la cuenta docente histórica para facilitar una
+        # instalación de práctica. Bajo un prefijo/proxy no se admiten claves
+        # predeterminadas ni contraseñas iniciales débiles.
+        if os.environ.get('APP_BASE_PATH', '').strip() or os.environ.get('FINANZAS_REQUIRE_STRONG_ADMIN_PASSWORD') == '1':
+            if not initial_password or len(initial_password) < 12 or initial_password == 'admin123!':
+                raise ValueError('Configure FINANZAS_INITIAL_ADMIN_PASSWORD (12+ caracteres) antes de inicializar un despliegue web')
+        if initial_password is None:
+            initial_password = 'admin123!'
         salt = secrets.token_hex(16)
         admin = dict(username='admin', name='Administrador', role='admin', active=True,
-                     salt=salt, hash=hash_password(os.environ.get('FINANZAS_INITIAL_ADMIN_PASSWORD', 'admin123!'), salt))
+                     salt=salt, hash=hash_password(initial_password, salt))
     connection.execute('''INSERT INTO usuarios(id_usuario,username,nombre,rol,activo,password_salt,password_hash)
         VALUES(1,'admin',?,'administrador',1,?,?) ON CONFLICT(id_usuario) DO UPDATE SET
         username='admin',nombre=excluded.nombre,rol='administrador',activo=1,

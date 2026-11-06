@@ -1,5 +1,22 @@
 # Control de Finanzas Familiares — Grupo 5
 
+## Versión candidata S4 — 6 de noviembre de 2026
+
+**Proyecto académico open source** con Python estándar y SQLite. S4 (semana 16) es un adelanto opcional de release candidate: el tag de final de curso `v1.0.0` y el PDF se presentan en el día de exposición según el enunciado del profesor.
+
+- **Instalación desde cero (Windows/Linux):** [guía S4](docs/INSTALACION_S4.md); comprobación automática temporal `python -m scripts.verify_clean_install_s4`.
+- **Bitácora de S4:** [docs/seguimientos/S4.md](docs/seguimientos/S4.md).
+- **Arquitectura:** [diagrama](docs/arquitectura/diagrama.md) y [modelo vigente](docs/arquitectura/modelo-v17.md).
+- **Validación y resultados:** [pruebas S3](docs/seguimientos/pruebas_s3.md), [mediciones S3](docs/seguimientos/S3_mediciones.md) y GitHub Actions.
+- **Guía de exposición y video:** [guion final](docs/seguimientos/GUIA_DEMO_FINAL.md). **Video real de 3–5 min: pendiente de grabación y enlace**.
+- **Captura:** [instrucciones para evidencia real](docs/img/README.md). **Capturas definitivas: pendientes de incorporar**.
+- **Roadmap:** [1 mes, 6 meses y posible TFG](docs/ROADMAP.md).
+- **Licencia:** [MIT](LICENSE); [ficha de portal](portal.yml).
+- **Seguridad:** no ingresar datos financieros reales. En una base nueva con `APP_BASE_PATH=/finanzas`, se exige `FINANZAS_INITIAL_ADMIN_PASSWORD` de 12+ caracteres; con HTTPS/proxy configurar `FINANZAS_COOKIE_SECURE=1`.
+
+Los nombres y cédulas de integrantes se reservan para el documento privado de entrega académica; la publicación de autores en el portal requiere consentimiento. La prueba de instalación hecha por una persona distinta y el video deben ejecutarse realmente antes de marcarlos como completados.
+
+
 **Universidad Nacional · Tópicos Avanzados de Bases de Datos · II-2026**
 
 **Actualización de usuarios y roles:** las cuentas de acceso se guardan ahora en
@@ -16,15 +33,15 @@ Aplicación web de demostración en Python y SQLite para registrar movimientos f
 
 - Ingresos y gastos: alta, consulta, edición y eliminación; panel mensual y alertas presupuestarias.
 - Catálogos: categorías, cuentas y monedas; presupuestos, metas de ahorro, alertas y movimientos de ahorro.
-- Transferencias entre cuentas; si las monedas son distintas, se **introduce un tipo de cambio manual positivo**. Esta versión **no** descarga cotizaciones automáticamente.
+- Transferencias entre cuentas y cotizaciones de monedas; el soporte actual incorpora ajustes posteriores a V17, ver [perfiles y cotizaciones](docs/perfiles_financieros.md) y pruebas de conversión.
 - Panel separado por divisas y reglas de conversión de gastos para presupuestos.
 - Perfiles financieros locales, usuarios de acceso y contraseñas protegidas mediante PBKDF2-HMAC.
 - Comprobantes de gastos en almacenamiento local; mensajes de error SQLite con registro rotativo.
 - Arquitectura extendida a partir del modelo original de cinco tablas. `src/schema.sql` sigue creando las cinco tablas base; `src/extension.py` agrega las tablas del módulo extendido durante `db.init_db()`.
 
-El código del módulo extendido proviene del ZIP V17 aportado por un integrante del grupo. La integración corrige incompatibilidades de las pruebas, protege archivos locales de versionado y añade soporte para prefijo de URL. Véanse `CAMBIOS_V17.md` y `docs/seguimientos/S2.md`.
+El código de la primera ampliación provenía del ZIP V17; luego Diego y Mariano integraron cambios directamente mediante commits y pull requests. La integración corrige incompatibilidades de las pruebas, protege archivos locales de versionado y añade soporte para prefijo de URL. Véanse `CAMBIOS_V17.md` y `docs/seguimientos/S2.md`.
 
-## Instalación local desde cero (Python 3.10+)
+## Instalación local desde cero (Python 3.11 o 3.12)
 
 No se necesita instalar dependencias de terceros.
 
@@ -114,3 +131,11 @@ python -m scripts.evidencia_s2 --output evidencia_s2_local.md --count 1000
 ```
 
 **Nota:** este script genera el archivo local `evidencia_s2_local.md` (se puede adjuntar como evidencia); no escribe en la base del servidor ni introduce credenciales.
+
+## Entrega S4 y uso de la aplicación
+
+**Rama candidata:** `release/s4-rc-2026-11-06`. El tag `v0.9.0` se debe crear después de aprobar CI y la revisión del grupo; **no** es evidencia automática de exposición. El release final `v1.0.0` requerirá el video real, el PDF de Aula Virtual y la exposición presencial según el calendario.
+
+**Respaldo de SQLite:** `python -m scripts.backup_sqlite_s4 /ruta/privada/finanzas_respaldo.sqlite3` (nunca sobrescribe y comprueba integridad). No copiar una base activa con `shutil.copyfile` mientras está en WAL.
+
+**Seguridad web:** `http.server` y las sesiones en memoria no son suficientes para datos reales; quedan pendientes CSRF global, limitación de intentos, operación supervisada y auditoría de infraestructura. Estos riesgos se registran en [Issue #10](https://github.com/sebastins18/Control_Finanzas_Familiares/issues/10).
