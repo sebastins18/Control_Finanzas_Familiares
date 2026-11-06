@@ -1,0 +1,15 @@
+nombre: MisFinanzas
+resumen: Aplicación para gestionar ingresos, gastos, presupuestos y finanzas familiares
+problema: Las familias necesitan organizar sus movimientos financieros y controlar sus presupuestos de manera sencilla
+usuarios: Personas y familias que desean administrar sus finanzas personales
+motores: [SQLite]
+lenguaje: Python
+licencia: MIT
+repositorio: https://github.com/sebastins18/Control_Finanzas_Familiares
+demo_video:
+demo_url: https://diego01.grupo5.crnube.org/finanzas/login
+captura:
+grupo: 5
+dia: viernes
+periodo: II-2026
+autores_publicos: []
