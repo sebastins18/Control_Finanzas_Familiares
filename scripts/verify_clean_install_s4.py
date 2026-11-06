@@ -8,6 +8,7 @@ import datetime
 import json
 import os
 from pathlib import Path
+from contextlib import closing
 import secrets
 import sqlite3
 import subprocess
@@ -52,7 +53,7 @@ def run(report=None):
         first_seed = execute(['scripts/seed.py'], env)
         second_seed = execute(['scripts/seed.py'], env)
         execute(['scripts/check_connection.py'], env)
-        with sqlite3.connect(db_file) as con:
+        with closing(sqlite3.connect(db_file)) as con:
             integrity = con.execute('PRAGMA integrity_check').fetchone()[0]
             foreign_errors = con.execute('PRAGMA foreign_key_check').fetchall()
             journal = con.execute('PRAGMA journal_mode').fetchone()[0]
@@ -94,9 +95,20 @@ def run(report=None):
                 server.server_close()
                 runner.join(timeout=4)
         finally:
-            for key,value in previous.items():
-                if value is None: os.environ.pop(key,None)
-                else: os.environ[key]=value
+            # La biblioteca sqlite3 y el RotatingFileHandler deben cerrar sus
+            # descriptores: Windows no elimina archivos aún abiertos.
+            try:
+                from src.app import logger
+                prefix = str(Path(directory).resolve()) + os.sep
+                for handler in list(logger.handlers):
+                    filename = getattr(handler, 'baseFilename', '')
+                    if filename and str(Path(filename).resolve()).startswith(prefix):
+                        handler.close()
+                        logger.removeHandler(handler)
+            finally:
+                for key,value in previous.items():
+                    if value is None: os.environ.pop(key,None)
+                    else: os.environ[key]=value
         record = {
             'integridad':integrity,'journal_mode':journal,'violaciones_fk':len(foreign_errors),
             'tablas':tables,'usuarios':users,'movimientos':transactions,

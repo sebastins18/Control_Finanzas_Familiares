@@ -18,7 +18,7 @@ New-Item -ItemType Directory -Force $PrivateDir | Out-Null
 $env:DB_PATH = Join-Path $PrivateDir "finanzas.sqlite3"
 $env:APP_BASE_PATH = ""
 $secreta = Read-Host "Clave inicial de admin (12+ caracteres)" -AsSecureString
-$env:FINANZAS_INITIAL_ADMIN_PASSWORD = (New-Object System.Net.NetworkCredential("", $secreta)).Password
+$env:FINANZAS_INITIAL_ADMIN_PASSWORD = ([System.Net.NetworkCredential]::new("", $secreta)).Password
 py scripts/init_db.py
 py scripts/seed.py
 py scripts/check_connection.py
