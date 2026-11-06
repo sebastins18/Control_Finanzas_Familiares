@@ -99,3 +99,15 @@ La herramienta usa `sqlite3.Connection.backup` y valida integridad y claves for�
 6. Escribir en `docs/seguimientos/S4.md` quién hizo la prueba, errores encontrados, correcciones y enlace a la evidencia.
 
 **Importante:** nunca incluir cédulas ni credenciales reales en el repositorio público.
+
+## G. Comprobación de SQLite en modo de solo lectura (aportada desde respaldo documental S4)
+
+Después de inicializar y ejecutar el seed en una **base local de ensayo**, se puede inspeccionar el archivo SQLite sin escribir en él. Esta comprobación fue propuesta en el [respaldo documental de Diego](seguimientos/S4_APORTE_RESPALDO_DIEGO.md). Ejecutar desde la raíz del repositorio, con la misma variable `DB_PATH` de la instalación que se está validando:
+
+```bash
+python -c 'import os,sqlite3; from pathlib import Path; p=Path(os.environ.get("DB_PATH","data/finanzas.sqlite3")).resolve(); assert p.is_file(),"No existe el archivo SQLite de ensayo"; c=sqlite3.connect(p.as_uri()+"?mode=ro",uri=True); print("SQLite",sqlite3.sqlite_version); print("Journal",c.execute("PRAGMA journal_mode").fetchone()[0]); print("Tablas de usuario",c.execute("SELECT COUNT(*) FROM sqlite_master WHERE type=? AND name NOT LIKE ?",("table","sqlite_%")).fetchone()[0]); print("Movimientos",c.execute("SELECT COUNT(*) FROM movimientos").fetchone()[0]); c.close()'
+```
+
+En Windows puede usarse `py -c` en lugar de `python -c`. El parámetro `mode=ro` y el `assert` impiden crear accidentalmente otra base vacía en el directorio equivocado. **No ejecutar seed, scripts de carga o migraciones** apuntando a la base publicada de CRNube sin autorización y respaldo. El número de tablas puede cambiar al ampliar el esquema; registrar el valor observado en vez de asumir una cifra fija.
+
+La inspección de solo lectura es una **verificación adicional**, no reemplaza las 109 pruebas de regresión, el verificador temporal de S4 ni la prueba de instalación independiente hecha por otro integrante.

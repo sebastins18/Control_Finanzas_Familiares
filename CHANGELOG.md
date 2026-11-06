@@ -69,3 +69,10 @@
 - PR #20 fusionado a `main`; terminal del grupo verificó **109/109 tests OK** en Windows y una instalación limpia S4 exitosa.
 - Arquitectura actual, matriz de cumplimiento, acta pendiente y guion de video documentados; el despliegue del servidor del profesor se mantiene sin cambios por instrucción del responsable.
 - **Pendiente:** tag `v0.9.0` después de aprobación, video de 3–5 min, instalación por otra persona, capturas actuales y documentación final de exposición.
+
+## Integración documental del respaldo S4 de Diego — 6/11/2026
+
+- Se integra históricamente el commit de `dfonseca15` [`4b0bfed`](https://github.com/sebastins18/Control_Finanzas_Familiares/commit/4b0bfed6ae37e527daf72fc3b6aa8727e990e199), realizado en la rama `respaldo-documentacion-s4`.
+- Se agrega la comprobación SQLite de solo lectura a `docs/INSTALACION_S4.md` y el [registro de diferencias y atribución](docs/seguimientos/S4_APORTE_RESPALDO_DIEGO.md).
+- No se reemplaza la documentación S4 más reciente de `main` ni se confunden los 105 tests históricos del respaldo con los 109 de la suite local posterior.
+- Sin cambios de código ejecutable, SQLite, WebAdmin, tags ni evidencias humanas.

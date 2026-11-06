@@ -147,3 +147,7 @@ python -m scripts.evidencia_s2 --output evidencia_s2_local.md --count 1000
 El 6/11/2026 el código S4 fue fusionado a `main` mediante [PR #20](https://github.com/sebastins18/Control_Finanzas_Familiares/pull/20), commit `4cbf76a`. [GitHub Actions](https://github.com/sebastins18/Control_Finanzas_Familiares/actions/runs/42303414421) aprobó los tres trabajos Linux/Windows. La terminal Windows del grupo mostró **109/109 pruebas correctas** e instalación limpia satisfactoria.
 
 **No** se ha desplegado esta versión S4 en CRNube, ni se publicó el video real ni se certificó la instalación realizada independientemente por otro compañero. Para la rúbrica y las tareas restantes, consultar [ENTREGA_S4.md](docs/seguimientos/ENTREGA_S4.md). El guion de grabación está en [VIDEO_S4.md](docs/seguimientos/VIDEO_S4.md).
+
+## Aporte documental de Diego — respaldo S4
+
+El integrante `dfonseca15` preparó una rama separada, [`respaldo-documentacion-s4`](https://github.com/sebastins18/Control_Finanzas_Familiares/tree/respaldo-documentacion-s4), con instrucciones detalladas y una matriz de S4 sobre una versión histórica del código. Su commit [`4b0bfed`](https://github.com/sebastins18/Control_Finanzas_Familiares/commit/4b0bfed6ae37e527daf72fc3b6aa8727e990e199) se conserva en el historial. Se aprovecharon las recomendaciones aplicables sin sustituir el README posterior a los PR #20 y #21. Consultar [registro de integración](docs/seguimientos/S4_APORTE_RESPALDO_DIEGO.md) y [comprobación SQLite sin escrituras](docs/INSTALACION_S4.md).
