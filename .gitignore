@@ -78,3 +78,7 @@ startup_out.txt
 # Evidencias generadas por la instalación limpia S4
 evidencia_s4_instalacion.md
 evidencia_s4_ci.md
+
+# Evidencias generadas localmente, conservar fuera del commit
+/evidencia_s2_windows.md
+/evidencia_s2_crnube.md

@@ -56,12 +56,16 @@
 - **Pruebas:** 103/103 en Python 3.11 y 3.12 (+18: `test_historial_reportes.py`, `test_formularios_v2.py`).
 - Detalle de uso: [docs/consultas_reportes_recurrentes.md](docs/consultas_reportes_recurrentes.md).
 
-## v0.9.0-rc — S4 (6/11/2026, rama de preparación; tag aún pendiente)
+## S4 — release candidate integrado en main (6/11/2026; tag v0.9.0 pendiente)
 
 - Preparados la guía reproducible de instalación desde cero, `S4.md`, `portal.yml`, roadmap y guion de exposición con riesgos/evidencias pendientes.
 - Nueva comprobación de instalación limpia sobre SQLite temporal: init, seed idempotente, conexión, integridad, WAL, login HTTP y cabeceras.
 - Nuevo respaldo SQLite coherente con bases activas en WAL mediante `sqlite3.Connection.backup` y verificación de integridad/relaciones; nunca sobrescribe archivos.
 - Arranque de SQLite nuevo con prefijo web exige contraseña inicial de administrador de 12+ caracteres (evita `admin123!` en despliegues nuevos); bases ya existentes conservan el hash.
 - Cookies de sesión con `Secure` optativo mediante `FINANZAS_COOKIE_SECURE=1` bajo HTTPS; se añaden cabeceras `X-Frame-Options: DENY` y `Referrer-Policy: same-origin`.
-- Se amplía CI en Python 3.11/3.12 para validar S4; los resultados definitivos y el tag deben confirmarse después de ejecutar la rama en GitHub Actions.
+- CI ampliado y **confirmado** sobre el merge de S4 `4cbf76a` ([run 42303414421](https://github.com/sebastins18/Control_Finanzas_Familiares/actions/runs/42303414421)): Linux Python 3.11/3.12 y Windows Python 3.12, tres trabajos correctos.
 - No se declara demo/manual hecha por otro integrante, video publicado ni release `v1.0.0` hasta contar con evidencia auténtica.
+
+- PR #20 fusionado a `main`; terminal del grupo verificó **109/109 tests OK** en Windows y una instalación limpia S4 exitosa.
+- Arquitectura actual, matriz de cumplimiento, acta pendiente y guion de video documentados; el despliegue del servidor del profesor se mantiene sin cambios por instrucción del responsable.
+- **Pendiente:** tag `v0.9.0` después de aprobación, video de 3–5 min, instalación por otra persona, capturas actuales y documentación final de exposición.

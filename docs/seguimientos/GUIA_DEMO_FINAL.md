@@ -44,3 +44,10 @@ Propuesta de secuencia: 0:00 problema; 0:30 arquitectura; 1:10 login y CRUD; 2:3
 - [ ] URL final del video, fecha de grabación y evidencia de instalación hecha por otra persona.
 
 **Protección de datos:** no incluir cédulas, contraseñas, tokens, rutas privadas o datos financieros en GitHub público ni en video.
+
+## Material complementario validado para S4
+
+- [Matriz de cumplimiento](ENTREGA_S4.md) y [arquitectura vigente](../arquitectura/ARQUITECTURA_S4.md).
+- [Guion breve para grabar el video real](VIDEO_S4.md) y [acta pendiente](ACTA_S4.md).
+- [CI del merge de S4](https://github.com/sebastins18/Control_Finanzas_Familiares/actions/runs/42303414421) con tres trabajos aprobados. La terminal Windows del grupo reportó 109/109 pruebas y instalación limpia OK.
+- La pantalla que se muestre deberá ser una instancia local de prueba realmente ejecutada; **no** la antigua web de CRNube como si ya tuviera S4. El responsable no ha autorizado desplegar S4 en WebAdmin.

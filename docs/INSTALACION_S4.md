@@ -69,7 +69,7 @@ El código Python se mantiene fuera de `public_html` y escucha en `127.0.0.1:801
 export APP_BASE_PATH=/finanzas
 export FINANZAS_COOKIE_SECURE=1
 read -r -s -p "Clave admin nueva (12+ caracteres): " FINANZAS_INITIAL_ADMIN_PASSWORD
- echo
+echo
 export FINANZAS_INITIAL_ADMIN_PASSWORD
 export DB_PATH="$HOME/finanzas_private/finanzas.sqlite3"
 python3 -m src.app --host 127.0.0.1 --port 8010
