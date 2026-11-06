@@ -21,8 +21,6 @@ from tests.helpers_admin import TEST_ADMIN_PASSWORD
 
 class AuthSQLiteTests(unittest.TestCase):
     def setUp(self):
-        self.admin_mode=patch.object(auth,'STANDARD_USER_MODE',False)
-        self.admin_mode.start()
         self.tmp = tempfile.TemporaryDirectory()
         self.path = Path(self.tmp.name) / 'test.sqlite3'
         self.env = patch.dict(os.environ, {'DB_PATH': str(self.path),
@@ -32,7 +30,6 @@ class AuthSQLiteTests(unittest.TestCase):
         app.SESSIONS.clear()
 
     def tearDown(self):
-        self.admin_mode.stop()
         request_ctx.set_user_id(1)
         app.SESSIONS.clear()
         self.env.stop()
@@ -122,7 +119,9 @@ class AuthSQLiteTests(unittest.TestCase):
             return post('/perfiles/seleccionar', {'id_perfil':pid})
 
         try:
-            self.assertIn('/perfiles', login())
+            admin_html = login()
+            self.assertIn('/perfiles', admin_html)
+            self.assertIn('Mantenimiento de usuarios', admin_html)
             with opener.open(base+'/admin/usuarios') as r:
                 html=r.read().decode()
                 self.assertIn('value="administrador"',html)
@@ -132,8 +131,17 @@ class AuthSQLiteTests(unittest.TestCase):
                                             'active':'1','password':'Diego123!'})
             self.assertEqual(app.user_by_name('Diego')['role_name'], 'usuario')
             login()
-            post('/admin/usuarios/guardar', {'username':'Diego','name':'Diego actualizado','role':'usuario',
+            with app.AUTH_LOCK:
+                admin_sessions = {token: session for token, session in app.SESSIONS.items() if session[0] == 'admin'}
+                app.SESSIONS['edited-user-session'] = ('Diego', 9999999999)
+            saved_html = post('/admin/usuarios/guardar', {'username':'Diego','name':'Diego actualizado','role':'usuario',
                                             'active':'1','password':''})
+            self.assertIn('Mantenimiento de usuarios', saved_html)
+            self.assertNotIn('action="/login"', saved_html)
+            self.assertTrue(admin_sessions)
+            self.assertTrue(all(token in app.SESSIONS and app.SESSIONS[token][0] == session[0]
+                                for token, session in admin_sessions.items()))
+            self.assertNotIn('edited-user-session', app.SESSIONS)
             self.assertEqual(app.user_by_name('Diego')['name'], 'Diego actualizado')
             login()
             post('/admin/usuarios/guardar', {'username':'Diego','name':'Diego actualizado','role':'administrador',
@@ -155,6 +163,7 @@ class AuthSQLiteTests(unittest.TestCase):
             self.assertEqual(caught.exception.code, 401)
             caught.exception.close()
             html = login('Diego', 'Diego123!')
+            self.assertNotIn('Mantenimiento de usuarios', html)
             self.assertNotIn('Mantenimiento de roles', html)
             with db.connect() as c:
                 uid=app.user_by_name('Diego')['id_usuario']
@@ -172,6 +181,10 @@ class AuthSQLiteTests(unittest.TestCase):
             caught.exception.close()
             with self.assertRaises(HTTPError) as caught:
                 opener.open(base+'/admin/usuarios')
+            self.assertEqual(caught.exception.code,403)
+            caught.exception.close()
+            with self.assertRaises(HTTPError) as caught:
+                post('/admin/usuarios/guardar', {'username':'admin','name':'Intruso','role':'administrador','active':'1','password':''})
             self.assertEqual(caught.exception.code,403)
             caught.exception.close()
             for route,data in [('/admin/roles',None),('/admin/roles/guardar',b'nombre=Intruso')]:

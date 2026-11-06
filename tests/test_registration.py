@@ -124,6 +124,7 @@ class RegistrationTests(unittest.TestCase):
             with self.post(self.form(),'/finanzas/registro') as r:
                 self.assertTrue(r.url.endswith('/finanzas/login?registro=ok'))
 
+    @patch.object(auth, 'STANDARD_USER_MODE', True)
     def test_standard_user_mode_hides_roles_and_disables_user_management(self):
         self.assertTrue(auth.STANDARD_USER_MODE)
         with self.post({'usuario':'admin','contrasena':TEST_ADMIN_PASSWORD},'/login') as r:r.read()

@@ -8,8 +8,8 @@ import sqlite3
 
 from src import db
 
-# Modo temporal: todas las sesiones utilizan permisos de usuario normal.
-STANDARD_USER_MODE = True
+# Administración habilitada únicamente para cuentas administradoras activas.
+STANDARD_USER_MODE = False
 
 
 def is_system_admin(user):

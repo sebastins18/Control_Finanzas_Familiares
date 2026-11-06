@@ -718,8 +718,11 @@ class Handler(BaseHTTPRequestHandler):
                     if password:
                         salt=secrets.token_hex(16);target.update(salt=salt,hash=hash_password(password,salt))
                     save_users(users)
-                    SESSIONS.clear()
-                return self.redirect_to('/login')
+                    editing_self = SESSIONS[self.session_token()][0] == username
+                    for token, session in list(SESSIONS.items()):
+                        if session[0] == username:
+                            SESSIONS.pop(token, None)
+                return self.redirect_to('/login' if editing_self else '/admin/usuarios')
             if path == '/admin/cambiar-clave':
                 form={k:v[0] for k,v in parse_qs(payload.decode('utf-8'),keep_blank_values=True).items()}
                 current=self.current_user()

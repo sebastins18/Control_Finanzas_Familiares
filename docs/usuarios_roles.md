@@ -13,13 +13,12 @@ Campos: `id_usuario`, `nombre`, `username` unico, `rol`, `activo`,
 `password_salt` y `password_hash`. Las contrasenas usan PBKDF2-HMAC-SHA256.
 La barra superior muestra el nombre completo del usuario conectado.
 
-**Modo temporal actual:** `auth.STANDARD_USER_MODE=True` aplica permisos normales
-a todas las sesiones, incluso si la cuenta conserva el rol administrador en
-SQLite. Seguridad solo muestra Cambiar contraseña; las rutas de mantenimiento
-de usuarios quedan bloqueadas. El encabezado muestra únicamente el nombre
-completo. Los roles almacenados se conservan para poder reactivar la
-administración posteriormente. Los permisos de propietario e invitado dentro
-de cada perfil financiero siguen funcionando.
+**Administración activa:** `auth.STANDARD_USER_MODE=False` habilita el
+mantenimiento de usuarios exclusivamente para administradores activos. Solo
+ellos ven la opción en Seguridad y pueden consultar o guardar usuarios. Las
+cuentas de tipo usuario no ven el enlace y reciben HTTP 403 al acceder
+directamente a sus rutas. Los permisos de propietario e invitado dentro de
+cada perfil financiero siguen funcionando.
 
 En el inicio de sesión, **Crear cuenta** abre `/registro`. El formulario solicita
 nombre completo, usuario, contraseña y confirmación. Las cuentas registradas por
