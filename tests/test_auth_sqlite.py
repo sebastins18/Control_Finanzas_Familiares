@@ -2,6 +2,8 @@
 import json
 import os
 import sqlite3
+import subprocess
+import sys
 import tempfile
 import threading
 import unittest
@@ -49,6 +51,71 @@ class AuthSQLiteTests(unittest.TestCase):
             for bad in ('admin','otro',''):
                 with self.assertRaises(sqlite3.IntegrityError):
                     c.execute('UPDATE usuarios SET rol=? WHERE id_usuario=1',(bad,))
+
+    def run_init_script(self, password=None):
+        env = dict(os.environ, DB_PATH=str(self.path))
+        env.pop('FINANZAS_INITIAL_ADMIN_PASSWORD', None)
+        if password is not None:
+            env['FINANZAS_INITIAL_ADMIN_PASSWORD'] = password
+        result = subprocess.run([sys.executable, str(db.ROOT / 'scripts' / 'init_db.py')],
+                                cwd=db.ROOT, env=env, capture_output=True, text=True, timeout=30)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_fresh_cli_ignores_json_and_preserves_existing_credentials(self):
+        legacy = self.path.parent / 'login_credentials.json'
+        salt = 'ab' * 16
+        legacy_text = json.dumps({'users': [
+            dict(username=name, name=name, role='admin', active=True,
+                 salt=salt, hash=auth.hash_password('Anterior123!', salt))
+            for name in ('admin', 'Diego')]})
+        legacy.write_text(legacy_text, encoding='utf-8')
+        self.run_init_script()
+        with db.connect() as c:
+            tables = {r[0] for r in c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")}
+            self.assertEqual(len(tables), 17, sorted(tables))
+            self.assertEqual([tuple(r) for r in c.execute('SELECT username,rol,activo FROM usuarios')],
+                             [('admin', 'administrador', 1)])
+            self.assertEqual(c.execute('PRAGMA foreign_key_check').fetchall(), [])
+        admin = app.user_by_name('admin')
+        self.assertEqual(admin['hash'], auth.hash_password('admin123!', admin['salt']))
+        self.assertNotEqual(admin['hash'], 'admin123!')
+        server = ThreadingHTTPServer(('127.0.0.1', 0), app.Handler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            client = build_opener(HTTPCookieProcessor(CookieJar()))
+            with client.open(Request(f'http://127.0.0.1:{server.server_port}/login',
+                    data=urlencode({'usuario':'admin', 'contrasena':'admin123!'}).encode()), timeout=5) as r:
+                self.assertTrue(r.url.endswith('/perfiles/elegir'))
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join(timeout=3)
+        # Una contraseña cambiada y otros usuarios deben sobrevivir a la CLI.
+        changed_salt = 'cd' * 16
+        with db.connect() as c:
+            c.execute('UPDATE usuarios SET password_salt=?,password_hash=? WHERE username=?',
+                      (changed_salt, auth.hash_password('Cambiada123!', changed_salt), 'admin'))
+        auth.register(dict(username='Existente', name='Usuario existente', password='Existente123!',
+                           confirm_password='Existente123!'))
+        with db.connect() as c:
+            before = [tuple(r) for r in c.execute('SELECT * FROM usuarios ORDER BY id_usuario')]
+        self.run_init_script('OtraInicial123!')
+        with db.connect() as c:
+            self.assertEqual([tuple(r) for r in c.execute('SELECT * FROM usuarios ORDER BY id_usuario')], before)
+            self.assertEqual(c.execute('PRAGMA foreign_key_check').fetchall(), [])
+        self.assertEqual(legacy.read_text(encoding='utf-8'), legacy_text)
+
+    def test_fresh_cli_custom_password_ignores_invalid_json(self):
+        legacy = self.path.parent / 'login_credentials.json'
+        legacy.write_text('{invalid', encoding='utf-8')
+        self.run_init_script(TEST_ADMIN_PASSWORD)
+        admin = app.user_by_name('admin')
+        self.assertEqual(admin['hash'], auth.hash_password(TEST_ADMIN_PASSWORD, admin['salt']))
+        self.assertEqual(len(auth.credentials()), 1)
+        self.run_init_script()
+        self.assertEqual(app.user_by_name('admin')['hash'], admin['hash'])
+        self.assertEqual(legacy.read_text(encoding='utf-8'), '{invalid')
 
     def test_migrate_json_preserves_users_and_financial_ids(self):
         with closing(sqlite3.connect(self.path)) as c:

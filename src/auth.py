@@ -34,6 +34,9 @@ def init(connection):
     if 'username' in columns and connection.execute('SELECT 1 FROM usuarios WHERE username IS NOT NULL').fetchone():
         username_constraints(connection)
         return
+    # El JSON solo pertenece a la migración de usuarios sin autenticación SQLite.
+    # Una tabla vacía (instalación nueva) nunca debe heredar credenciales externas.
+    migrate_json = bool(connection.execute('SELECT 1 FROM usuarios LIMIT 1').fetchone())
     for column, definition in (
             ('username', 'username TEXT'),
             ('rol', "rol TEXT NOT NULL DEFAULT 'usuario' CHECK(rol IN ('administrador','usuario'))"),
@@ -52,14 +55,14 @@ def init(connection):
             (f"legacy_{row['id_usuario']}", salt, hash_password(secrets.token_urlsafe(32), salt), row['id_usuario']))
     legacy = db.db_path().parent / 'login_credentials.json'
     users = []
-    if legacy.exists():
+    if migrate_json and legacy.exists():
         data = json.loads(legacy.read_text(encoding='utf-8'))
         users = data.get('users', [dict(data, name='Administrador', role='admin', active=True)]) if isinstance(data, dict) else []
     admin = next((u for u in users if u['username'] == 'admin'), None)
     if admin is None:
         salt = secrets.token_hex(16)
         admin = dict(username='admin', name='Administrador', role='admin', active=True,
-                     salt=salt, hash=hash_password(os.environ.get('FINANZAS_INITIAL_ADMIN_PASSWORD') or 'admin123!', salt))
+                     salt=salt, hash=hash_password(os.environ.get('FINANZAS_INITIAL_ADMIN_PASSWORD', 'admin123!'), salt))
     connection.execute('''INSERT INTO usuarios(id_usuario,username,nombre,rol,activo,password_salt,password_hash)
         VALUES(1,'admin',?,'administrador',1,?,?) ON CONFLICT(id_usuario) DO UPDATE SET
         username='admin',nombre=excluded.nombre,rol='administrador',activo=1,

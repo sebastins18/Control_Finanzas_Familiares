@@ -37,6 +37,8 @@ para las relaciones, selección por sesión y permisos del propietario e invitad
 
 Una base nueva crea `admin` con contrasena `admin123!`, salvo que se configure
 `FINANZAS_INITIAL_ADMIN_PASSWORD`. Inicializar nuevamente no restablece claves.
+Una instalación nueva ignora `login_credentials.json`, aunque esté presente:
+solo crea el administrador inicial con hash y salt.
 
 ## Migracion
 
@@ -46,7 +48,8 @@ anteriores. Los permisos anteriores se convierten segun `es_administrador`:
 nombres, estados, contrasenas y relaciones financieras. Despues elimina
 `usuarios.id_rol` y la tabla `roles`. La migracion es idempotente.
 
-Tambien se mantiene la migracion desde el antiguo JSON de credenciales y el
+Tambien se mantiene la migracion desde el antiguo JSON de credenciales solo
+para bases antiguas con usuarios sin autenticación SQLite, junto con el
 modelo de perfiles. El JSON ya no se utiliza para iniciar sesion ni guardar
 cambios. Los documentos anteriores describen versiones historicas.
 
