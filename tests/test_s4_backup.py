@@ -1,5 +1,6 @@
 """Respaldo SQLite sin sobrescribir la base origen."""
 import os
+from contextlib import closing
 from pathlib import Path
 import sqlite3
 import tempfile
@@ -24,7 +25,7 @@ class S4BackupTests(unittest.TestCase):
                     original_count = con.execute('SELECT COUNT(*) FROM usuarios').fetchone()[0]
                 backup(copy)
                 self.assertTrue(copy.exists())
-                with sqlite3.connect(copy) as con:
+                with closing(sqlite3.connect(copy)) as con:
                     self.assertEqual(con.execute('PRAGMA integrity_check').fetchone()[0], 'ok')
                     self.assertEqual(con.execute('SELECT COUNT(*) FROM usuarios').fetchone()[0], original_count)
                     self.assertEqual(con.execute("SELECT nombre FROM usuarios WHERE id_usuario=1").fetchone()[0],
