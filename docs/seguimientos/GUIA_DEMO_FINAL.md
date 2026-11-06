@@ -17,7 +17,7 @@ La exposición exige demo en vivo de 8–10 minutos; **el video no la reemplaza*
 3. Crear un gasto **ficticio** con descripción visible y verificar su aparición en el historial.
 4. Editarlo y comprobar el saldo; eliminarlo y verificar que desaparece.
 5. Mostrar categoría y presupuesto del período; provocar una alerta con una categoría ficticia sin gastos previos.
-6. Mostrar historial filtrable, reporte anual y exportación CSV, si el estado desplegado coincide con \`main\`.
+6. Mostrar historial filtrable, reporte anual y exportación CSV, si el estado desplegado coincide con `main`.
 7. Abrir el panel de calidad solo con un usuario administrador de pruebas.
 8. Enseñar en GitHub un PR auténtico de Diego y otro de Mariano, los tags y el Project. No atribuir commits inexistentes a Crystian.
 
@@ -32,7 +32,7 @@ La exposición exige demo en vivo de 8–10 minutos; **el video no la reemplaza*
 
 ## Video de 3–5 minutos (pendiente de grabación)
 
-Propuesta de secuencia: 0:00 problema; 0:30 arquitectura; 1:10 login y CRUD; 2:30 presupuesto y alertas; 3:20 pruebas e índices; 4:15 conclusión. Grabar **pantalla real**, no usar imágenes sintéticas como si fueran funcionamiento comprobado. Subir a una dirección accesible al profesor, confirmar permisos, agregar el enlace en \`README.md\` y \`portal.yml\`.
+Propuesta de secuencia: 0:00 problema; 0:30 arquitectura; 1:10 login y CRUD; 2:30 presupuesto y alertas; 3:20 pruebas e índices; 4:15 conclusión. Grabar **pantalla real**, no usar imágenes sintéticas como si fueran funcionamiento comprobado. Subir a una dirección accesible al profesor, confirmar permisos, agregar el enlace en `README.md` y `portal.yml`.
 
 ## Capturas requeridas
 

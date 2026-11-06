@@ -8,7 +8,7 @@
 - Diseño responsive y accesibilidad revisados en navegador real; ampliar casos automatizados.
 
 ## Próximos seis meses
-- Migrar \`http.server\` a un servidor ASGI/WSGI adecuado con sesiones persistentes, monitoreo y logging estructurado.
+- Migrar `http.server` a un servidor ASGI/WSGI adecuado con sesiones persistentes, monitoreo y logging estructurado.
 - Gestión de respaldos, restauración ensayada, cuotas de almacenamiento y adjuntos cifrados según el riesgo.
 - Reportes comparativos, filtros avanzados y exportaciones accesibles.
 - Auditoría de permisos por recurso, controles de privacidad y minimización de datos.
