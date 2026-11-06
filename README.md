@@ -1,12 +1,12 @@
 # Control de Finanzas Familiares — Grupo 5
 
-## Versión candidata S4 — 6 de noviembre de 2026
+## Seguimiento 4 integrado — 6 de noviembre de 2026
 
-**Proyecto académico open source** con Python estándar y SQLite. S4 (semana 16) es un adelanto opcional de release candidate: el tag de final de curso `v1.0.0` y el PDF se presentan en el día de exposición según el enunciado del profesor.
+**Proyecto académico open source** con Python estándar y SQLite. S4 (semana 16) es un adelanto del release candidate ya integrado en `main` mediante [PR #20](https://github.com/sebastins18/Control_Finanzas_Familiares/pull/20). La entrega final `v1.0.0` y el PDF corresponden al día de exposición según el enunciado; el tag `v0.9.0` todavía requiere aprobación del grupo.
 
 - **Instalación desde cero (Windows/Linux):** [guía S4](docs/INSTALACION_S4.md); comprobación automática temporal `python -m scripts.verify_clean_install_s4`.
-- **Bitácora de S4:** [docs/seguimientos/S4.md](docs/seguimientos/S4.md).
-- **Arquitectura:** [diagrama](docs/arquitectura/diagrama.md) y [modelo vigente](docs/arquitectura/modelo-v17.md).
+- **Bitácora de S4:** [docs/seguimientos/S4.md](docs/seguimientos/S4.md) · [Matriz de entrega](docs/seguimientos/ENTREGA_S4.md).
+- **Arquitectura vigente S4:** [ficha y componentes](docs/arquitectura/ARQUITECTURA_S4.md). Los documentos de S1 y V17 conservan el historial.
 - **Validación y resultados:** [pruebas S3](docs/seguimientos/pruebas_s3.md), [mediciones S3](docs/seguimientos/S3_mediciones.md) y GitHub Actions.
 - **Guía de exposición y video:** [guion final](docs/seguimientos/GUIA_DEMO_FINAL.md). **Video real de 3–5 min: pendiente de grabación y enlace**.
 - **Captura:** [instrucciones para evidencia real](docs/img/README.md). **Capturas definitivas: pendientes de incorporar**.
@@ -22,14 +22,13 @@ Los nombres y cédulas de integrantes se reservan para el documento privado de e
 **Actualización de usuarios y roles:** las cuentas de acceso se guardan ahora en
 SQLite (tabla `usuarios`, con campo `rol` limitado a `administrador` o `usuario`).
 No existe tabla ni mantenimiento de roles. Los perfiles financieros y sus invitados
-se administran por separado: [modelo y permisos actuales](docs/perfiles_financieros.md). Una base nueva
-crea `admin` / `admin123!`; al migrar se conservan las contraseñas existentes.
+se administran por separado: [modelo y permisos actuales](docs/perfiles_financieros.md). Una instalación local **sin prefijo** conserva `admin` / `admin123!` exclusivamente para pruebas. Una base nueva con `APP_BASE_PATH` configurado exige `FINANZAS_INITIAL_ADMIN_PASSWORD` de 12+ caracteres y rechaza la clave predeterminada. Al migrar se preservan las contraseñas ya establecidas.
 Consulta [usuarios, roles y migración](docs/usuarios_roles.md) para el modelo actual.
 Las secciones V17 y las bitácoras inferiores documentan la versión anterior.
 
 Aplicación web de demostración en Python y SQLite para registrar movimientos financieros familiares, planificar presupuestos y consultar saldos. El objetivo es un MVP open source reproducible y medible, no un servicio bancario ni una aplicación apta para introducir datos financieros reales.
 
-## Funciones de la versión integrada V17
+## Funciones actuales (evolución S1–S4)
 
 - Ingresos y gastos: alta, consulta, edición y eliminación; panel mensual y alertas presupuestarias.
 - Catálogos: categorías, cuentas y monedas; presupuestos, metas de ahorro, alertas y movimientos de ahorro.
@@ -66,7 +65,7 @@ Abrir `http://127.0.0.1:8000/`. Para detener la aplicación, `Ctrl+C`. Ejecutar 
 | `APP_BASE_PATH` | Prefijo al publicar tras proxy (por ejemplo `/finanzas`); vacío para localhost |
 | `FINANZAS_INITIAL_ADMIN_PASSWORD` | Contraseña inicial de **12 o más caracteres** obligatoria para crear credenciales nuevas con `APP_BASE_PATH` configurado. Solo se usa la primera vez. |
 
-Las credenciales de autenticación, comprobantes y logs se guardan **junto al archivo de SQLite** indicado por `DB_PATH`, en `login_credentials.json`, `comprobantes/` y `logs/` respectivamente. `data/`, archivos SQLite, comprobantes, JSON de credenciales y logs nunca deben publicarse en el repositorio ni estar directamente accesibles desde un servidor web. Para CRNube, utilizar una carpeta privada **fuera de `public_html`** y establecer `DB_PATH` a su archivo SQLite.
+Los **usuarios y hashes de contraseña actuales están en SQLite**. Los comprobantes y logs se mantienen en almacenamiento privado asociado a `DB_PATH`. Un `login_credentials.json` heredado puede intervenir en migraciones antiguas, pero **no** es el almacenamiento principal de las cuentas nuevas. `data/`, archivos SQLite, comprobantes, JSON de credenciales y logs nunca deben publicarse en el repositorio ni estar directamente accesibles desde un servidor web. Para CRNube, utilizar una carpeta privada **fuera de `public_html`** y establecer `DB_PATH` a su archivo SQLite.
 
 ### Proxy del servidor del curso
 
@@ -74,7 +73,10 @@ El Apache observado redirige `/finanzas/...` a un backend Python en `127.0.0.1:8
 
 ```bash
 export APP_BASE_PATH=/finanzas
-export FINANZAS_INITIAL_ADMIN_PASSWORD="CAMBIE_ESTA_CLAVE_POR_UNA_SEGURA"
+export FINANZAS_COOKIE_SECURE=1
+read -r -s -p "Clave inicial privada (12+ caracteres): " FINANZAS_INITIAL_ADMIN_PASSWORD
+echo
+export FINANZAS_INITIAL_ADMIN_PASSWORD
 python3 -m src.app --host 127.0.0.1 --port 8010
 ```
 
@@ -139,3 +141,9 @@ python -m scripts.evidencia_s2 --output evidencia_s2_local.md --count 1000
 **Respaldo de SQLite:** `python -m scripts.backup_sqlite_s4 /ruta/privada/finanzas_respaldo.sqlite3` (nunca sobrescribe y comprueba integridad). No copiar una base activa con `shutil.copyfile` mientras está en WAL.
 
 **Seguridad web:** `http.server` y las sesiones en memoria no son suficientes para datos reales; quedan pendientes CSRF global, limitación de intentos, operación supervisada y auditoría de infraestructura. Estos riesgos se registran en [Issue #10](https://github.com/sebastins18/Control_Finanzas_Familiares/issues/10).
+
+## Estado verificado del cierre S4
+
+El 6/11/2026 el código S4 fue fusionado a `main` mediante [PR #20](https://github.com/sebastins18/Control_Finanzas_Familiares/pull/20), commit `4cbf76a`. [GitHub Actions](https://github.com/sebastins18/Control_Finanzas_Familiares/actions/runs/42303414421) aprobó los tres trabajos Linux/Windows. La terminal Windows del grupo mostró **109/109 pruebas correctas** e instalación limpia satisfactoria.
+
+**No** se ha desplegado esta versión S4 en CRNube, ni se publicó el video real ni se certificó la instalación realizada independientemente por otro compañero. Para la rúbrica y las tareas restantes, consultar [ENTREGA_S4.md](docs/seguimientos/ENTREGA_S4.md). El guion de grabación está en [VIDEO_S4.md](docs/seguimientos/VIDEO_S4.md).
