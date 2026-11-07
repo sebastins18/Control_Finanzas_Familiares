@@ -1,5 +1,7 @@
 # Seguimiento 3 — Evidencia consolidada
 
+> Registro histórico de mediciones y pruebas. S3 está cerrado técnicamente en [Issue #3](https://github.com/sebastins18/Control_Finanzas_Familiares/issues/3); la comparación WAL/DELETE que se propuso como pendiente es opcional y no condiciona ese cierre. Estado vigente y evidencia posterior: [S3](S3.md) y [S4](S4.md). Se preservan los valores originales de las mediciones.
+
 Este archivo reemplaza los `.txt` de resultados generados durante la sesión de trabajo. Resume cada ejecución; la salida cruda (con el registro HTTP de los tests) no se conservó. Bitácora y estado de la rúbrica: `docs/seguimientos/S3.md`. Decisiones: `docs/decisiones.md` (D-006 a D-010).
 
 ## 1. Resultados de las pruebas (un archivo por proceso)

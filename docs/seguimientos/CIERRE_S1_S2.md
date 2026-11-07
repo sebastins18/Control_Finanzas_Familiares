@@ -1,8 +1,10 @@
 # Auditoría de cumplimiento — Seguimientos 1 y 2
 
+> Registro histórico del 23/10/2026. Los pendientes de capturas y demostración describen ese corte. Al 6/11 ya existen capturas y video auténticos locales, 109 regresiones y 27 E2E correctas; el video final sincronizado sigue en preparación. Estado y publicación en [S4](S4.md); la evidencia automática no acredita acta o instalación por otro integrante.
+
 **Universidad Nacional · Grupo 5 · revisión del 23/10/2026.**
-**Repositorio:** https://github.com/sebastins18/Control_Finanzas_Familiares  
-**Tablero existente:** https://github.com/users/sebastins18/projects/1  
+**Repositorio:** https://github.com/sebastins18/Control_Finanzas_Familiares
+**Tablero existente:** https://github.com/users/sebastins18/projects/1
 **Despliegue académico:** https://diego01.grupo5.crnube.org/finanzas/login (únicamente datos sintéticos).
 
 Esta matriz distingue **evidencia técnica comprobada** de requisitos de equipo que todavía no se pueden certificar. No reemplaza la evaluación del profesor.

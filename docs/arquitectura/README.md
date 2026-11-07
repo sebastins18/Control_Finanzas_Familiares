@@ -1,6 +1,6 @@
-# Arquitectura integrada V17 — Seguimiento 2
+# Arquitectura integrada V17 — Seguimiento 2 (histórica)
 
-> La documentación debajo del encabezado **S1 histórico** describe el estado al 16/10. La arquitectura actual incluye funcionalidades ampliadas del ZIP V17 y debe revisarse junto con [`modelo-v17.md`](modelo-v17.md).
+> Este documento conserva la evolución S1/V17. La autenticación JSON y el conteo de tablas descritos corresponden a esas etapas. La referencia vigente es [Arquitectura S4](ARQUITECTURA_S4.md): usuarios en SQLite, 17 tablas y despliegue S4 en `8a88aeb`. Revisar [`modelo-v17.md`](modelo-v17.md) como modelo histórico, no como inventario actual. La sección **S1 histórico** describe el estado al 16/10.
 
 ```mermaid
 flowchart LR

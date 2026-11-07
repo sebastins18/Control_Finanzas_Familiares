@@ -52,27 +52,30 @@
 - **Reporte anual** (`/reportes/anual`): totales mensuales por categoría y moneda, con CSV (D-019).
 - **Movimientos recurrentes:** plantillas mensuales y generación explícita e idempotente; tablas nuevas `movimientos_recurrentes` y `recurrentes_generados`, sin cambios en las existentes (D-020).
 - **Formularios rediseñados**, brillo que sigue al puntero en paneles y botones, e indicador animado en selectores y pestañas; mismos nombres y valores enviados al servidor (D-021).
-- **Datos de demostración:** `scripts/demo_temporal.py` (perfil DEMO separado) queda solo en el tag `v0.4.0`; en `main` se retiró para que el despliegue del servidor no incluya cargadores de datos ficticios.
-- **Pruebas:** 103/103 en Python 3.11 y 3.12 (+18: `test_historial_reportes.py`, `test_formularios_v2.py`).
+- **Datos de demostración — errata aclarada el 6/11:** el árbol inspeccionado de `v0.4.0` y el HEAD actual no contienen `scripts/demo_temporal.py`. La afirmación anterior de que quedaba en ese tag era incorrecta; utilizar `scripts/seed.py` sobre una base nueva de ensayo.
+- **Pruebas históricas de v0.4.0:** 103/103 en Python 3.11 y 3.12 (+18: `test_historial_reportes.py`, `test_formularios_v2.py`).
 - Detalle de uso: [docs/consultas_reportes_recurrentes.md](docs/consultas_reportes_recurrentes.md).
 
-## S4 — release candidate integrado en main (6/11/2026; tag v0.9.0 pendiente)
+## S4 — integración técnica, despliegue y evidencia local (6/11/2026)
 
-- Preparados la guía reproducible de instalación desde cero, `S4.md`, `portal.yml`, roadmap y guion de exposición con riesgos/evidencias pendientes.
-- Nueva comprobación de instalación limpia sobre SQLite temporal: init, seed idempotente, conexión, integridad, WAL, login HTTP y cabeceras.
-- Nuevo respaldo SQLite coherente con bases activas en WAL mediante `sqlite3.Connection.backup` y verificación de integridad/relaciones; nunca sobrescribe archivos.
-- Arranque de SQLite nuevo con prefijo web exige contraseña inicial de administrador de 12+ caracteres (evita `admin123!` en despliegues nuevos); bases ya existentes conservan el hash.
-- Cookies de sesión con `Secure` optativo mediante `FINANZAS_COOKIE_SECURE=1` bajo HTTPS; se añaden cabeceras `X-Frame-Options: DENY` y `Referrer-Policy: same-origin`.
-- CI ampliado y **confirmado** sobre el merge de S4 `4cbf76a` ([run 42303414421](https://github.com/sebastins18/Control_Finanzas_Familiares/actions/runs/42303414421)): Linux Python 3.11/3.12 y Windows Python 3.12, tres trabajos correctos.
-- No se declara demo/manual hecha por otro integrante, video publicado ni release `v1.0.0` hasta contar con evidencia auténtica.
+- Base técnica actual `main`, `8a88aeb`; se mantienen los cambios de código, seguridad, respaldo SQLite, CI y pruebas de los PR #20, #21 y #22.
+- Instalación limpia aislada con init, seed idempotente, conexión, integridad, WAL, login HTTP y cookies. Respaldo coherente con WAL mediante `sqlite3.Connection.backup`, validación de integridad/FK y destino sin sobrescritura.
+- Para una base nueva con prefijo web o con `FINANZAS_REQUIRE_STRONG_ADMIN_PASSWORD=1`, se exige clave inicial privada de 12+ caracteres y se rechaza la credencial pública de demostración. Bases existentes conservan sus hashes.
+- Cookie Secure configurable mediante `FINANZAS_COOKIE_SECURE=1` bajo HTTPS; cabeceras `X-Frame-Options: DENY` y `Referrer-Policy: same-origin`.
+- CI histórico verificado sobre `4cbf76a`: [run 42303414421](https://github.com/sebastins18/Control_Finanzas_Familiares/actions/runs/42303414421), Linux Python 3.11/3.12 y Windows 3.12, tres trabajos correctos. No se declara una nueva corrida sobre la revisión documental.
+- **S4 desplegado en CRNube el 6/11/2026 sobre `8a88aeb`**, con respaldo SQLite consistente anterior a la actualización, según el responsable. SQLite del despliegue: **WAL, 17 tablas, integridad `ok`, cero errores FK**. El GET público del login es una comprobación separada y limitada.
+- Evidencia local vigente: **109/109 pruebas de regresión correctas**, 188.515 s, y **27/27 E2E satisfactorias**, 0 fallidas/omitidas. [Consola](evidencias/s4_final/reportes/complementarias/regresion.txt), [resumen E2E](evidencias/s4_final/reportes/e2e/reportes/RESUMEN.md), instalación automática y carga/respaldo de ensayo de 1.000 registros.
+- Existen capturas y video auténticos locales. Se conservan la primera grabación y las versiones de trabajo 1080p, voz, guion y subtítulos. **El video final sincronizado sigue en preparación; no se afirma su publicación.** Los nombres `FINAL` no equivalen a aceptación editorial.
+- **S3 cerrado técnicamente** en [Issue #3](https://github.com/sebastins18/Control_Finanzas_Familiares/issues/3), estado `closed`, razón `completed`. Volumen de 100.000 e índices/EQP sustentan profundidad; la comparación WAL/DELETE es opcional. No se atribuye aprobación docente.
+- `v0.9.0` y `v1.0.0` **no aparecen en la consulta real de tags remotos al corte** (`git ls-remote --heads --tags origin`). No se crean ni publican versiones en esta tarea.
+- Pendientes académicos: instalación por otro integrante siguiendo solo README, revisión final del video y publicación autorizada con acceso del profesor, acta/comentarios, fecha de exposición, PDF y revisión del candidato.
 
-- PR #20 fusionado a `main`; terminal del grupo verificó **109/109 tests OK** en Windows y una instalación limpia S4 exitosa.
-- Arquitectura actual, matriz de cumplimiento, acta pendiente y guion de video documentados; el despliegue del servidor del profesor se mantiene sin cambios por instrucción del responsable.
-- **Pendiente:** tag `v0.9.0` después de aprobación, video de 3–5 min, instalación por otra persona, capturas actuales y documentación final de exposición.
+## Consolidación documental del aporte de Diego — 6/11/2026
 
-## Integración documental del respaldo S4 de Diego — 6/11/2026
-
-- Se integra históricamente el commit de `dfonseca15` [`4b0bfed`](https://github.com/sebastins18/Control_Finanzas_Familiares/commit/4b0bfed6ae37e527daf72fc3b6aa8727e990e199), realizado en la rama `respaldo-documentacion-s4`.
-- Se agrega la comprobación SQLite de solo lectura a `docs/INSTALACION_S4.md` y el [registro de diferencias y atribución](docs/seguimientos/S4_APORTE_RESPALDO_DIEGO.md).
-- No se reemplaza la documentación S4 más reciente de `main` ni se confunden los 105 tests históricos del respaldo con los 109 de la suite local posterior.
-- Sin cambios de código ejecutable, SQLite, WebAdmin, tags ni evidencias humanas.
+- Se recupera y acredita la documentación detallada de **Diego Fonseca (`dfonseca15`)**, commit [`4b0bfed`](https://github.com/sebastins18/Control_Finanzas_Familiares/commit/4b0bfed6ae37e527daf72fc3b6aa8727e990e199): propósito, usuarios, arquitectura, instalación, lectura SQLite, matriz académica S4, ficha independiente, verificaciones y roadmap.
+- Comparación actual: `origin/respaldo-documentacion-s4...origin/main` = **0 / 9**. El commit original ya está integrado en la ascendencia de main; la consolidación es editorial, sin otro merge ni sustitución automática de archivos históricos.
+- Se actualizan README, esta bitácora, S4 y documentos de entrega conservando la base técnica y todos los materiales locales de QA/video. [Registro de atribución y diferencias](docs/seguimientos/S4_APORTE_RESPALDO_DIEGO.md).
+- **103 y 105 pruebas quedan únicamente como antecedentes históricos**: 103 en la etapa v0.4.0/registro de calidad anterior; 105 aportadas sobre `94412a1`, sin consola original adjunta. Ninguna reemplaza las 109 vigentes ni se suma a ellas.
+- `portal.yml` mantiene exactamente los 15 campos académicos y sus valores; se actualizan solo comentarios. Video y captura conservan cadenas vacías por falta de URL pública autorizada; autores públicos permanecen vacíos.
+- Los enlaces relativos de evidencia son locales y no acreditan publicación en GitHub. ZIP/manifiestos anteriores conservan su corte de ejecución. La documentación no convierte instalación automática en validación humana ni cierre técnico en aprobación académica.
+- Sin cambios de código, bases, credenciales, CI o tests; sin commit, push, merge, tags, publicaciones ni acceso a WebAdmin.

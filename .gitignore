@@ -2,6 +2,8 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 .venv/
+.venv-e2e/
+**/.venv_*/
 venv/
 .env
 .env.*
@@ -82,3 +84,32 @@ evidencia_s4_ci.md
 # Evidencias generadas localmente, conservar fuera del commit
 /evidencia_s2_windows.md
 /evidencia_s2_crnube.md
+
+# Multimedia generado: se conserva localmente y se publica fuera de Git.
+/evidencias/**/*.mp4
+/evidencias/**/*.webm
+/evidencias/**/*.wav
+/evidencias/**/*.mp3
+/evidencias/**/*.m4a
+/evidencias/**/*.zip
+/evidencias/audio_generado/
+/evidencias/**/intermedios/
+/evidencias/**/reportes/*.html
+/evidencias/**/reportes/regresion.txt
+/evidencias/**/reportes/instalacion.txt
+/evidencias/**/reportes/verificacion_video/
+/evidencias/s4_final/reportes/revision_escenas/
+/evidencias/**/*.png
+# Solo las capturas revisadas de la ejecución final.
+!/evidencias/s4_final/capturas/01_login.png
+!/evidencias/s4_final/capturas/02_dashboard.png
+!/evidencias/s4_final/capturas/03_crear_ingreso.png
+!/evidencias/s4_final/capturas/04_crear_gasto.png
+!/evidencias/s4_final/capturas/05_editar_movimiento.png
+!/evidencias/s4_final/capturas/06_eliminar_movimiento.png
+!/evidencias/s4_final/capturas/07_presupuestos.png
+!/evidencias/s4_final/capturas/08_alerta_80.png
+!/evidencias/s4_final/capturas/09_alerta_100.png
+!/evidencias/s4_final/capturas/10_historial.png
+!/evidencias/s4_final/capturas/11_reporte_anual.png
+!/evidencias/s4_final/capturas/12_validacion_error.png
