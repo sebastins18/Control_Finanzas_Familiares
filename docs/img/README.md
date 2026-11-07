@@ -1,7 +1,7 @@
-# Capturas de pantalla para la entrega
+# Capturas auténticas para la entrega
 
-Agregar aquí únicamente **capturas auténticas** de una ejecución real del MVP con datos inventados, sin credenciales, cédulas ni información financiera personal.
+Ya existen capturas funcionales reales del 6/11/2026: [serie 1080p](../../evidencias/s4_final/capturas/) y [serie original](../../evidencias/s4/capturas/), con datos ficticios. Incluyen login, dashboard, CRUD, presupuesto, alertas, historial, reporte y validación. No es necesario duplicarlas en esta carpeta para acreditar su existencia local.
 
-Nombre recomendado: `captura.png` (dashboard). Después de publicar y revisar la imagen, actualizar `portal.yml` en `captura` y agregar el enlace en el README.
+La URL pública autorizada sigue pendiente. Después de revisar y publicar selectivamente una captura auténtica, actualizar `portal.yml` en `captura` y el README con el enlace real. El campo vacío actual indica falta de URL aprobada, no falta de capturas.
 
-No reemplazar la evidencia por una imagen generada: la rúbrica pide demostrar funcionamiento.
+Mantener fuera credenciales, cédulas y datos financieros personales. Una imagen generada o el logotipo no reemplazan evidencia funcional. [Estado y matriz S4](../seguimientos/S4.md).

@@ -1,0 +1,207 @@
+1
+00:00:02,120 --> 00:00:05,960
+MisFinanzas organiza ingresos y gastos familiares con Python,
+
+2
+00:00:06,040 --> 00:00:12,600
+HTML, CSS y SQLite. Esta demostración usa una instancia local,
+
+3
+00:00:12,740 --> 00:00:16,200
+datos ficticios y un navegador real controlado por Playwright.
+
+4
+00:00:17,120 --> 00:00:20,135
+Iniciamos sesión con la cuenta ficticia y elegimos su perfil
+
+5
+00:00:20,160 --> 00:00:23,780
+financiero. La contraseña permanece enmascarada.
+
+6
+00:00:24,220 --> 00:00:28,180
+Los permisos del perfil se gestionan separadamente del acceso de la cuenta.
+
+7
+00:00:29,120 --> 00:00:32,540
+El panel muestra saldos, movimientos y planificación.
+
+8
+00:00:33,140 --> 00:00:36,195
+Partimos sin movimientos para poder atribuir cada cambio a las
+
+9
+00:00:36,220 --> 00:00:38,100
+operaciones de esta demostración.
+
+10
+00:00:39,120 --> 00:00:41,720
+Consultamos las cuentas desde el menú.
+
+11
+00:00:42,340 --> 00:00:47,415
+Trabajamos en colones. Después creamos, editamos y eliminamos
+
+12
+00:00:47,440 --> 00:00:51,660
+una categoría temporal, y preparamos otra para el presupuesto.
+
+13
+00:00:57,120 --> 00:01:00,420
+Registramos un ingreso ficticio de mil colones.
+
+14
+00:01:01,160 --> 00:01:05,135
+La suite comprueba el movimiento en pantalla y verifica que SQLite
+
+15
+00:01:05,160 --> 00:01:07,040
+guarda cien mil centavos.
+
+16
+00:01:11,120 --> 00:01:15,100
+Agregamos un gasto de veinticinco colones en alimentación.
+
+17
+00:01:15,640 --> 00:01:19,455
+La aplicación guarda los importes en centavos enteros y permite
+
+18
+00:01:19,480 --> 00:01:21,920
+consultar inmediatamente el resultado.
+
+19
+00:01:25,120 --> 00:01:29,580
+Editamos el gasto a treinta y cinco colones y cambiamos su descripción.
+
+20
+00:01:30,180 --> 00:01:34,400
+La suite contrasta ambos campos de la interfaz con SQLite.
+
+21
+00:01:38,120 --> 00:01:41,755
+Eliminamos el gasto y comprobamos que desaparece de la pantalla
+
+22
+00:01:41,780 --> 00:01:45,620
+y de la base. El ingreso permanece registrado.
+
+23
+00:01:52,120 --> 00:01:55,795
+Creamos un presupuesto de cien colones para una categoría sin
+
+24
+00:01:55,820 --> 00:02:01,940
+gastos anteriores. Esto permite comprobar los umbrales con importes exactos.
+
+25
+00:02:07,120 --> 00:02:10,240
+Con ochenta colones aparece Cerca del límite:
+
+26
+00:02:10,340 --> 00:02:12,820
+es exactamente el ochenta por ciento.
+
+27
+00:02:13,600 --> 00:02:16,880
+SQLite conserva la alerta correspondiente.
+
+28
+00:02:23,120 --> 00:02:25,060
+Agregamos veinte colones.
+
+29
+00:02:25,840 --> 00:02:28,760
+El total llega a cien y cambia a Excedido.
+
+30
+00:02:29,420 --> 00:02:32,720
+Se comprueban las alertas del ochenta y cien por ciento.
+
+31
+00:02:35,120 --> 00:02:37,580
+El historial muestra tres movimientos:
+
+32
+00:02:37,760 --> 00:02:40,840
+un ingreso de mil y dos gastos que suman cien.
+
+33
+00:02:41,580 --> 00:02:44,140
+Los totales están separados por moneda.
+
+34
+00:02:46,120 --> 00:02:49,980
+Combinamos búsqueda, tipo, categoría, cuenta y fechas.
+
+35
+00:02:50,320 --> 00:02:52,360
+Queda el gasto de ochenta colones.
+
+36
+00:02:53,000 --> 00:02:57,160
+El CSV descargado respeta el filtro y coincide con SQLite.
+
+37
+00:02:58,120 --> 00:03:02,460
+El reporte anual permite cambiar de año y exportar los resultados.
+
+38
+00:03:04,120 --> 00:03:08,220
+La tabla anual muestra mil colones de ingreso y cien de gasto.
+
+39
+00:03:08,800 --> 00:03:15,380
+El CSV descargado coincide en categoría, mes, año e importes con SQLite.
+
+40
+00:03:17,120 --> 00:03:19,120
+Introducimos un monto negativo.
+
+41
+00:03:19,380 --> 00:03:23,200
+El navegador bloquea el formulario y muestra su validación nativa.
+
+42
+00:03:23,580 --> 00:03:26,040
+La suite comprueba que no se guardó el movimiento.
+
+43
+00:03:27,120 --> 00:03:30,855
+Omitimos deliberadamente la validación del navegador para probar
+
+44
+00:03:30,880 --> 00:03:34,655
+el servidor. Responde error cuatrocientos:
+
+45
+00:03:34,680 --> 00:03:39,100
+el monto debe ser mayor que cero. La base no cambia.
+
+46
+00:03:40,120 --> 00:03:44,035
+La cuenta estándar recibe error cuatrocientos tres en administración
+
+47
+00:03:44,060 --> 00:03:48,835
+y calidad. Cerramos sesión y comprobamos que las rutas protegidas
+
+48
+00:03:48,860 --> 00:03:50,940
+vuelven a pedir autenticación.
+
+49
+00:03:53,120 --> 00:03:56,535
+Pasaron veintisiete pruebas de extremo a extremo y, por separado,
+
+50
+00:03:56,560 --> 00:03:57,980
+ciento nueve de regresión.
+
+51
+00:03:58,300 --> 00:04:01,060
+También pasaron instalación automática y carga local.
+
+52
+00:04:01,520 --> 00:04:06,100
+Siguen pendientes la revisión del grupo, la instalación independiente y la evaluación docente.

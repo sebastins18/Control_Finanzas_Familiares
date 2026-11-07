@@ -1,6 +1,6 @@
 # Arquitectura vigente del MVP — Seguimiento 4
 
-**Corte verificado:** 6 de noviembre de 2026, `main` después del PR #20 (`4cbf76a`). Esta ficha actualiza los esquemas históricos de S1 y V17; **no** sustituye sus registros de evolución.
+**Corte verificado:** 6 de noviembre de 2026, `main`, `8a88aeb`, con los cambios técnicos de S4 y sus correcciones posteriores. Esta ficha actualiza los esquemas históricos de S1 y V17; **no** sustituye sus registros de evolución.
 
 ## Arquitectura de ejecución
 
@@ -17,7 +17,7 @@ flowchart LR
   B[sqlite3.Connection.backup] --> D
 ```
 
-En instalación local no se necesita Apache: el navegador conecta directamente al servidor Python en `127.0.0.1:8000`. La publicación de CRNube **no se actualizó ni validó con S4** en esta fase.
+En instalación local no se necesita Apache: el navegador conecta directamente al servidor Python en `127.0.0.1:8000`. S4 fue desplegado en CRNube el **6/11/2026 sobre `8a88aeb`**, con respaldo SQLite consistente anterior, según confirmó el responsable. La verificación interna aportada registra **WAL, 17 tablas, integridad `ok` y cero errores FK**. El GET público del login documentado por la automatización no certifica por sí solo el commit o el estado interno del servidor.
 
 ## Módulos del código vigente
 
@@ -36,7 +36,7 @@ En instalación local no se necesita Apache: el navegador conecta directamente a
 
 ## Modelo y profundidad de base de datos
 
-Se utiliza **un único motor SQLite**, no PostgreSQL ni MongoDB. Contiene entidades de usuarios, perfiles, cuentas, categorías, movimientos, presupuestos, monedas, tasas, alertas, metas/ahorro, transferencias, comprobantes y movimientos recurrentes. El modelo evolucionó desde las cinco tablas iniciales S1 y el listado de trece tablas V17; por eso se debe consultar el **DDL y las migraciones actuales** al preparar un diagrama físico definitivo, sin afirmar que el modelo todavía tiene exactamente trece tablas.
+Se utiliza **un único motor SQLite**, no PostgreSQL ni MongoDB. Contiene entidades de usuarios, perfiles, cuentas, categorías, movimientos, presupuestos, monedas, tasas, alertas, metas/ahorro, transferencias, comprobantes y movimientos recurrentes. El modelo evolucionó desde las cinco tablas iniciales S1 y el listado de trece tablas V17; la inicialización vigente crea **17 tablas de aplicación**, por lo que se debe consultar el **DDL y las migraciones actuales** al preparar un diagrama físico definitivo, sin afirmar que el modelo todavía tiene exactamente trece tablas.
 
 Medidas demostrables: `PRAGMA foreign_keys`, `integrity_check`, modo WAL para la base de aplicación, SQL parametrizado, transacciones y `EXPLAIN QUERY PLAN`. Las mediciones S3 son **locales, sintéticas y no comparan motores**. Véanse [S3_mediciones.md](../seguimientos/S3_mediciones.md) e [indices_s3.md](../seguimientos/indices_s3.md).
 
@@ -51,5 +51,7 @@ Medidas demostrables: `PRAGMA foreign_keys`, `integrity_check`, modo WAL para la
 ## Limitaciones y control de alcance
 
 El MVP utiliza `http.server`, sesiones en memoria y aún carece de una política CSRF completa y de protección general contra intentos automatizados. Un CI exitoso **no es certificación de seguridad ni de disponibilidad del sitio público**. Mantener solamente datos ficticios y respaldos privados fuera de `public_html`.
+
+La explicación de arquitectura se consolida con el aporte de Diego Fonseca (`dfonseca15`, `4b0bfed`), [atribución y diferencias](../seguimientos/S4_APORTE_RESPALDO_DIEGO.md). Las 109 regresiones y 27 E2E correctas son evidencia local, no certificación operativa del servidor.
 
 [Guía de instalación S4](../INSTALACION_S4.md) · [Bitácora S4](../seguimientos/S4.md)
