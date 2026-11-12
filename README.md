@@ -13,15 +13,15 @@ Es un MVP académico open source con datos ficticios. El backend utiliza Python 
 | Base técnica | `main`, commit `8a88aeb`; se conservan código, seguridad, respaldo, CI y pruebas de S4 | Historial Git; PR #20, #21 y #22 |
 | CRNube | S4 desplegado el **6/11/2026 sobre `8a88aeb`**, con respaldo SQLite consistente anterior a la actualización | Confirmación del responsable; esta revisión documental no administra el servidor |
 | SQLite del despliegue | **WAL, 17 tablas, integridad `ok` y 0 errores de claves foráneas** | Verificación del despliegue aportada por el responsable; comprobaciones locales separadas |
-| Regresión | **109/109 pruebas correctas** | [Consola local](evidencias/s4_final/reportes/complementarias/regresion.txt) y [resumen de comprobaciones](evidencias/s4_final/reportes/complementarias/comprobaciones_adicionales.json) |
-| Navegador | **27/27 E2E satisfactorias, 0 fallidas y 0 omitidas**, con capturas y video auténtico | [Reporte local E2E](evidencias/s4_final/reportes/e2e/reportes/RESUMEN.md) |
+| Regresión | **109/109 pruebas correctas** en el registro histórico del 6/11/2026 | [Matriz histórica S4](docs/seguimientos/ENTREGA_S4.md); consola y reporte de comprobaciones originales no disponibles en este checkout. La ejecución del 11/11/2026 se documenta por separado en la tabla de evidencias |
+| Navegador | **27/27 E2E satisfactorias, 0 fallidas y 0 omitidas**, según el registro histórico del 6/11/2026 | [Matriz histórica S4](docs/seguimientos/ENTREGA_S4.md); reporte original no disponible en este checkout, sin nueva ejecución E2E |
 | S3 | Cerrado técnicamente en [Issue #3](https://github.com/sebastins18/Control_Finanzas_Familiares/issues/3) | GitHub: `closed`, motivo `completed`; sin atribuir aprobación docente |
 | Video | Hay grabaciones y versiones de trabajo locales; el **video final sincronizado sigue en preparación para la entrega y no está publicado** | [Estado y evidencias audiovisuales](docs/seguimientos/VIDEO_S4.md) |
 | Versión | **`v0.9.0` no aparece en las etiquetas remotas consultadas**; requiere revisión y autorización | Consulta de `git ls-remote --heads --tags origin` del 6/11/2026 |
 
-El login público es [MisFinanzas en CRNube](https://diego01.grupo5.crnube.org/finanzas/login). El [registro de GET HTTPS](evidencias/s4_final/reportes/login_publico.json) devuelve HTTP 200 sin autenticación; ese GET no comprueba por sí solo el commit ni los datos internos del servidor. La [matriz de entrega S4](docs/seguimientos/ENTREGA_S4.md) distingue evidencias locales, comprobaciones remotas y validaciones humanas pendientes.
+El login público es [MisFinanzas en CRNube](https://diego01.grupo5.crnube.org/finanzas/login). La [bitácora histórica S4](docs/seguimientos/S4.md#evidencia-vigente-y-procedencia) registra un GET HTTPS con HTTP 200 sin autenticación; el reporte original no está disponible en este checkout; ese GET no comprueba por sí solo el commit ni los datos internos del servidor. La [matriz de entrega S4](docs/seguimientos/ENTREGA_S4.md) distingue evidencias locales, comprobaciones remotas y validaciones humanas pendientes.
 
-Los enlaces a `evidencias/` y `scripts/e2e/` identifican archivos presentes en esta copia de trabajo. No equivalen a archivos publicados en GitHub ni a enlaces públicos de video. Esta consolidación y la automatización local aún deben revisarse antes de incorporarlas mediante un commit.
+Las capturas enlazadas, los reportes de Virtualmin incorporados y las guías de `scripts/e2e/` están disponibles en esta copia de trabajo; los reportes históricos ausentes se identifican expresamente. No equivalen a archivos publicados en GitHub ni a enlaces públicos de video. Esta consolidación y la automatización local aún deben revisarse antes de incorporarlas mediante un commit.
 
 ## Funcionalidades actuales
 
@@ -182,7 +182,7 @@ No copiar directamente un archivo SQLite activo en WAL como sustituto de la API 
 
 | Material | Evidencia existente | Pendiente |
 | --- | --- | --- |
-| Pruebas | [27 E2E](evidencias/s4_final/reportes/e2e/reportes/RESUMEN.md), [109 regresiones, instalación, carga y respaldo](evidencias/s4_final/reportes/complementarias/comprobaciones_adicionales.json) | Adjuntar o publicar los archivos aprobados |
+| Pruebas y mediciones del 11/11/2026 | [109/109 regresiones](evidencias/s4_final/reportes/virtualmin/suite.json), [mediciones con y sin índices](evidencias/s4_final/reportes/virtualmin/benchmark.md) y [procedencia, hashes y alcance](docs/seguimientos/evidencia_final_pruebas.md). La [matriz histórica S4](docs/seguimientos/ENTREGA_S4.md) conserva las 27 E2E y los registros del 6/11/2026 de regresión, instalación, carga y respaldo | Publicar los archivos aprobados; reporte E2E original no disponible en este checkout, sin nueva ejecución E2E |
 | Capturas auténticas | [Login](evidencias/s4_final/capturas/01_login.png), [dashboard](evidencias/s4_final/capturas/02_dashboard.png), [presupuesto](evidencias/s4_final/capturas/07_presupuestos.png), [historial](evidencias/s4_final/capturas/10_historial.png), [reporte](evidencias/s4_final/capturas/11_reporte_anual.png) y CRUD en la misma carpeta | Publicación selectiva tras revisión |
 | Video auténtico | [Primera toma local](evidencias/s4/video/MisFinanzas_S4.mp4), guiones y versiones de trabajo sincronizadas en `evidencias/s4_final/` | **Video final sincronizado en preparación**, revisión del grupo, URL y permisos del profesor |
 | Ficha del portal | [portal.yml](portal.yml): 15 campos académicos y cuatro integrantes registrados en `autores_publicos` | `demo_video` y `captura` vacíos hasta disponer de URL aprobadas |
