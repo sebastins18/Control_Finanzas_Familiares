@@ -11,7 +11,7 @@
 | Guion y subtítulos de trabajo | [Guion](../../evidencias/s4_final/MisFinanzas_S4_FINAL_Guion.md), [SRT](../../evidencias/s4_final/MisFinanzas_S4_FINAL_Subtitulos.srt) |
 | Revisiones técnicas existentes | [Validación audiovisual local](../../evidencias/s4_final/MisFinanzas_S4_FINAL_Validacion.md); son registros técnicos, no aprobación editorial o docente |
 | Capturas reales | [Serie 1080p](../../evidencias/s4_final/capturas/) y [serie original](../../evidencias/s4/capturas/) |
-| Pruebas actuales | [27 E2E correctas](../../evidencias/s4_final/reportes/e2e/reportes/RESUMEN.md) y [109 regresiones correctas](../../evidencias/s4_final/reportes/complementarias/regresion.txt) |
+| Pruebas históricas de la grabación (6/11/2026) | [27 E2E correctas](../../evidencias/s4_final/reportes/e2e/reportes/RESUMEN.md) y [109 regresiones correctas](../../evidencias/s4_final/reportes/complementarias/regresion.txt) |
 | Reproducibilidad | [QA](../../scripts/e2e/README.md), [presentación](../../scripts/e2e/PRESENTACION.md) |
 
 Las grabaciones muestran Chromium y SQLite temporal con datos ficticios, código `8a88aeb`; no simulan una interfaz implementada. S4 fue desplegado en CRNube el 6/11/2026 con respaldo previo, WAL, 17 tablas, integridad `ok` y FK 0, según el responsable. Esta producción local no administra el servidor: su GET público no demuestra operaciones autenticadas.

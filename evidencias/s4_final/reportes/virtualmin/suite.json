@@ -1,12 +1,12 @@
 {
- "generado": "2026-11-11T12:16:21",
- "segundos": 113.33,
+ "generado": "2026-11-12T10:18:51",
+ "segundos": 123.43,
  "entorno": {
   "python": "3.12.3",
   "sqlite": "3.45.1",
   "sistema": "Linux"
  },
- "total": 109,
+ "total": 122,
  "exito": true,
  "archivos": [
   {
@@ -16,8 +16,97 @@
    "fallos": 0,
    "errores": 0,
    "omitidos": 0,
-   "segundos": 9.425,
+   "segundos": 9.343,
    "problemas": [],
+   "pruebas": [
+    {
+     "clase": "AuthSQLiteTests",
+     "prueba": "test_defaults_and_idempotence",
+     "significado": "Inicializar la base crea el administrador con contraseña cifrada (hash + salt) y repetirlo no cambia nada.",
+     "funciones": [
+      "db.init_db()",
+      "app.user_by_name()",
+      "auth.hash_password()"
+     ],
+     "resultado": "ok",
+     "segundos": 0.598,
+     "detalle": ""
+    },
+    {
+     "clase": "AuthSQLiteTests",
+     "prueba": "test_fresh_cli_custom_password_ignores_invalid_json",
+     "significado": "Una instalación nueva usa la contraseña inicial indicada aunque el JSON heredado esté dañado.",
+     "funciones": [
+      "app.user_by_name()",
+      "auth.hash_password()",
+      "auth.credentials()"
+     ],
+     "resultado": "ok",
+     "segundos": 0.739,
+     "detalle": ""
+    },
+    {
+     "clase": "AuthSQLiteTests",
+     "prueba": "test_fresh_cli_ignores_json_and_preserves_existing_credentials",
+     "significado": "El script de instalación ignora el JSON heredado y no sobrescribe las credenciales que ya existen.",
+     "funciones": [
+      "app.user_by_name()",
+      "auth.register()",
+      "auth.hash_password()",
+      "Ruta /login → Handler.do_POST (inicio de sesión) → auth.hash_password()",
+      "Ruta /perfiles/elegir → profiles.selection_page()"
+     ],
+     "resultado": "ok",
+     "segundos": 2.372,
+     "detalle": ""
+    },
+    {
+     "clase": "AuthSQLiteTests",
+     "prueba": "test_http_users_roles_and_permissions",
+     "significado": "Por HTTP, solo el administrador gestiona usuarios y los roles se validan; un usuario normal recibe 403.",
+     "funciones": [
+      "db.init_db()",
+      "Ruta /login → Handler.do_POST (inicio de sesión) → auth.hash_password()",
+      "Ruta /perfiles/seleccionar → profiles.access()",
+      "Ruta /perfiles → profiles.page()",
+      "Ruta /admin/usuarios/guardar → Handler.do_POST → auth.save_users()",
+      "Ruta /movimientos → db.save_movement()",
+      "Ruta /admin/cambiar-clave → Handler.do_POST → auth.hash_password()",
+      "app.user_by_name()"
+     ],
+     "resultado": "ok",
+     "segundos": 3.946,
+     "detalle": ""
+    },
+    {
+     "clase": "AuthSQLiteTests",
+     "prueba": "test_migrate_json_preserves_users_and_financial_ids",
+     "significado": "Migrar usuarios desde el JSON antiguo conserva usuarios y los identificadores de los datos financieros.",
+     "funciones": [
+      "db.init_db()",
+      "app.user_by_name()",
+      "auth.hash_password()",
+      "auth.credentials()",
+      "db.SCHEMA.read_text()"
+     ],
+     "resultado": "ok",
+     "segundos": 1.303,
+     "detalle": ""
+    },
+    {
+     "clase": "AuthSQLiteTests",
+     "prueba": "test_migrate_role_table_to_fixed_user_field",
+     "significado": "La migración de la antigua tabla de roles deja el rol como campo fijo del usuario sin perder datos.",
+     "funciones": [
+      "auth.hash_password()",
+      "db.init_db()",
+      "app.user_by_name()"
+     ],
+     "resultado": "ok",
+     "segundos": 0.386,
+     "detalle": ""
+    }
+   ],
    "descripcion": "Autenticación SQLite, migración y permisos mediante solicitudes HTTP reales."
   },
   {
@@ -27,8 +116,25 @@
    "fallos": 0,
    "errores": 0,
    "omitidos": 0,
-   "segundos": 1.121,
+   "segundos": 1.312,
    "problemas": [],
+   "pruebas": [
+    {
+     "clase": "BasePathTests",
+     "prueba": "test_prefixed_login_flow",
+     "significado": "Bajo el prefijo /finanzas (proxy de Apache) el login, la elección de perfil y los enlaces funcionan.",
+     "funciones": [
+      "Ruta / → app.dashboard_page()",
+      "Ruta /login → Handler.do_POST (inicio de sesión) → auth.hash_password()",
+      "Ruta /perfiles/elegir → profiles.selection_page()",
+      "Ruta /health → Handler.do_GET (/health)",
+      "Ruta /perfiles/seleccionar → profiles.access()"
+     ],
+     "resultado": "ok",
+     "segundos": 1.312,
+     "detalle": ""
+    }
+   ],
    "descripcion": "Cobertura del reverse proxy para /finanzas en CRNube."
   },
   {
@@ -38,8 +144,32 @@
    "fallos": 0,
    "errores": 0,
    "omitidos": 0,
-   "segundos": 0.376,
+   "segundos": 0.385,
    "problemas": [],
+   "pruebas": [
+    {
+     "clase": "BulkSeedTests",
+     "prueba": "test_bulk_transaction_and_idempotence",
+     "significado": "La carga masiva se guarda en una sola transacción y repetirla no duplica registros.",
+     "funciones": [
+      "scripts.seed_bulk_s2.bulk_load()"
+     ],
+     "resultado": "ok",
+     "segundos": 0.385,
+     "detalle": ""
+    },
+    {
+     "clase": "BulkSeedTests",
+     "prueba": "test_reject_large_unintended_load",
+     "significado": "Una carga masiva mayor al límite permitido (100 000) se rechaza antes de escribir.",
+     "funciones": [
+      "scripts.seed_bulk_s2.bulk_load()"
+     ],
+     "resultado": "ok",
+     "segundos": 0.0,
+     "detalle": ""
+    }
+   ],
    "descripcion": "La carga masiva se confirma o revierte como una transacción."
   },
   {
@@ -49,8 +179,32 @@
    "fallos": 0,
    "errores": 0,
    "omitidos": 0,
-   "segundos": 0.714,
+   "segundos": 1.024,
    "problemas": [],
+   "pruebas": [
+    {
+     "clase": "SQLiteConnectionTest",
+     "prueba": "test_create_schema_and_connect",
+     "significado": "Se crea el esquema SQLite y la aplicación puede conectarse y consultarlo.",
+     "funciones": [
+      "db.init_db()"
+     ],
+     "resultado": "ok",
+     "segundos": 0.433,
+     "detalle": ""
+    },
+    {
+     "clase": "SQLiteConnectionTest",
+     "prueba": "test_idempotent_init",
+     "significado": "Inicializar la base dos veces no falla ni duplica tablas o datos.",
+     "funciones": [
+      "db.init_db()"
+     ],
+     "resultado": "ok",
+     "segundos": 0.591,
+     "detalle": ""
+    }
+   ],
    "descripcion": "Pruebas de conectividad SQLite del MVP (modelo real de cinco tablas)."
   },
   {
@@ -60,8 +214,103 @@
    "fallos": 0,
    "errores": 0,
    "omitidos": 0,
-   "segundos": 9.225,
+   "segundos": 9.85,
    "problemas": [],
+   "pruebas": [
+    {
+     "clase": "ErrorHandlingTests",
+     "prueba": "test_authentication_failure_get_and_post_are_controlled",
+     "significado": "Si falla la base al autenticar, GET y POST responden con un error controlado y sin datos internos.",
+     "funciones": [
+      "Ruta / → app.dashboard_page()",
+      "Ruta /health → Handler.do_GET (/health)",
+      "Ruta /login → Handler.do_POST (inicio de sesión) → auth.hash_password()"
+     ],
+     "resultado": "ok",
+     "segundos": 1.2,
+     "detalle": ""
+    },
+    {
+     "clase": "ErrorHandlingTests",
+     "prueba": "test_cli_failure_has_no_unhandled_traceback",
+     "significado": "Si el script de inicialización falla, muestra un mensaje claro sin traza ni rutas del servidor.",
+     "funciones": [
+      "Script scripts/init_db.py"
+     ],
+     "resultado": "ok",
+     "segundos": 1.663,
+     "detalle": ""
+    },
+    {
+     "clase": "ErrorHandlingTests",
+     "prueba": "test_constraint_and_validation_have_friendly_responses",
+     "significado": "Duplicados y registros relacionados producen mensajes claros (409/400) en lugar de errores técnicos.",
+     "funciones": [
+      "Ruta /admin/cuentas → extension.page()",
+      "Ruta /admin/categorias/guardar → extension.save()",
+      "Ruta /admin/categorias/3/eliminar → extension.delete()",
+      "Ruta /health → Handler.do_GET (/health)"
+     ],
+     "resultado": "ok",
+     "segundos": 1.2,
+     "detalle": ""
+    },
+    {
+     "clase": "ErrorHandlingTests",
+     "prueba": "test_expensive_query_is_interrupted_and_next_connection_works",
+     "significado": "Una consulta demasiado lenta se interrumpe por tiempo y la siguiente conexión funciona normal.",
+     "funciones": [
+      "db.connect()"
+     ],
+     "resultado": "ok",
+     "segundos": 1.123,
+     "detalle": ""
+    },
+    {
+     "clase": "ErrorHandlingTests",
+     "prueba": "test_locked_database_returns_without_retry_loop",
+     "significado": "Con la base bloqueada se responde «ocupada» (503) de inmediato, sin reintentos infinitos.",
+     "funciones": [
+      "Ruta /admin/categorias/guardar → extension.save()"
+     ],
+     "resultado": "ok",
+     "segundos": 1.271,
+     "detalle": ""
+    },
+    {
+     "clase": "ErrorHandlingTests",
+     "prueba": "test_quote_transfer_errors_are_controlled_and_rollback_all_changes",
+     "significado": "Una transferencia con cotización inválida o fallida se rechaza y no deja cambios parciales.",
+     "funciones": [
+      "Ruta /admin/transferencias/guardar → extension.save()"
+     ],
+     "resultado": "ok",
+     "segundos": 1.12,
+     "detalle": ""
+    },
+    {
+     "clase": "ErrorHandlingTests",
+     "prueba": "test_storage_and_unexpected_errors_do_not_break_response",
+     "significado": "Errores de almacenamiento o inesperados devuelven 503/500 con mensaje genérico, sin rutas internas.",
+     "funciones": [
+      "Ruta / → app.dashboard_page()"
+     ],
+     "resultado": "ok",
+     "segundos": 1.159,
+     "detalle": ""
+    },
+    {
+     "clase": "ErrorHandlingTests",
+     "prueba": "test_transaction_rolls_back_and_closes_after_failure",
+     "significado": "Si una escritura falla a mitad, la transacción se revierte y la conexión se cierra.",
+     "funciones": [
+      "db.connect()"
+     ],
+     "resultado": "ok",
+     "segundos": 1.115,
+     "detalle": ""
+    }
+   ],
    "descripcion": "Fallos reales de SQLite y errores durante autenticación: siempre una respuesta."
   },
   {
@@ -71,9 +320,53 @@
    "fallos": 0,
    "errores": 0,
    "omitidos": 0,
-   "segundos": 1.161,
+   "segundos": 1.173,
    "problemas": [],
-   "descripcion": ""
+   "pruebas": [
+    {
+     "clase": "V4Features",
+     "prueba": "test_budget_alerts_and_currency",
+     "significado": "Los presupuestos generan alertas al 80 % y 100 % y respetan la moneda del presupuesto.",
+     "funciones": [
+      "db.save_budget()",
+      "db.save_movement()",
+      "extension.refresh_alerts()",
+      "db.dashboard()"
+     ],
+     "resultado": "ok",
+     "segundos": 0.398,
+     "detalle": ""
+    },
+    {
+     "clase": "V4Features",
+     "prueba": "test_manual_alert_survives_refresh_while_automatic_alerts_recalculate",
+     "significado": "Al recalcular alertas automáticas se conservan las alertas creadas a mano.",
+     "funciones": [
+      "db.save_budget()",
+      "extension.save()",
+      "extension.refresh_alerts()",
+      "db.save_movement()",
+      "db.remove_movement()",
+      "db.init_db()"
+     ],
+     "resultado": "ok",
+     "segundos": 0.424,
+     "detalle": ""
+    },
+    {
+     "clase": "V4Features",
+     "prueba": "test_menus_and_receipt_page",
+     "significado": "La página de comprobantes permite subir archivos y las tablas no administrables (roles) se rechazan.",
+     "funciones": [
+      "extension.receipts_page()",
+      "extension.page()"
+     ],
+     "resultado": "ok",
+     "segundos": 0.35,
+     "detalle": ""
+    }
+   ],
+   "descripcion": "Funcionalidades v4: alertas de presupuesto al 80 % y 100 %, página de comprobantes y alertas manuales."
   },
   {
    "archivo": "test_formularios_v2",
@@ -82,8 +375,94 @@
    "fallos": 0,
    "errores": 0,
    "omitidos": 0,
-   "segundos": 8.3,
+   "segundos": 8.401,
    "problemas": [],
+   "pruebas": [
+    {
+     "clase": "FormsV2Tests",
+     "prueba": "test_alert_switch_marks_read",
+     "significado": "El interruptor «leída» de una alerta se guarda correctamente.",
+     "funciones": [
+      "Ruta /admin/alertas → extension.page()",
+      "Ruta /admin/alertas/guardar → extension.save()"
+     ],
+     "resultado": "ok",
+     "segundos": 1.165,
+     "detalle": ""
+    },
+    {
+     "clase": "FormsV2Tests",
+     "prueba": "test_history_filter_form_round_trip",
+     "significado": "Los filtros del historial se mantienen en el formulario después de aplicarlos.",
+     "funciones": [
+      "Ruta /historial → reportes.history_page()"
+     ],
+     "resultado": "ok",
+     "segundos": 1.146,
+     "detalle": ""
+    },
+    {
+     "clase": "FormsV2Tests",
+     "prueba": "test_movement_edit_round_trip_keeps_values",
+     "significado": "Editar un movimiento muestra sus valores actuales y guardarlo sin cambios los conserva.",
+     "funciones": [
+      "Ruta / → app.dashboard_page()",
+      "Ruta /movimientos/1/actualizar → db.save_movement()"
+     ],
+     "resultado": "ok",
+     "segundos": 1.183,
+     "detalle": ""
+    },
+    {
+     "clase": "FormsV2Tests",
+     "prueba": "test_movement_form_segmented_type_and_amount",
+     "significado": "El formulario de movimiento usa el selector Gasto/Ingreso y el campo de monto con su moneda.",
+     "funciones": [
+      "Ruta / → app.dashboard_page()",
+      "Ruta /movimientos → db.save_movement()"
+     ],
+     "resultado": "ok",
+     "segundos": 1.165,
+     "detalle": ""
+    },
+    {
+     "clase": "FormsV2Tests",
+     "prueba": "test_recurring_edit_round_trip_and_switch_off",
+     "significado": "Editar una plantilla recurrente conserva sus datos y permite desactivarla.",
+     "funciones": [
+      "Ruta /admin/movimientos_recurrentes → extension.page()",
+      "Ruta /admin/movimientos_recurrentes/guardar → extension.save()",
+      "Ruta /admin/movimientos_recurrentes/1/guardar → extension.save()"
+     ],
+     "resultado": "ok",
+     "segundos": 1.269,
+     "detalle": ""
+    },
+    {
+     "clase": "FormsV2Tests",
+     "prueba": "test_recurring_form_switch_and_stepper",
+     "significado": "El formulario de recurrentes tiene el interruptor de activo y el selector de día (1 a 28).",
+     "funciones": [
+      "Ruta /admin/movimientos_recurrentes → extension.page()",
+      "Ruta /admin/movimientos_recurrentes/guardar → extension.save()"
+     ],
+     "resultado": "ok",
+     "segundos": 1.186,
+     "detalle": ""
+    },
+    {
+     "clase": "FormsV2Tests",
+     "prueba": "test_savings_movement_segmented_aporte_retiro",
+     "significado": "Los movimientos de ahorro usan el selector Aporte/Retiro y se guardan con el tipo correcto.",
+     "funciones": [
+      "Ruta /admin/movimientos_ahorro → extension.page()",
+      "Ruta /admin/movimientos_ahorro/guardar → extension.save()"
+     ],
+     "resultado": "ok",
+     "segundos": 1.287,
+     "detalle": ""
+    }
+   ],
    "descripcion": "Formularios rediseñados: se envían como lo haría un navegador y se verifica lo guardado en SQLite."
   },
   {
@@ -93,8 +472,92 @@
    "fallos": 0,
    "errores": 0,
    "omitidos": 0,
-   "segundos": 4.145,
+   "segundos": 2.605,
    "problemas": [],
+   "pruebas": [
+    {
+     "clase": "FxQuoteTests",
+     "prueba": "test_100000_colones_to_dollars_stores_the_original_460_quote",
+     "significado": "Convertir ₡100 000 a dólares con cotización 460 guarda el monto convertido y la cotización original.",
+     "funciones": [
+      "extension.save()",
+      "extension.page()",
+      "finance.conversion()",
+      "finance.historical_conversion()"
+     ],
+     "resultado": "ok",
+     "segundos": 0.37,
+     "detalle": ""
+    },
+    {
+     "clase": "FxQuoteTests",
+     "prueba": "test_100_dollars_to_colones_uses_the_same_460_quote",
+     "significado": "Convertir $100 a colones usa la misma cotización 460 en sentido inverso.",
+     "funciones": [
+      "extension.save()"
+     ],
+     "resultado": "ok",
+     "segundos": 0.37,
+     "detalle": ""
+    },
+    {
+     "clase": "FxQuoteTests",
+     "prueba": "test_form_only_asks_for_the_quote_and_schema_has_no_directional_factor",
+     "significado": "El formulario solo pide la cotización y la tabla de cotizaciones no guarda factores redundantes.",
+     "funciones": [
+      "extension.page()"
+     ],
+     "resultado": "ok",
+     "segundos": 0.36,
+     "detalle": ""
+    },
+    {
+     "clase": "FxQuoteTests",
+     "prueba": "test_insufficient_funds_roll_back_the_quote_too",
+     "significado": "Si no hay saldo suficiente, se revierte la transferencia y también su cotización.",
+     "funciones": [
+      "extension.save()"
+     ],
+     "resultado": "ok",
+     "segundos": 0.366,
+     "detalle": ""
+    },
+    {
+     "clase": "FxQuoteTests",
+     "prueba": "test_invalid_quotes_and_unrepresentable_amounts_do_not_write",
+     "significado": "Cotizaciones inválidas o montos imposibles de representar se rechazan sin escribir nada.",
+     "funciones": [
+      "extension.save()"
+     ],
+     "resultado": "ok",
+     "segundos": 0.383,
+     "detalle": ""
+    },
+    {
+     "clase": "FxQuoteTests",
+     "prueba": "test_later_quote_does_not_modify_an_existing_transfer",
+     "significado": "Registrar una cotización nueva no cambia transferencias ya hechas.",
+     "funciones": [
+      "extension.save()",
+      "finance.conversion()",
+      "finance.historical_conversion()"
+     ],
+     "resultado": "ok",
+     "segundos": 0.385,
+     "detalle": ""
+    },
+    {
+     "clase": "FxQuoteTests",
+     "prueba": "test_same_currency_needs_no_quote",
+     "significado": "Una transferencia entre cuentas de la misma moneda no pide cotización.",
+     "funciones": [
+      "extension.save()"
+     ],
+     "resultado": "ok",
+     "segundos": 0.372,
+     "detalle": ""
+    }
+   ],
    "descripcion": "Cotización legible, dirección automática e historial inmutable."
   },
   {
@@ -104,8 +567,139 @@
    "fallos": 0,
    "errores": 0,
    "omitidos": 0,
-   "segundos": 13.598,
+   "segundos": 13.012,
    "problemas": [],
+   "pruebas": [
+    {
+     "clase": "AnnualReportTests",
+     "prueba": "test_empty_year",
+     "significado": "Un año sin movimientos muestra el reporte vacío sin errores.",
+     "funciones": [
+      "Ruta /reportes/anual → reportes.annual_page()"
+     ],
+     "resultado": "ok",
+     "segundos": 1.141,
+     "detalle": ""
+    },
+    {
+     "clase": "AnnualReportTests",
+     "prueba": "test_monthly_totals_by_category_and_currency",
+     "significado": "El reporte anual suma por mes, categoría y moneda sin mezclar monedas ni años.",
+     "funciones": [
+      "Ruta /reportes/anual → reportes.annual_page()",
+      "Ruta /reportes/anual.csv → reportes.annual_csv()"
+     ],
+     "resultado": "ok",
+     "segundos": 1.189,
+     "detalle": ""
+    },
+    {
+     "clase": "HistoryTests",
+     "prueba": "test_csv_export_respects_filters_and_neutralizes_formulas",
+     "significado": "El CSV exporta solo lo filtrado y neutraliza fórmulas para que Excel no las ejecute.",
+     "funciones": [
+      "Ruta /historial.csv → reportes.history_csv()"
+     ],
+     "resultado": "ok",
+     "segundos": 1.144,
+     "detalle": ""
+    },
+    {
+     "clase": "HistoryTests",
+     "prueba": "test_invalid_filters_return_400_with_reason",
+     "significado": "Filtros inválidos (fechas, ids) devuelven 400 explicando el motivo.",
+     "funciones": [
+      "Ruta /historial → reportes.history_page()",
+      "Ruta /reportes/anual → reportes.annual_page()"
+     ],
+     "resultado": "ok",
+     "segundos": 1.145,
+     "detalle": ""
+    },
+    {
+     "clase": "HistoryTests",
+     "prueba": "test_like_wildcards_are_literal",
+     "significado": "Buscar «%» o «_» en el historial los trata como texto literal, no como comodines SQL.",
+     "funciones": [
+      "Ruta /historial → reportes.history_page()"
+     ],
+     "resultado": "ok",
+     "segundos": 1.15,
+     "detalle": ""
+    },
+    {
+     "clase": "HistoryTests",
+     "prueba": "test_other_profiles_never_appear",
+     "significado": "El historial y sus exportaciones nunca muestran datos de otros perfiles.",
+     "funciones": [
+      "Ruta /historial → reportes.history_page()",
+      "Ruta /historial.csv → reportes.history_csv()",
+      "Ruta /reportes/anual → reportes.annual_page()"
+     ],
+     "resultado": "ok",
+     "segundos": 1.151,
+     "detalle": ""
+    },
+    {
+     "clase": "HistoryTests",
+     "prueba": "test_pagination_and_filters",
+     "significado": "El historial pagina los movimientos y filtra por texto, tipo, categoría, cuenta y fechas.",
+     "funciones": [
+      "Ruta /historial → reportes.history_page()"
+     ],
+     "resultado": "ok",
+     "segundos": 1.419,
+     "detalle": ""
+    },
+    {
+     "clase": "RecurringTests",
+     "prueba": "test_database_enforces_one_occurrence_per_period",
+     "significado": "La base impide dos movimientos generados de la misma plantilla en el mismo mes.",
+     "funciones": [
+      "Ruta /admin/movimientos_recurrentes/guardar → extension.save()"
+     ],
+     "resultado": "ok",
+     "segundos": 1.139,
+     "detalle": ""
+    },
+    {
+     "clase": "RecurringTests",
+     "prueba": "test_generation_is_idempotent_and_respects_deleted_movements",
+     "significado": "Generar recurrentes crea un movimiento por mes sin duplicar y no recrea los que se borraron.",
+     "funciones": [
+      "Ruta /admin/movimientos_recurrentes/guardar → extension.save()",
+      "recurrentes.generate()"
+     ],
+     "resultado": "ok",
+     "segundos": 1.163,
+     "detalle": ""
+    },
+    {
+     "clase": "RecurringTests",
+     "prueba": "test_http_flow_and_inactive_templates",
+     "significado": "Desde la web se generan los recurrentes pendientes y las plantillas inactivas se ignoran.",
+     "funciones": [
+      "Ruta /admin/movimientos_recurrentes/guardar → extension.save()",
+      "Ruta /recurrentes/generar → recurrentes.generate()",
+      "Ruta /admin/movimientos_recurrentes → extension.page()",
+      "Ruta / → app.dashboard_page()"
+     ],
+     "resultado": "ok",
+     "segundos": 1.231,
+     "detalle": ""
+    },
+    {
+     "clase": "RecurringTests",
+     "prueba": "test_invalid_templates_are_rejected",
+     "significado": "Plantillas recurrentes con datos inválidos se rechazan.",
+     "funciones": [
+      "Ruta /admin/movimientos_recurrentes/guardar → extension.save()"
+     ],
+     "resultado": "ok",
+     "segundos": 1.142,
+     "detalle": ""
+    }
+   ],
    "descripcion": "Historial filtrable y paginado, reporte anual, exportación CSV y movimientos recurrentes."
   },
   {
@@ -115,8 +709,72 @@
    "fallos": 0,
    "errores": 0,
    "omitidos": 0,
-   "segundos": 4.608,
+   "segundos": 4.625,
    "problemas": [],
+   "pruebas": [
+    {
+     "clase": "Seguimiento2HttpCrud",
+     "prueba": "test_crud_completo_desde_http_con_autenticacion",
+     "significado": "Con sesión iniciada se crea, consulta, edita y elimina un movimiento por HTTP.",
+     "funciones": [
+      "Ruta / → app.dashboard_page()",
+      "Ruta /movimientos → db.save_movement()",
+      "Ruta /movimientos/1/actualizar → db.save_movement()",
+      "Ruta /movimientos/1/eliminar → db.remove_movement()",
+      "Ruta /login → Handler.do_POST (inicio de sesión) → auth.hash_password()",
+      "Ruta /perfiles/seleccionar → profiles.access()",
+      "Ruta /perfiles/elegir → profiles.selection_page()"
+     ],
+     "resultado": "ok",
+     "segundos": 1.279,
+     "detalle": ""
+    },
+    {
+     "clase": "Seguimiento2HttpCrud",
+     "prueba": "test_post_sin_sesion_no_guarda_datos",
+     "significado": "Un POST sin sesión redirige al login y no guarda nada.",
+     "funciones": [
+      "Ruta /movimientos → db.save_movement()",
+      "Ruta /login → Handler.do_POST (inicio de sesión) → auth.hash_password()"
+     ],
+     "resultado": "ok",
+     "segundos": 0.893,
+     "detalle": ""
+    },
+    {
+     "clase": "Seguimiento2HttpCrud",
+     "prueba": "test_presupuesto_y_alertas_80_y_100_por_http",
+     "significado": "Un presupuesto creado por HTTP dispara alertas al llegar al 80 % y al 100 %.",
+     "funciones": [
+      "Ruta /presupuestos → db.save_budget()",
+      "Ruta /movimientos → db.save_movement()",
+      "Ruta /movimientos/1/actualizar → db.save_movement()",
+      "Ruta /movimientos/1/eliminar → db.remove_movement()",
+      "Ruta / → app.dashboard_page()",
+      "Ruta /login → Handler.do_POST (inicio de sesión) → auth.hash_password()",
+      "Ruta /perfiles/seleccionar → profiles.access()",
+      "Ruta /perfiles/elegir → profiles.selection_page()"
+     ],
+     "resultado": "ok",
+     "segundos": 1.325,
+     "detalle": ""
+    },
+    {
+     "clase": "Seguimiento2HttpCrud",
+     "prueba": "test_solicitud_invalida_no_modifica_sqlite",
+     "significado": "Una solicitud con datos inválidos responde 400 y no modifica la base.",
+     "funciones": [
+      "Ruta /movimientos → db.save_movement()",
+      "Ruta /login → Handler.do_POST (inicio de sesión) → auth.hash_password()",
+      "Ruta /perfiles/seleccionar → profiles.access()",
+      "Ruta /perfiles/elegir → profiles.selection_page()",
+      "Ruta / → app.dashboard_page()"
+     ],
+     "resultado": "ok",
+     "segundos": 1.129,
+     "detalle": ""
+    }
+   ],
    "descripcion": "S2: pruebas HTTP reales sobre SQLite temporal; no se toca la base del curso."
   },
   {
@@ -126,8 +784,43 @@
    "fallos": 0,
    "errores": 0,
    "omitidos": 0,
-   "segundos": 1.229,
+   "segundos": 1.12,
    "problemas": [],
+   "pruebas": [
+    {
+     "clase": "ManualFxTests",
+     "prueba": "test_cached_rate_still_requires_explicit_confirmation",
+     "significado": "Aunque exista una cotización guardada, la transferencia entre monedas exige indicarla explícitamente.",
+     "funciones": [
+      "extension.save()"
+     ],
+     "resultado": "ok",
+     "segundos": 0.366,
+     "detalle": ""
+    },
+    {
+     "clase": "ManualFxTests",
+     "prueba": "test_manual_rate_converts_correctly",
+     "significado": "La cotización manual convierte el monto con el redondeo correcto.",
+     "funciones": [
+      "extension.save()"
+     ],
+     "resultado": "ok",
+     "segundos": 0.372,
+     "detalle": ""
+    },
+    {
+     "clase": "ManualFxTests",
+     "prueba": "test_same_currency_does_not_require_rate",
+     "significado": "Entre cuentas de la misma moneda no se exige tipo de cambio.",
+     "funciones": [
+      "extension.save()"
+     ],
+     "resultado": "ok",
+     "segundos": 0.381,
+     "detalle": ""
+    }
+   ],
    "descripcion": "Pruebas actualizadas al modelo V17 de cambio manual sin API de divisas."
   },
   {
@@ -137,9 +830,47 @@
    "fallos": 0,
    "errores": 0,
    "omitidos": 0,
-   "segundos": 1.183,
+   "segundos": 1.156,
    "problemas": [],
-   "descripcion": ""
+   "pruebas": [
+    {
+     "clase": "MulticurrencyTests",
+     "prueba": "test_budget_converts_from_actual_account_currency",
+     "significado": "El presupuesto convierte el gasto desde la moneda real de la cuenta usando la cotización histórica.",
+     "funciones": [
+      "db.save_movement()",
+      "db.save_budget()",
+      "db.dashboard()"
+     ],
+     "resultado": "ok",
+     "segundos": 0.399,
+     "detalle": ""
+    },
+    {
+     "clase": "MulticurrencyTests",
+     "prueba": "test_separate_monthly_totals",
+     "significado": "Los totales mensuales se calculan por separado para cada moneda.",
+     "funciones": [
+      "db.dashboard()",
+      "db.save_movement()"
+     ],
+     "resultado": "ok",
+     "segundos": 0.375,
+     "detalle": ""
+    },
+    {
+     "clase": "MulticurrencyTests",
+     "prueba": "test_transfer_between_currencies",
+     "significado": "Una transferencia entre monedas descuenta y acredita los montos correctos en cada cuenta.",
+     "funciones": [
+      "extension.save()"
+     ],
+     "resultado": "ok",
+     "segundos": 0.382,
+     "detalle": ""
+    }
+   ],
+   "descripcion": "Multimoneda v7: totales separados por moneda, transferencias entre monedas y presupuestos con conversión."
   },
   {
    "archivo": "test_profiles",
@@ -148,19 +879,326 @@
    "fallos": 0,
    "errores": 0,
    "omitidos": 0,
-   "segundos": 21.186,
+   "segundos": 23.984,
    "problemas": [],
+   "pruebas": [
+    {
+     "clase": "ProfileMigrationTests",
+     "prueba": "test_existing_financial_tables_and_children_keep_ids",
+     "significado": "La migración a perfiles conserva los identificadores de los datos financieros existentes.",
+     "funciones": [
+      "db.SCHEMA.read_text()",
+      "db.init_db()",
+      "extension.SCHEMA.removeprefix()"
+     ],
+     "resultado": "ok",
+     "segundos": 0.27,
+     "detalle": ""
+    },
+    {
+     "clase": "ProfileTests",
+     "prueba": "test_exchange_rates_do_not_change_another_profiles_conversions",
+     "significado": "Las cotizaciones de un perfil no afectan las conversiones de otro.",
+     "funciones": [
+      "profiles.create()",
+      "profiles.access()",
+      "finance.historical_conversion()"
+     ],
+     "resultado": "ok",
+     "segundos": 2.102,
+     "detalle": ""
+    },
+    {
+     "clase": "ProfileTests",
+     "prueba": "test_guest_can_register_transfers_and_savings_and_read_alerts",
+     "significado": "Un invitado puede registrar transferencias y ahorros y marcar alertas como leídas.",
+     "funciones": [
+      "Ruta /movimientos → db.save_movement()",
+      "Ruta /admin/transferencias/guardar → extension.save()",
+      "Ruta /admin/metas_ahorro/guardar → extension.save()",
+      "Ruta /admin/movimientos_ahorro/guardar → extension.save()",
+      "Ruta /perfiles/crear → profiles.create()",
+      "Ruta /perfiles/1/invitar → profiles.invite()",
+      "Ruta /perfiles/seleccionar → profiles.access()"
+     ],
+     "resultado": "ok",
+     "segundos": 2.273,
+     "detalle": ""
+    },
+    {
+     "clase": "ProfileTests",
+     "prueba": "test_guest_cannot_change_structure_or_members_even_with_direct_posts",
+     "significado": "Un invitado no puede cambiar cuentas, catálogos ni integrantes, ni siquiera con POST directos.",
+     "funciones": [
+      "Ruta /perfiles → profiles.page()",
+      "Ruta /admin/cuentas → extension.page()",
+      "Ruta /movimientos → db.save_movement()",
+      "Ruta /movimientos/1/eliminar → db.remove_movement()",
+      "Ruta /movimientos/1/actualizar → db.save_movement()",
+      "Ruta /admin/usuarios → app.users_page()",
+      "Ruta / → app.dashboard_page()",
+      "Ruta /perfiles/crear → profiles.create()"
+     ],
+     "resultado": "ok",
+     "segundos": 2.365,
+     "detalle": ""
+    },
+    {
+     "clase": "ProfileTests",
+     "prueba": "test_guest_receipts_are_shared_but_outsiders_cannot_read_them",
+     "significado": "Los comprobantes se comparten dentro del perfil, pero un usuario ajeno no puede verlos.",
+     "funciones": [
+      "Ruta /movimientos → db.save_movement()",
+      "Ruta /comprobantes/1/archivo → Handler.do_GET (archivo de comprobante)",
+      "Ruta /comprobantes/1/eliminar → extension.delete_receipt()",
+      "Ruta /comprobantes → extension.receipts_page()",
+      "Ruta /comprobantes/subir → extension.upload_receipt()",
+      "Ruta / → app.dashboard_page()",
+      "Ruta /perfiles/crear → profiles.create()",
+      "Ruta /perfiles/1/invitar → profiles.invite()"
+     ],
+     "resultado": "ok",
+     "segundos": 2.255,
+     "detalle": ""
+    },
+    {
+     "clase": "ProfileTests",
+     "prueba": "test_login_requires_selection_before_entering_financial_information",
+     "significado": "Tras iniciar sesión hay que elegir un perfil antes de ver información financiera.",
+     "funciones": [
+      "app.SESSIONS.values()",
+      "Ruta /movimientos → db.save_movement()",
+      "Ruta /perfiles/seleccionar → profiles.access()",
+      "Ruta /perfiles/elegir → profiles.selection_page()",
+      "Ruta / → app.dashboard_page()",
+      "Ruta /login → Handler.do_POST (inicio de sesión) → auth.hash_password()",
+      "Ruta /perfiles/crear → profiles.create()",
+      "Ruta /perfiles/1/invitar → profiles.invite()"
+     ],
+     "resultado": "ok",
+     "segundos": 2.548,
+     "detalle": ""
+    },
+    {
+     "clase": "ProfileTests",
+     "prueba": "test_multiple_profiles_edit_and_delete_only_empty_profiles",
+     "significado": "Se pueden crear y renombrar varios perfiles; solo se eliminan los que están vacíos.",
+     "funciones": [
+      "Ruta /perfiles/crear → profiles.create()",
+      "Ruta /perfiles/1/guardar → profiles.rename()",
+      "Ruta /perfiles/1/eliminar → profiles.delete()",
+      "Ruta /movimientos → db.save_movement()",
+      "Ruta /perfiles → profiles.page()",
+      "Ruta / → app.dashboard_page()",
+      "Ruta /perfiles/1/invitar → profiles.invite()",
+      "Ruta /perfiles/seleccionar → profiles.access()"
+     ],
+     "resultado": "ok",
+     "segundos": 2.279,
+     "detalle": ""
+    },
+    {
+     "clase": "ProfileTests",
+     "prueba": "test_revoking_guest_access_keeps_records_and_takes_effect_next_request",
+     "significado": "Quitar el acceso a un invitado conserva sus registros y surte efecto en su siguiente solicitud.",
+     "funciones": [
+      "Ruta /movimientos → db.save_movement()",
+      "Ruta /perfiles/1/integrantes/2/eliminar → profiles.remove_member()",
+      "Ruta /perfiles/seleccionar → profiles.access()",
+      "Ruta /perfiles/1/invitar → profiles.invite()",
+      "Ruta / → app.dashboard_page()",
+      "Ruta /perfiles/crear → profiles.create()"
+     ],
+     "resultado": "ok",
+     "segundos": 2.312,
+     "detalle": ""
+    },
+    {
+     "clase": "ProfileTests",
+     "prueba": "test_shared_ledger_and_independent_session_selection",
+     "significado": "Propietario e invitado comparten los datos del perfil y cada sesión elige su perfil por separado.",
+     "funciones": [
+      "Ruta /movimientos → db.save_movement()",
+      "Ruta /perfiles/seleccionar → profiles.access()",
+      "Ruta /admin/cuentas → extension.page()",
+      "Ruta / → app.dashboard_page()",
+      "Ruta /perfiles/crear → profiles.create()",
+      "Ruta /perfiles/1/invitar → profiles.invite()"
+     ],
+     "resultado": "ok",
+     "segundos": 2.467,
+     "detalle": ""
+    },
+    {
+     "clase": "ProfileTests",
+     "prueba": "test_two_sessions_of_same_account_keep_independent_profiles",
+     "significado": "Dos sesiones del mismo usuario pueden tener perfiles distintos seleccionados.",
+     "funciones": [
+      "Ruta /perfiles/seleccionar → profiles.access()",
+      "Ruta /login → Handler.do_POST (inicio de sesión) → auth.hash_password()",
+      "app.user_by_name()",
+      "Ruta / → app.dashboard_page()",
+      "Ruta /perfiles/crear → profiles.create()",
+      "Ruta /perfiles/1/invitar → profiles.invite()"
+     ],
+     "resultado": "ok",
+     "segundos": 5.113,
+     "detalle": ""
+    }
+   ],
    "descripcion": "Perfiles compartidos: aislamiento, sesiones e invitados por HTTP y SQLite."
   },
   {
    "archivo": "test_quality_panel",
-   "tests": 9,
-   "ok": 9,
+   "tests": 11,
+   "ok": 11,
    "fallos": 0,
    "errores": 0,
    "omitidos": 0,
-   "segundos": 7.14,
+   "segundos": 7.753,
    "problemas": [],
+   "pruebas": [
+    {
+     "clase": "QualityPanelTests",
+     "prueba": "test_admin_sees_panel_and_menu_link",
+     "significado": "El administrador ve el panel de calidad y su enlace en el menú.",
+     "funciones": [
+      "Ruta /admin/calidad → quality.content()",
+      "Ruta /login → Handler.do_POST (inicio de sesión) → auth.hash_password()",
+      "Ruta /perfiles/seleccionar → profiles.access()",
+      "app.user_by_name()"
+     ],
+     "resultado": "ok",
+     "segundos": 1.582,
+     "detalle": ""
+    },
+    {
+     "clase": "QualityPanelTests",
+     "prueba": "test_child_process_is_isolated_from_the_real_database",
+     "significado": "Los trabajos del panel corren en un proceso aparte con base temporal, nunca con la base real.",
+     "funciones": [
+      "quality.running_job()",
+      "quality.start()",
+      "quality.read_status()"
+     ],
+     "resultado": "ok",
+     "segundos": 1.035,
+     "detalle": ""
+    },
+    {
+     "clase": "QualityPanelTests",
+     "prueba": "test_corrupt_results_do_not_break_the_page",
+     "significado": "Un archivo de resultados dañado no rompe la página del panel.",
+     "funciones": [
+      "quality.content()"
+     ],
+     "resultado": "ok",
+     "segundos": 0.855,
+     "detalle": ""
+    },
+    {
+     "clase": "QualityPanelTests",
+     "prueba": "test_only_one_job_at_a_time_and_stale_lock_expires",
+     "significado": "Solo corre un trabajo a la vez y un bloqueo abandonado caduca solo.",
+     "funciones": [
+      "quality._release()",
+      "quality._acquire()",
+      "quality.start()",
+      "quality._lock_path()",
+      "quality.running_job()"
+     ],
+     "resultado": "ok",
+     "segundos": 0.849,
+     "detalle": ""
+    },
+    {
+     "clase": "QualityPanelTests",
+     "prueba": "test_regular_user_and_anonymous_are_denied",
+     "significado": "Un usuario normal o sin sesión no puede ver el panel de calidad.",
+     "funciones": [
+      "auth.register()",
+      "Ruta /admin/calidad → quality.content()",
+      "Ruta /admin/calidad/ejecutar → quality.start()",
+      "Ruta /login → Handler.do_POST (inicio de sesión) → auth.hash_password()",
+      "Ruta / → app.dashboard_page()",
+      "Ruta /perfiles/seleccionar → profiles.access()",
+      "app.user_by_name()"
+     ],
+     "resultado": "ok",
+     "segundos": 1.41,
+     "detalle": ""
+    },
+    {
+     "clase": "QualityPanelTests",
+     "prueba": "test_run_requires_valid_csrf_and_known_job",
+     "significado": "Ejecutar un trabajo exige token CSRF válido y solo acepta trabajos conocidos.",
+     "funciones": [
+      "Ruta /admin/calidad/ejecutar → quality.start()",
+      "Ruta /admin/calidad → quality.content()",
+      "Ruta /login → Handler.do_POST (inicio de sesión) → auth.hash_password()",
+      "Ruta /perfiles/seleccionar → profiles.access()",
+      "app.user_by_name()"
+     ],
+     "resultado": "ok",
+     "segundos": 1.15,
+     "detalle": ""
+    },
+    {
+     "clase": "QualityPanelTests",
+     "prueba": "test_stored_results_are_escaped",
+     "significado": "Los resultados guardados se muestran escapados (no se puede inyectar HTML).",
+     "funciones": [
+      "quality.content()"
+     ],
+     "resultado": "ok",
+     "segundos": 0.862,
+     "detalle": ""
+    },
+    {
+     "clase": "SuiteRunnerTests",
+     "prueba": "test_each_test_reports_meaning_and_functions_used",
+     "significado": "Cada prueba informa qué significa (docstring) y con qué funciones o rutas de la app se logró.",
+     "funciones": [
+      "scripts.run_quality_suite.run()"
+     ],
+     "resultado": "ok",
+     "segundos": 0.004,
+     "detalle": ""
+    },
+    {
+     "clase": "SuiteRunnerTests",
+     "prueba": "test_panel_shows_detail_escaped_and_tolerates_old_results",
+     "significado": "El panel muestra el detalle por prueba escapado y avisa si el JSON es de una versión anterior.",
+     "funciones": [
+      "quality.content()"
+     ],
+     "resultado": "ok",
+     "segundos": 0.003,
+     "detalle": ""
+    },
+    {
+     "clase": "SuiteRunnerTests",
+     "prueba": "test_summary_for_passing_suite",
+     "significado": "El resumen JSON de una suite exitosa cuenta pruebas y resultados por archivo.",
+     "funciones": [
+      "scripts.run_quality_suite.run()"
+     ],
+     "resultado": "ok",
+     "segundos": 0.002,
+     "detalle": ""
+    },
+    {
+     "clase": "SuiteRunnerTests",
+     "prueba": "test_summary_reports_failures_without_internal_paths",
+     "significado": "El resumen de una suite con fallos los informa sin exponer rutas internas.",
+     "funciones": [
+      "scripts.run_quality_suite.run()"
+     ],
+     "resultado": "ok",
+     "segundos": 0.003,
+     "detalle": ""
+    }
+   ],
    "descripcion": "Panel de calidad (/admin/calidad): acceso solo para administradores y ejecucion segura."
   },
   {
@@ -170,9 +1208,45 @@
    "fallos": 0,
    "errores": 0,
    "omitidos": 0,
-   "segundos": 3.37,
+   "segundos": 3.402,
    "problemas": [],
-   "descripcion": ""
+   "pruebas": [
+    {
+     "clase": "ReadCacheTests",
+     "prueba": "test_cache_expires_and_is_bounded",
+     "significado": "La caché de lectura caduca con el tiempo y tiene un número máximo de entradas.",
+     "funciones": [
+      "read_cache.store()",
+      "read_cache.fetch()"
+     ],
+     "resultado": "ok",
+     "segundos": 1.123,
+     "detalle": ""
+    },
+    {
+     "clase": "ReadCacheTests",
+     "prueba": "test_catalog_is_served_from_cache_with_notice_when_sqlite_fails",
+     "significado": "Si SQLite falla, los catálogos se sirven desde caché con un aviso visible.",
+     "funciones": [
+      "Ruta /admin/cuentas → extension.page()"
+     ],
+     "resultado": "ok",
+     "segundos": 1.137,
+     "detalle": ""
+    },
+    {
+     "clase": "ReadCacheTests",
+     "prueba": "test_non_cacheable_pages_still_return_503",
+     "significado": "Las páginas que no se guardan en caché responden 503 cuando SQLite falla.",
+     "funciones": [
+      "Ruta / → app.dashboard_page()"
+     ],
+     "resultado": "ok",
+     "segundos": 1.142,
+     "detalle": ""
+    }
+   ],
+   "descripcion": "Caché de lectura: catálogos servidos desde caché con aviso cuando SQLite falla, con caducidad y límite."
   },
   {
    "archivo": "test_registration",
@@ -181,9 +1255,193 @@
    "fallos": 0,
    "errores": 0,
    "omitidos": 0,
-   "segundos": 9.412,
+   "segundos": 8.049,
    "problemas": [],
+   "pruebas": [
+    {
+     "clase": "RegistrationTests",
+     "prueba": "test_concurrent_signup_only_creates_one_account",
+     "significado": "Dos registros simultáneos con el mismo usuario solo crean una cuenta.",
+     "funciones": [
+      "auth.register()"
+     ],
+     "resultado": "ok",
+     "segundos": 0.857,
+     "detalle": ""
+    },
+    {
+     "clase": "RegistrationTests",
+     "prueba": "test_duplicates_preserve_original_and_case_is_ignored",
+     "significado": "Un nombre de usuario repetido (sin importar mayúsculas) se rechaza y conserva la cuenta original.",
+     "funciones": [
+      "app.user_by_name()",
+      "Ruta /registro → auth.register()"
+     ],
+     "resultado": "ok",
+     "segundos": 1.128,
+     "detalle": ""
+    },
+    {
+     "clase": "RegistrationTests",
+     "prueba": "test_profile_creation_failure_rolls_back_account",
+     "significado": "Si falla la creación del perfil, también se revierte la cuenta nueva.",
+     "funciones": [
+      "app.user_by_name()",
+      "Ruta /registro → auth.register()"
+     ],
+     "resultado": "ok",
+     "segundos": 0.881,
+     "detalle": ""
+    },
+    {
+     "clase": "RegistrationTests",
+     "prueba": "test_public_registration_and_login_with_fixed_user_role",
+     "significado": "El registro público crea usuarios con rol «usuario» que luego pueden iniciar sesión.",
+     "funciones": [
+      "app.user_by_name()",
+      "Ruta /login → Handler.do_POST (inicio de sesión) → auth.hash_password()",
+      "Ruta /registro → auth.register()",
+      "Ruta /perfiles/seleccionar → profiles.access()",
+      "Ruta /perfiles/elegir → profiles.selection_page()"
+     ],
+     "resultado": "ok",
+     "segundos": 1.347,
+     "detalle": ""
+    },
+    {
+     "clase": "RegistrationTests",
+     "prueba": "test_registration_respects_base_path",
+     "significado": "El registro funciona bajo el prefijo /finanzas.",
+     "funciones": [
+      "Ruta /login → Handler.do_POST (inicio de sesión) → auth.hash_password()",
+      "Ruta /registro → auth.register()"
+     ],
+     "resultado": "ok",
+     "segundos": 1.119,
+     "detalle": ""
+    },
+    {
+     "clase": "RegistrationTests",
+     "prueba": "test_standard_user_mode_hides_roles_and_disables_user_management",
+     "significado": "En modo de usuarios estándar se ocultan los roles y se desactiva la gestión de usuarios.",
+     "funciones": [
+      "Ruta /login → Handler.do_POST (inicio de sesión) → auth.hash_password()",
+      "Ruta /perfiles/seleccionar → profiles.access()",
+      "Ruta /admin/usuarios → app.users_page()",
+      "Ruta /admin/usuarios/guardar → Handler.do_POST → auth.save_users()",
+      "Ruta /admin/cambiar-clave → Handler.do_POST → auth.hash_password()",
+      "Ruta /perfiles/elegir → profiles.selection_page()",
+      "Ruta /registro → auth.register()"
+     ],
+     "resultado": "ok",
+     "segundos": 1.831,
+     "detalle": ""
+    },
+    {
+     "clase": "RegistrationTests",
+     "prueba": "test_validation_and_escaping_without_returning_passwords",
+     "significado": "El registro valida los datos, escapa el texto y nunca devuelve la contraseña en la página.",
+     "funciones": [
+      "Ruta /registro → auth.register()"
+     ],
+     "resultado": "ok",
+     "segundos": 0.886,
+     "detalle": ""
+    }
+   ],
    "descripcion": "Registro público, unicidad y creación transaccional del perfil inicial."
+  },
+  {
+   "archivo": "test_resumen_csrf",
+   "tests": 7,
+   "ok": 7,
+   "fallos": 0,
+   "errores": 0,
+   "omitidos": 0,
+   "segundos": 5.848,
+   "problemas": [],
+   "pruebas": [
+    {
+     "clase": "CsrfTests",
+     "prueba": "test_every_post_form_carries_the_token",
+     "significado": "Cada formulario POST de una página con sesión lleva el token CSRF; el login no lo necesita.",
+     "funciones": [
+      "Ruta / → app.dashboard_page()",
+      "Ruta /login → Handler.do_POST (inicio de sesión) → auth.hash_password()"
+     ],
+     "resultado": "ok",
+     "segundos": 1.186,
+     "detalle": ""
+    },
+    {
+     "clase": "CsrfTests",
+     "prueba": "test_logout_requires_token",
+     "significado": "Cerrar sesión también exige el token: sin él la sesión sigue activa.",
+     "funciones": [
+      "Ruta /logout → Handler.do_POST (cierre de sesión)",
+      "Ruta / → app.dashboard_page()"
+     ],
+     "resultado": "ok",
+     "segundos": 1.176,
+     "detalle": ""
+    },
+    {
+     "clase": "CsrfTests",
+     "prueba": "test_post_without_or_with_wrong_token_is_rejected_and_saves_nothing",
+     "significado": "Un POST sin token o con token falso responde 403 y no guarda nada.",
+     "funciones": [
+      "Ruta /movimientos → db.save_movement()"
+     ],
+     "resultado": "ok",
+     "segundos": 1.171,
+     "detalle": ""
+    },
+    {
+     "clase": "DashboardTests",
+     "prueba": "test_cards_categories_comparison_and_goals",
+     "significado": "El Resumen calcula tarjetas, gastos por categoría, comparación mensual y progreso de metas.",
+     "funciones": [
+      "Ruta / → app.dashboard_page()"
+     ],
+     "resultado": "ok",
+     "segundos": 1.184,
+     "detalle": ""
+    },
+    {
+     "clase": "DashboardTests",
+     "prueba": "test_empty_states_and_compact_hero",
+     "significado": "Sin datos, el Resumen muestra estados vacíos con una acción sugerida y el encabezado compacto.",
+     "funciones": [
+      "Ruta / → app.dashboard_page()"
+     ],
+     "resultado": "ok",
+     "segundos": 1.131,
+     "detalle": ""
+    },
+    {
+     "clase": "FormatTests",
+     "prueba": "test_single_money_format",
+     "significado": "Todos los montos se muestran con un único formato: signo, símbolo, miles y dos decimales.",
+     "funciones": [
+      "finance.format_amount()"
+     ],
+     "resultado": "ok",
+     "segundos": 0.0,
+     "detalle": ""
+    },
+    {
+     "clase": "FormatTests",
+     "prueba": "test_variation_text",
+     "significado": "La variación contra el mes anterior muestra flecha, signo y porcentaje correctos.",
+     "funciones": [
+      "app.variation_html()"
+     ],
+     "resultado": "ok",
+     "segundos": 0.0,
+     "detalle": ""
+    }
+   ],
+   "descripcion": "Resumen v2 (tarjetas, gastos por categoría, metas, variación mensual, estados vacíos, formato único)"
   },
   {
    "archivo": "test_s3_benchmark_smoke",
@@ -192,8 +1450,33 @@
    "fallos": 0,
    "errores": 0,
    "omitidos": 0,
-   "segundos": 0.449,
+   "segundos": 0.389,
    "problemas": [],
+   "pruebas": [
+    {
+     "clase": "S3BenchmarkSmokeTests",
+     "prueba": "test_benchmark_reports_median_and_plan_change",
+     "significado": "Las mediciones reportan la mediana de cada operación y el cambio de plan con y sin índices.",
+     "funciones": [
+      "scripts.benchmark_s3.run()",
+      "scripts.benchmark_s3.operations()"
+     ],
+     "resultado": "ok",
+     "segundos": 0.389,
+     "detalle": ""
+    },
+    {
+     "clase": "S3BenchmarkSmokeTests",
+     "prueba": "test_fewer_than_three_runs_are_rejected",
+     "significado": "Las mediciones exigen al menos tres ejecuciones para calcular una mediana válida.",
+     "funciones": [
+      "scripts.benchmark_s3.run()"
+     ],
+     "resultado": "ok",
+     "segundos": 0.0,
+     "detalle": ""
+    }
+   ],
    "descripcion": "Prueba de humo del benchmark S3: corre en pequeno y produce mediana, con y sin indices."
   },
   {
@@ -203,8 +1486,43 @@
    "fallos": 0,
    "errores": 0,
    "omitidos": 0,
-   "segundos": 3.519,
+   "segundos": 3.415,
    "problemas": [],
+   "pruebas": [
+    {
+     "clase": "S3ConnectionErrorTests",
+     "prueba": "test_locked_database_is_reported_as_busy_without_partial_write",
+     "significado": "Con la base bloqueada se informa «ocupada» sin escrituras parciales.",
+     "funciones": [
+      "Ruta /movimientos → db.save_movement()"
+     ],
+     "resultado": "ok",
+     "segundos": 1.148,
+     "detalle": ""
+    },
+    {
+     "clase": "S3ConnectionErrorTests",
+     "prueba": "test_read_failure_returns_generic_503_and_server_recovers",
+     "significado": "Si falla una lectura se responde 503 genérico y el servidor sigue atendiendo después.",
+     "funciones": [
+      "Ruta / → app.dashboard_page()"
+     ],
+     "resultado": "ok",
+     "segundos": 1.125,
+     "detalle": ""
+    },
+    {
+     "clase": "S3ConnectionErrorTests",
+     "prueba": "test_write_failure_returns_503_and_saves_nothing",
+     "significado": "Si falla una escritura se responde 503 y no queda nada guardado.",
+     "funciones": [
+      "Ruta /movimientos → db.save_movement()"
+     ],
+     "resultado": "ok",
+     "segundos": 1.142,
+     "detalle": ""
+    }
+   ],
    "descripcion": "Error de conexion (Seguimiento 3): que hace la aplicacion si SQLite no responde."
   },
   {
@@ -214,8 +1532,54 @@
    "fallos": 0,
    "errores": 0,
    "omitidos": 0,
-   "segundos": 4.578,
+   "segundos": 4.583,
    "problemas": [],
+   "pruebas": [
+    {
+     "clase": "S3InvalidDataTests",
+     "prueba": "test_invalid_date_is_rejected",
+     "significado": "Fechas inexistentes o mal escritas se rechazan.",
+     "funciones": [
+      "Ruta /movimientos → db.save_movement()"
+     ],
+     "resultado": "ok",
+     "segundos": 1.159,
+     "detalle": ""
+    },
+    {
+     "clase": "S3InvalidDataTests",
+     "prueba": "test_negative_or_zero_amount_is_rejected",
+     "significado": "Montos negativos o cero se rechazan.",
+     "funciones": [
+      "Ruta /movimientos → db.save_movement()"
+     ],
+     "resultado": "ok",
+     "segundos": 1.135,
+     "detalle": ""
+    },
+    {
+     "clase": "S3InvalidDataTests",
+     "prueba": "test_non_numeric_and_too_many_decimals_are_rejected",
+     "significado": "Montos no numéricos o con más de dos decimales se rechazan.",
+     "funciones": [
+      "Ruta /movimientos → db.save_movement()"
+     ],
+     "resultado": "ok",
+     "segundos": 1.133,
+     "detalle": ""
+    },
+    {
+     "clase": "S3InvalidDataTests",
+     "prueba": "test_unknown_type_category_or_account_is_rejected",
+     "significado": "Un tipo, categoría o cuenta inexistente o de otro perfil se rechaza.",
+     "funciones": [
+      "Ruta /movimientos → db.save_movement()"
+     ],
+     "resultado": "ok",
+     "segundos": 1.157,
+     "detalle": ""
+    }
+   ],
    "descripcion": "Datos invalidos (Seguimiento 3): la aplicacion rechaza entradas incorrectas sin escribir."
   },
   {
@@ -225,8 +1589,24 @@
    "fallos": 0,
    "errores": 0,
    "omitidos": 0,
-   "segundos": 1.206,
+   "segundos": 1.252,
    "problemas": [],
+   "pruebas": [
+    {
+     "clase": "S3NormalCaseTests",
+     "prueba": "test_create_read_update_delete_movement",
+     "significado": "Caso normal: crear, consultar, editar y eliminar un movimiento actualiza bien la base.",
+     "funciones": [
+      "Ruta /movimientos → db.save_movement()",
+      "Ruta /movimientos/1/actualizar → db.save_movement()",
+      "Ruta /movimientos/1/eliminar → db.remove_movement()",
+      "Ruta / → app.dashboard_page()"
+     ],
+     "resultado": "ok",
+     "segundos": 1.252,
+     "detalle": ""
+    }
+   ],
    "descripcion": "Caso normal (Seguimiento 3): alta, edicion y borrado de un movimiento por HTTP."
   },
   {
@@ -236,8 +1616,22 @@
    "fallos": 0,
    "errores": 0,
    "omitidos": 0,
-   "segundos": 0.371,
+   "segundos": 0.376,
    "problemas": [],
+   "pruebas": [
+    {
+     "clase": "S4BackupTests",
+     "prueba": "test_online_backup_integrity_and_no_overwrite",
+     "significado": "El respaldo en caliente pasa la verificación de integridad y no sobrescribe uno existente.",
+     "funciones": [
+      "db.init_db()",
+      "scripts.backup_sqlite_s4.backup()"
+     ],
+     "resultado": "ok",
+     "segundos": 0.376,
+     "detalle": ""
+    }
+   ],
    "descripcion": "Respaldo SQLite sin sobrescribir la base origen."
   },
   {
@@ -247,9 +1641,105 @@
    "fallos": 0,
    "errores": 0,
    "omitidos": 0,
-   "segundos": 1.756,
+   "segundos": 1.77,
    "problemas": [],
+   "pruebas": [
+    {
+     "clase": "ReleaseSecurityTests",
+     "prueba": "test_deployment_requires_strong_initial_admin",
+     "significado": "Una instalación nueva bajo /finanzas exige una contraseña inicial fuerte para el administrador.",
+     "funciones": [
+      "auth.credentials()",
+      "db.init_db()"
+     ],
+     "resultado": "ok",
+     "segundos": 0.523,
+     "detalle": ""
+    },
+    {
+     "clase": "ReleaseSecurityTests",
+     "prueba": "test_existing_admin_is_not_overwritten_by_new_env_variable",
+     "significado": "Cambiar la variable de contraseña inicial no sobrescribe un administrador existente.",
+     "funciones": [
+      "db.init_db()",
+      "auth.credentials()"
+     ],
+     "resultado": "ok",
+     "segundos": 0.36,
+     "detalle": ""
+    },
+    {
+     "clase": "ReleaseSecurityTests",
+     "prueba": "test_secure_headers_and_login_cookie_with_explicit_tls",
+     "significado": "Las respuestas llevan cabeceras de seguridad y la cookie de sesión es segura cuando hay TLS.",
+     "funciones": [
+      "Ruta /login → Handler.do_POST (inicio de sesión) → auth.hash_password()"
+     ],
+     "resultado": "ok",
+     "segundos": 0.887,
+     "detalle": ""
+    }
+   ],
    "descripcion": "S4: políticas de credenciales y cabeceras en una instalación SQLite nueva."
+  },
+  {
+   "archivo": "test_saldos_grafico",
+   "tests": 4,
+   "ok": 4,
+   "fallos": 0,
+   "errores": 0,
+   "omitidos": 0,
+   "segundos": 3.396,
+   "problemas": [],
+   "pruebas": [
+    {
+     "clase": "BalanceHistoryTests",
+     "prueba": "test_dashboard_panel_scoped_to_profile_and_escaped",
+     "significado": "El gráfico de saldos solo usa cuentas del perfil activo y escapa los nombres.",
+     "funciones": [
+      "Ruta / → app.dashboard_page()",
+      "app.months_back()"
+     ],
+     "resultado": "ok",
+     "segundos": 1.16,
+     "detalle": ""
+    },
+    {
+     "clase": "BalanceHistoryTests",
+     "prueba": "test_last_point_matches_current_balance",
+     "significado": "El último punto del gráfico de saldos coincide con el saldo actual de cada cuenta.",
+     "funciones": [
+      "finance.balance_history()",
+      "finance.account_balance()"
+     ],
+     "resultado": "ok",
+     "segundos": 1.122,
+     "detalle": ""
+    },
+    {
+     "clase": "BalanceHistoryTests",
+     "prueba": "test_series_follow_movements_transfers_and_savings",
+     "significado": "El historial diario de saldos incluye movimientos, transferencias y ahorros en el día correcto.",
+     "funciones": [
+      "finance.balance_history()"
+     ],
+     "resultado": "ok",
+     "segundos": 1.114,
+     "detalle": ""
+    },
+    {
+     "clase": "MonthsBackTests",
+     "prueba": "test_clamps_to_last_day_and_crosses_years",
+     "significado": "Restar meses a una fecha ajusta al último día del mes y cruza de año correctamente.",
+     "funciones": [
+      "app.months_back()"
+     ],
+     "resultado": "ok",
+     "segundos": 0.0,
+     "detalle": ""
+    }
+   ],
+   "descripcion": "Módulo «Evolución de saldos» del Resumen: historial diario por cuenta y rangos 1 semana / 1 mes / 3 meses."
   },
   {
    "archivo": "test_smoke",
@@ -258,9 +1748,109 @@
    "fallos": 0,
    "errores": 0,
    "omitidos": 0,
-   "segundos": 4.514,
+   "segundos": 4.493,
    "problemas": [],
-   "descripcion": ""
+   "pruebas": [
+    {
+     "clase": "TestFinanzas",
+     "prueba": "test_budget",
+     "significado": "El presupuesto suma el gasto del mes de su categoría y lo compara con el límite.",
+     "funciones": [
+      "db.save_budget()",
+      "db.save_movement()",
+      "db.dashboard()"
+     ],
+     "resultado": "ok",
+     "segundos": 0.377,
+     "detalle": ""
+    },
+    {
+     "clase": "TestFinanzas",
+     "prueba": "test_crud_movements",
+     "significado": "Crear, editar y eliminar movimientos funciona directamente sobre la base.",
+     "funciones": [
+      "db.save_movement()",
+      "db.dashboard()",
+      "db.remove_movement()"
+     ],
+     "resultado": "ok",
+     "segundos": 0.38,
+     "detalle": ""
+    },
+    {
+     "clase": "TestFinanzas",
+     "prueba": "test_money_display",
+     "significado": "La función currency() da formato a montos en colones, incluidos los negativos.",
+     "funciones": [
+      "app.currency()"
+     ],
+     "resultado": "ok",
+     "segundos": 0.351,
+     "detalle": ""
+    },
+    {
+     "clase": "TestFinanzas",
+     "prueba": "test_reject_invalid_amount_and_type",
+     "significado": "Montos o tipos de movimiento inválidos se rechazan.",
+     "funciones": [
+      "db.save_movement()"
+     ],
+     "resultado": "ok",
+     "segundos": 0.349,
+     "detalle": ""
+    },
+    {
+     "clase": "TestFinanzas",
+     "prueba": "test_schema_and_wal",
+     "significado": "La base usa modo WAL, claves foráneas activas y tiene el esquema creado.",
+     "funciones": [
+      "db.connect()"
+     ],
+     "resultado": "ok",
+     "segundos": 0.35,
+     "detalle": ""
+    },
+    {
+     "clase": "TestFinanzas",
+     "prueba": "test_sql_injection_is_not_executed",
+     "significado": "Texto con SQL malicioso se guarda como texto y nunca se ejecuta.",
+     "funciones": [
+      "db.save_movement()"
+     ],
+     "resultado": "ok",
+     "segundos": 0.365,
+     "detalle": ""
+    },
+    {
+     "clase": "TestHttp",
+     "prueba": "test_http_200_and_health",
+     "significado": "Las páginas principales responden 200 y /health informa que la base está disponible.",
+     "funciones": [
+      "Ruta / → app.dashboard_page()",
+      "Ruta /health → Handler.do_GET (/health)",
+      "Ruta /login → Handler.do_POST (inicio de sesión) → auth.hash_password()",
+      "Ruta /perfiles/seleccionar → profiles.access()"
+     ],
+     "resultado": "ok",
+     "segundos": 1.158,
+     "detalle": ""
+    },
+    {
+     "clase": "TestHttp",
+     "prueba": "test_http_create_and_invalid",
+     "significado": "Por HTTP se crea un movimiento válido y uno inválido se rechaza con 400.",
+     "funciones": [
+      "Ruta /movimientos → db.save_movement()",
+      "db.dashboard()",
+      "Ruta /login → Handler.do_POST (inicio de sesión) → auth.hash_password()",
+      "Ruta /perfiles/seleccionar → profiles.access()"
+     ],
+     "resultado": "ok",
+     "segundos": 1.163,
+     "detalle": ""
+    }
+   ],
+   "descripcion": "Pruebas básicas: esquema y WAL, movimientos, presupuestos, validaciones, inyección SQL y respuestas HTTP."
   },
   {
    "archivo": "test_sqlite_failure_v16",
@@ -269,8 +1859,21 @@
    "fallos": 0,
    "errores": 0,
    "omitidos": 0,
-   "segundos": 0.533,
+   "segundos": 0.531,
    "problemas": [],
+   "pruebas": [
+    {
+     "clase": "SQLiteFailureTests",
+     "prueba": "test_get_failure_is_controlled",
+     "significado": "Si SQLite no responde, /health devuelve un error controlado en vez de una traza.",
+     "funciones": [
+      "Ruta /health → Handler.do_GET (/health)"
+     ],
+     "resultado": "ok",
+     "segundos": 0.531,
+     "detalle": ""
+    }
+   ],
    "descripcion": ""
   }
  ]

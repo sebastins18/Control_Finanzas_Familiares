@@ -40,7 +40,7 @@ Esta consolidación edita el contenido manualmente sobre main y conserva el cré
 | `v0.9.0` en preparación | Tag no encontrado en consulta remota real al corte; no se declara publicado |
 | Instalación por otra persona | Sigue pendiente de evidencia humana identificada; el runner no la sustituye |
 
-La evidencia local vigente es **109/109 de regresión y 27/27 E2E**, con capturas y video auténtico; [fuentes en S4](S4.md#evidencia-vigente-y-procedencia). SQLite del despliegue: WAL, 17 tablas, integridad `ok`, FK 0, según responsable. El GET público no demuestra esos datos por sí mismo.
+La evidencia histórica local del 6/11/2026 es **109/109 de regresión y 27/27 E2E**, con capturas y video auténtico; [fuentes en S4](S4.md#evidencia-vigente-y-procedencia). SQLite del despliegue: WAL, 17 tablas, integridad `ok`, FK 0, según responsable. El GET público no demuestra esos datos por sí mismo.
 
 ## Alcance de la consolidación
 

@@ -124,4 +124,4 @@ python -c 'import os,sqlite3; from pathlib import Path; p=Path(os.environ.get("D
 
 En Windows puede usarse `py -c` en lugar de `python -c`. El parámetro `mode=ro` y el `assert` impiden crear accidentalmente otra base vacía en el directorio equivocado. **No ejecutar seed, scripts de carga o migraciones** apuntando a la base publicada de CRNube sin autorización y respaldo. La versión `8a88aeb` inicializa 17 tablas; registrar el valor observado y el commit en cualquier ejecución futura. El README amplía esta inspección con integridad, claves foráneas y presupuestos del período.
 
-La inspección de solo lectura es una **verificación adicional**, no reemplaza las 109 pruebas de regresión, el verificador temporal de S4 ni la prueba de instalación independiente hecha por otro integrante.
+La inspección de solo lectura es una **verificación adicional**, no reemplaza las 122 pruebas de regresión de Virtualmin del 12/11/2026, el verificador temporal de S4 ni la prueba de instalación independiente hecha por otro integrante.

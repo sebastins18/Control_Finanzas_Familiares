@@ -8,12 +8,12 @@
 
 | Operacion | Escenario | Ejecuciones (ms) | Mediana (ms) |
 | --- | --- | --- | --- |
-| Movimientos por rango de fecha (1 mes, 100 filas) | con indices | 2.745, 0.641, 0.531, 0.547, 0.481 | 0.547 |
-| Total de gasto por categoria en un mes | con indices | 17.760, 16.732, 16.334, 16.964, 16.433 | 16.732 |
-| Actualizacion de un gasto por id | con indices | 0.053, 0.017, 0.012, 0.011, 0.011 | 0.012 |
-| Movimientos por rango de fecha (1 mes, 100 filas) | sin indices | 18.309, 16.304, 16.458, 16.363, 16.204 | 16.363 |
-| Total de gasto por categoria en un mes | sin indices | 18.017, 17.799, 17.936, 18.417, 18.096 | 18.017 |
-| Actualizacion de un gasto por id | sin indices | 0.059, 0.014, 0.011, 0.011, 0.011 | 0.011 |
+| Movimientos por rango de fecha (1 mes, 100 filas) | con indices | 2.289, 0.522, 0.539, 0.460, 0.501 | 0.522 |
+| Total de gasto por categoria en un mes | con indices | 17.668, 17.540, 17.995, 16.723, 16.620 | 17.540 |
+| Actualizacion de un gasto por id | con indices | 0.055, 0.028, 0.017, 0.016, 0.015 | 0.017 |
+| Movimientos por rango de fecha (1 mes, 100 filas) | sin indices | 18.186, 16.587, 17.829, 17.074, 16.921 | 17.074 |
+| Total de gasto por categoria en un mes | sin indices | 17.924, 17.565, 17.372, 17.970, 17.458 | 17.565 |
+| Actualizacion de un gasto por id | sin indices | 0.064, 0.014, 0.011, 0.012, 0.011 | 0.012 |
 
 ## EXPLAIN QUERY PLAN
 

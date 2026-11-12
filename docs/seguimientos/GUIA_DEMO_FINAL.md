@@ -57,7 +57,7 @@ Propuesta de secuencia: 0:00 problema; 0:30 arquitectura; 1:10 login y CRUD; 2:3
 
 - [Matriz de cumplimiento](ENTREGA_S4.md) y [arquitectura vigente](../arquitectura/ARQUITECTURA_S4.md).
 - [Guion breve para grabar el video real](VIDEO_S4.md) y [acta pendiente](ACTA_S4.md).
-- [CI del merge de S4](https://github.com/sebastins18/Control_Finanzas_Familiares/actions/runs/42303414421) con tres trabajos aprobados. La evidencia local vigente registra 109/109 regresiones y 27/27 E2E: [resumen](../../evidencias/s4_final/reportes/e2e/reportes/RESUMEN.md). El CI enlazado conserva su commit y fecha históricos.
+- [CI del merge de S4](https://github.com/sebastins18/Control_Finanzas_Familiares/actions/runs/42303414421) con tres trabajos aprobados. La evidencia histórica local del 6/11/2026 registra 109/109 regresiones y 27/27 E2E: [resumen](../../evidencias/s4_final/reportes/e2e/reportes/RESUMEN.md). El CI enlazado conserva su commit y fecha históricos.
 - El responsable confirmó S4 desplegado en CRNube, commit `8a88aeb`, con respaldo previo consistente. Para esta demostración se utiliza una instancia local aislada; solo se comprobó GET público del login. No se accedió a WebAdmin ni se cambió el servidor. SQLite del despliegue: WAL, 17 tablas, integridad `ok`, FK 0, según el responsable. S3 está cerrado técnicamente en [Issue #3](https://github.com/sebastins18/Control_Finanzas_Familiares/issues/3). `v0.9.0` no se encontró en la consulta remota de tags al corte.
 
 Los enlaces relativos identifican evidencia local, no publicación acreditada. La [matriz S4](S4.md) recupera la documentación académica de Diego Fonseca (`dfonseca15`, `4b0bfed`) sin sustituir las validaciones humanas pendientes.

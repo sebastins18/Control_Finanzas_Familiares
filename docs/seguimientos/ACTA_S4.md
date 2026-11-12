@@ -29,7 +29,7 @@
 - Accesibilidad desde sesión sin autenticar: **pendiente**
 - Dashboard auténtico con datos sintéticos: [captura local](../../evidencias/s4_final/capturas/02_dashboard.png); no se presupone publicación.
 - Crear/editar/eliminar y alertas: [capturas locales](../../evidencias/s4_final/capturas/); publicación autorizada pendiente.
-- Regresión y E2E: 109/109 y 27/27, [fuentes](S4.md#evidencia-vigente-y-procedencia). Son evidencia automática, no certificación de presencia o instalación independiente.
+- Regresión y E2E históricas del 6/11/2026: 109/109 y 27/27, [fuentes](S4.md#evidencia-vigente-y-procedencia). Son evidencia automática, no certificación de presencia o instalación independiente.
 - Despliegue: S4 el 6/11/2026 sobre `8a88aeb`, respaldo consistente previo, WAL, 17 tablas, integridad `ok`, FK 0, según responsable. No implica aprobación docente.
 
 ## Equipo y atribución

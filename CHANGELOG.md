@@ -18,6 +18,8 @@ Funcionalidades implementadas y documentadas para la entrega final:
 
 **Resultados históricos documentados de S4 (6/11/2026):** 109/109 pruebas de regresión correctas y 27/27 pruebas E2E satisfactorias. Estos resultados corresponden a la verificación histórica de S4; no se afirma una nueva ejecución para `v1.0.0`.
 
+**Actualización de evidencias — 12/11/2026:** Virtualmin registra **122/122 pruebas correctas**, 0 fallos, errores y omisiones, en **123,43 segundos** (Linux, Python 3.12.3, SQLite 3.45.1). Se sustituyen los reportes de Virtualmin del 11/11/2026; se conservan los registros históricos de S4 y E2E. Mediciones sobre 100.000 movimientos, cinco ejecuciones por escenario y mediana: fecha 0,522/17,074 ms, agrupación 17,540/17,565 ms y actualización por ID 0,017/0,012 ms, con/sin índices. [Reportes, procedencia y SHA-256](docs/seguimientos/evidencia_final_pruebas.md). Cambios documentales pendientes de revisión y publicación; sin nueva ejecución E2E ni cambios funcionales.
+
 **Pendiente de confirmación:** la publicación del Release, el video final y la validación de las evidencias. La publicación de `v1.0.0` sigue pendiente.
 
 ## v0.1.0 — Seguimiento 1 (16/10/2026)
