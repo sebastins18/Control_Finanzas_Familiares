@@ -1,4 +1,4 @@
-# Ficha para el portal del curso. No se publican nombres sin autorización.
+# Ficha para el portal del curso. Integrantes del Grupo 5.
 nombre: Control de Finanzas Familiares
 resumen: MVP open source en Python y SQLite para registrar gastos, ingresos y presupuestos.
 problema: Los gastos e ingresos familiares dispersos dificultan conocer saldos y límites mensuales.
@@ -13,4 +13,8 @@ captura: ""      # Capturas auténticas locales existentes; URL pública autoriz
 grupo: 5
 dia: viernes
 periodo: II-2026
-autores_publicos: [] # Solicitar autorización expresa antes de publicar nombres.
+autores_publicos:
+  - "Sebastián Long Segura Méndez"
+  - "Diego Mauricio Fonseca Garita"
+  - "Crystian Jesús Chininin Barrantes"
+  - "Mariano Salas Núñez"

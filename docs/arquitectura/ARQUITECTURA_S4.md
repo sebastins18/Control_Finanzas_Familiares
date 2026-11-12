@@ -1,5 +1,7 @@
 # Arquitectura vigente del MVP — Seguimiento 4
 
+**Fecha de entrega final: viernes 13 de noviembre de 2026.**
+
 **Corte verificado:** 6 de noviembre de 2026, `main`, `8a88aeb`, con los cambios técnicos de S4 y sus correcciones posteriores. Esta ficha actualiza los esquemas históricos de S1 y V17; **no** sustituye sus registros de evolución.
 
 ## Arquitectura de ejecución

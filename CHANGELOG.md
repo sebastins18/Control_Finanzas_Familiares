@@ -1,5 +1,25 @@
 # Registro de cambios
 
+## v1.0.0 — Entrega final
+
+**Fecha de entrega final: viernes 13 de noviembre de 2026.**
+
+Funcionalidades implementadas y documentadas para la entrega final:
+
+- Registro y administración de ingresos y gastos.
+- Gestión de cuentas, categorías y presupuestos.
+- Perfiles financieros y autenticación de usuarios.
+- Metas de ahorro y transferencias.
+- Historial de movimientos, filtros y exportación CSV.
+- Reportes y movimientos recurrentes.
+- Persistencia mediante SQLite como único motor.
+- Instalación reproducible y carga de datos sintéticos.
+- Pruebas automatizadas, mediciones y respaldos SQLite.
+
+**Resultados históricos documentados de S4 (6/11/2026):** 109/109 pruebas de regresión correctas y 27/27 pruebas E2E satisfactorias. Estos resultados corresponden a la verificación histórica de S4; no se afirma una nueva ejecución para `v1.0.0`.
+
+**Pendiente de confirmación:** la publicación del Release, el video final y la validación de las evidencias. La publicación de `v1.0.0` sigue pendiente.
+
 ## v0.1.0 — Seguimiento 1 (16/10/2026)
 - Documentación del problema, usuarios, alcance y decisiones arquitectónicas.
 - Prototipo local con servidor web Python y SQLite.
