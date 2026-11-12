@@ -6,22 +6,24 @@ MisFinanzas ayuda a personas y familias a registrar ingresos y gastos, organizar
 
 Es un MVP académico open source con datos ficticios. El backend utiliza Python estándar y un único motor SQLite; la interfaz web sirve HTML, CSS y JavaScript. Las dependencias de Playwright y edición de video pertenecen a las herramientas de QA, no al funcionamiento de la aplicación.
 
-## Estado verificable al 6/11/2026
+**Versión final: `v1.0.0` — viernes 13 de noviembre de 2026.**
 
-| Área | Situación actual | Procedencia |
-| --- | --- | --- |
-| Base técnica | `main`, commit `8a88aeb`; se conservan código, seguridad, respaldo, CI y pruebas de S4 | Historial Git; PR #20, #21 y #22 |
-| CRNube | S4 desplegado el **6/11/2026 sobre `8a88aeb`**, con respaldo SQLite consistente anterior a la actualización | Confirmación del responsable; esta revisión documental no administra el servidor |
-| SQLite del despliegue | **WAL, 17 tablas, integridad `ok` y 0 errores de claves foráneas** | Verificación del despliegue aportada por el responsable; comprobaciones locales separadas |
-| Regresión | **109/109 pruebas correctas** en el registro histórico del 6/11/2026 | [Matriz histórica S4](docs/seguimientos/ENTREGA_S4.md); consola y reporte de comprobaciones originales no disponibles en este checkout. La ejecución del 12/11/2026 se documenta por separado en la tabla de evidencias |
-| Navegador | **27/27 E2E satisfactorias, 0 fallidas y 0 omitidas**, según el registro histórico del 6/11/2026 | [Matriz histórica S4](docs/seguimientos/ENTREGA_S4.md); reporte original no disponible en este checkout, sin nueva ejecución E2E |
-| S3 | Cerrado técnicamente en [Issue #3](https://github.com/sebastins18/Control_Finanzas_Familiares/issues/3) | GitHub: `closed`, motivo `completed`; sin atribuir aprobación docente |
-| Video | Hay grabaciones y versiones de trabajo locales; el **video final sincronizado sigue en preparación para la entrega y no está publicado** | [Estado y evidencias audiovisuales](docs/seguimientos/VIDEO_S4.md) |
-| Versión | **`v0.9.0` no aparece en las etiquetas remotas consultadas**; requiere revisión y autorización | Consulta de `git ls-remote --heads --tags origin` del 6/11/2026 |
+## Estado de la entrega final
 
-El login público es [MisFinanzas en CRNube](https://diego01.grupo5.crnube.org/finanzas/login). La [bitácora histórica S4](docs/seguimientos/S4.md#evidencia-vigente-y-procedencia) registra un GET HTTPS con HTTP 200 sin autenticación; el reporte original no está disponible en este checkout; ese GET no comprueba por sí solo el commit ni los datos internos del servidor. La [matriz de entrega S4](docs/seguimientos/ENTREGA_S4.md) distingue evidencias locales, comprobaciones remotas y validaciones humanas pendientes.
+| Área                  | Situación actual                                                                                                                         | Procedencia                                                                                                                                                                                                             |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Base técnica          | Rama main, con el código, las funcionalidades, las pruebas y la documentación correspondientes a los seguimientos S1 a S4.                                                   | Historial Git; PR #20, #21 y #22                                                                                                                                                                                        |
+| CRNube                | S4 desplegado el **6/11/2026 sobre `8a88aeb`**, con respaldo SQLite consistente anterior a la actualización                              | Confirmación del responsable; esta revisión documental no administra el servidor                                                                                                                                        |
+| SQLite del despliegue | **WAL, 17 tablas, integridad `ok` y 0 errores de claves foráneas**                                                                       | Verificación del despliegue aportada por el responsable; comprobaciones locales separadas                                                                                                                               |
+| Pruebas automatizadas finales | **122/122 exitosas**, 0 fallos, 0 errores y 0 omisiones; **123,43 segundos** | Virtualmin, **12/11/2026**; [suite original](evidencias/s4_final/reportes/virtualmin/suite.json) y [detalle de la ejecución](docs/seguimientos/evidencia_final_pruebas.md) |
+| Navegador             | **27/27 E2E satisfactorias, 0 fallidas y 0 omitidas**, según el registro histórico del 6/11/2026                                         | [Matriz histórica S4](docs/seguimientos/ENTREGA_S4.md); reporte original no disponible en este checkout, sin nueva ejecución E2E                                                                                        |
+| S3                    | Cerrado técnicamente en [Issue #3](https://github.com/sebastins18/Control_Finanzas_Familiares/issues/3)                                  | GitHub: `closed`, motivo `completed`; sin atribuir aprobación docente                                                                                                                                                   |
+| Video                 | Hay grabaciones y versiones de trabajo locales; el **video final sincronizado sigue en preparación para la entrega y no está publicado** | [Estado y evidencias audiovisuales](docs/seguimientos/VIDEO_S4.md)                                                                                                                                                      |
+| Versión final | **`v1.0.0` — viernes 13 de noviembre de 2026** | [Registro de cambios](CHANGELOG.md) |
 
-Los reportes de Virtualmin `suite.json` y `benchmark.md` se actualizaron con la ejecución del 12/11/2026; [procedencia, resultados y hashes](docs/seguimientos/evidencia_final_pruebas.md). Estas copias están pendientes de revisión, commit y push. El commit `cb8e7f9` conserva los reportes anteriores del 11/11/2026. Las capturas enlazadas y las guías de `scripts/e2e/` están disponibles en esta copia de trabajo; los reportes históricos ausentes se identifican expresamente. La publicación de estos documentos no acredita un enlace público al video final ni la disponibilidad del reporte E2E histórico; esas pruebas no se ejecutaron nuevamente.
+La aplicación se encuentra publicada en [MisFinanzas en CRNube](https://diego01.grupo5.crnube.org/finanzas/login). Las verificaciones del despliegue y sus evidencias se encuentran documentadas en la [matriz de entrega S4](docs/seguimientos/ENTREGA_S4.md).
+
+La ejecución final registró **122 pruebas exitosas**, sin fallos, errores ni omisiones, en **123,43 segundos**. Las evidencias están incorporadas en el repositorio y permiten consultar los resultados de las verificaciones realizadas. La [documentación de evidencias](docs/seguimientos/evidencia_final_pruebas.md) conserva la procedencia, los hashes y los antecedentes históricos.
 
 ## Funcionalidades actuales
 
@@ -54,7 +56,7 @@ Los reportes de Virtualmin `suite.json` y `benchmark.md` se actualizaron con la 
 
 Las cuentas y hashes están en `usuarios`; los roles admitidos son `administrador` y `usuario`, sin tabla ni mantenimiento de roles separado. El JSON heredado solo interviene en determinadas migraciones antiguas, no es el almacenamiento operativo de autenticación. Véanse [usuarios y migraciones](docs/usuarios_roles.md), [perfiles y permisos](docs/perfiles_financieros.md) y [consultas, reportes y recurrencias](docs/consultas_reportes_recurrentes.md).
 
-S4 mantiene la exigencia de contraseña inicial fuerte para una base nueva bajo prefijo web, las cookies seguras configurables y las cabeceras de protección. El MVP todavía usa `http.server`, sesiones en memoria y defensas CSRF y de fuerza bruta incompletas. Trabajar con datos ficticios; no se presenta como un servicio bancario ni como una certificación de seguridad.
+MisFinanzas incorpora requisitos de contraseña inicial fuerte para bases nuevas bajo prefijo web, cookies seguras configurables y cabeceras de protección. Como proyecto académico, todavía requiere mejoras en la gestión de sesiones, la protección contra solicitudes no autorizadas y la prevención de intentos repetidos de acceso. El servidor utiliza `http.server` y sesiones en memoria; las defensas CSRF y contra fuerza bruta son incompletas. Por esta razón, se recomienda utilizar datos ficticios y no emplear la aplicación para gestionar información financiera sensible en producción.
 
 ## Requisitos
 
@@ -76,7 +78,7 @@ python --version
 git rev-parse --short HEAD
 ```
 
-En Windows puede usarse `py`; en Linux, `python3`. Emplear el mismo intérprete en todos los pasos. Registrar el commit realmente instalado; `8a88aeb` identifica el despliegue confirmado al corte. El commit histórico `94412a1` y el tag `v0.4.0` no sustituyen la base técnica actual. Para validar esta revisión del README, conservar también su diff o el futuro commit documental.
+En Windows puede usarse py; en Linux, python3. Emplear el mismo intérprete en todos los pasos y registrar el commit instalado para mantener la trazabilidad.
 
 ### Configurar una base nueva en Windows / PowerShell
 
@@ -125,8 +127,7 @@ Desde la misma terminal, con el `DB_PATH` de ensayo ya definido:
 python -c "import os,sqlite3; from pathlib import Path; p=Path(os.environ['DB_PATH']).resolve(); c=sqlite3.connect(p.as_uri()+'?mode=ro',uri=True); print('SQLite:',sqlite3.sqlite_version); print('WAL:',c.execute('PRAGMA journal_mode').fetchone()[0]); print('Tablas:',c.execute('SELECT COUNT(*) FROM sqlite_master WHERE type=? AND name NOT LIKE ?',('table','sqlite_%')).fetchone()[0]); print('Integridad:',c.execute('PRAGMA integrity_check').fetchone()[0]); print('Errores FK:',len(c.execute('PRAGMA foreign_key_check').fetchall())); print('Movimientos:',c.execute('SELECT COUNT(*) FROM movimientos WHERE id_perfil=1').fetchone()[0]); print('Presupuestos:',c.execute('SELECT anio,mes,COUNT(*) FROM presupuestos WHERE id_perfil=1 GROUP BY anio,mes').fetchall()); c.close()"
 ```
 
-En una base recién inicializada y sembrada se esperan `wal`, 17 tablas, integridad `ok`, 0 errores FK, 5 movimientos y 4 presupuestos del período. `mode=ro` impide crear otra base si la ruta no existe. Esta inspección no lee contraseñas ni hashes. Se recupera y amplía el procedimiento documental de Diego; [procedencia y decisiones de consolidación](docs/seguimientos/S4_APORTE_RESPALDO_DIEGO.md).
-
+En una base recién inicializada y sembrada se esperan `wal`, 17 tablas, integridad `ok`, 0 errores FK, 5 movimientos y 4 presupuestos del período. `mode=ro` impide crear otra base si la ruta no existe. Esta inspección no lee contraseñas ni hashes.
 ### Pruebas, arranque y flujo de uso
 
 ```bash
@@ -137,7 +138,7 @@ python -m src.app --host 127.0.0.1 --port 8000
 
 Abrir `http://127.0.0.1:8000/login`, ingresar como `admin` con la clave privada elegida y seleccionar el perfil inicial. Comprobar los cinco movimientos en el resumen y los cuatro presupuestos en **Planificación → Presupuestos**, usando el período de carga. El servidor admite otro puerto libre mediante `--port`. Detener con `Ctrl+C`.
 
-El verificador de instalación usa su propia SQLite temporal, seed idempotente, integridad, WAL, login HTTP y cookie Secure; no utiliza la base del despliegue. La suite de Virtualmin del 12/11/2026 tiene **122 resultados correctos documentados**, sin fallos, errores ni omisiones, en 123,43 segundos. Registrar siempre el total real de una nueva ejecución, incluidos errores u omisiones. Los resultados antiguos de **103 y 105** se conservan exclusivamente como antecedentes en [S4](docs/seguimientos/S4.md) y [CHANGELOG](CHANGELOG.md).
+El verificador de instalación usa su propia SQLite temporal, seed idempotente, integridad, WAL, login HTTP y cookie Secure; no utiliza la base del despliegue. Al ejecutar las pruebas, se debe registrar el total real de resultados, incluidos los fallos, errores u omisiones que puedan presentarse.
 
 ### Validación independiente por otro integrante
 
@@ -160,7 +161,7 @@ Usar la [ficha de S4](docs/seguimientos/S4.md#validación-independiente-por-otro
 | `FINANZAS_REQUIRE_STRONG_ADMIN_PASSWORD` | Con `1`, exige esa regla fuerte también al crear una base local sin prefijo. |
 | `FINANZAS_COOKIE_SECURE` | Usar `1` bajo HTTPS/proxy; `0` para el ensayo local HTTP. |
 
-El modo local histórico sin prefijo admite una credencial pública de demostración si no se fija la variable inicial; los pasos de esta guía emplean una clave privada. La afirmación anterior al S4 de que el prefijo no exigía una clave fuerte quedó superada por `src/auth.py` de `main`.
+El modo local sin prefijo admite una credencial de demostración si no se configura una contraseña inicial. Para una instalación nueva, se recomienda utilizar una contraseña privada y segura, como se indica en esta guía.
 
 Usuarios y hashes viven en SQLite; comprobantes y logs se guardan junto a la base, y el panel de calidad utiliza `QUALITY_DIR` o la carpeta `quality/` junto a la base. No publicar SQLite, credenciales, adjuntos ni logs privados. En CRNube, el código y `DB_PATH` se mantienen fuera de `public_html`; Apache publica `/finanzas` hacia `127.0.0.1:8010`.
 
@@ -176,15 +177,15 @@ El despliegue del **6/11/2026 en `8a88aeb`** y su respaldo previo fueron confirm
 | `python -m scripts.benchmark_s3 --count 100000 --runs 5 --output mediciones_nuevas.md` | Tres operaciones, medianas y planes sobre bases temporales. No reemplazar los informes S3 históricos. |
 | `python scripts/e2e/run_e2e.py --pace 0 --output evidencias/ejecucion_nueva` | Recorrido local de navegador; requiere el entorno QA separado y un destino vacío. |
 
-No copiar directamente un archivo SQLite activo en WAL como sustituto de la API de respaldo. La [guía de QA](scripts/e2e/README.md) explica preparación, captura, reportes y límites. Las variantes `benchmark_s3_diego.py` e `indices_s3.py` conservan su trazabilidad. `scripts/demo_temporal.py` no está en el árbol actual ni en el tag `v0.4.0` inspeccionado; la demostración actual utiliza `scripts/seed.py`.
+No copiar directamente un archivo SQLite activo en WAL como sustituto de la API de respaldo. La [guía de QA](scripts/e2e/README.md) explica preparación, captura, reportes y límites. Las variantes `benchmark_s3_diego.py` e `indices_s3.py` conservan su trazabilidad.
 
 ## Evidencias locales, publicación y cierre académico
 
 | Material | Evidencia existente | Pendiente |
 | --- | --- | --- |
-| Pruebas y mediciones del 12/11/2026 | [122/122 regresiones](evidencias/s4_final/reportes/virtualmin/suite.json), [mediciones con y sin índices](evidencias/s4_final/reportes/virtualmin/benchmark.md) y [procedencia, hashes y alcance](docs/seguimientos/evidencia_final_pruebas.md). La [matriz histórica S4](docs/seguimientos/ENTREGA_S4.md) conserva las 27 E2E y los registros del 6/11/2026 de regresión, instalación, carga y respaldo | Nuevas copias revisadas localmente, pendientes de commit y push; `cb8e7f9` conserva la ejecución anterior; reporte E2E histórico original no disponible en este checkout, sin nueva ejecución E2E |
+| Pruebas y mediciones de Virtualmin del 12/11/2026 | [122/122 pruebas exitosas](evidencias/s4_final/reportes/virtualmin/suite.json), sin fallos, errores ni omisiones, en 123,43 segundos; [mediciones de rendimiento](evidencias/s4_final/reportes/virtualmin/benchmark.md) y [trazabilidad](docs/seguimientos/evidencia_final_pruebas.md) | Reporte E2E histórico original no incluido; no se realizó una nueva ejecución E2E |
 | Capturas auténticas | [Login](evidencias/s4_final/capturas/01_login.png), [dashboard](evidencias/s4_final/capturas/02_dashboard.png), [presupuesto](evidencias/s4_final/capturas/07_presupuestos.png), [historial](evidencias/s4_final/capturas/10_historial.png), [reporte](evidencias/s4_final/capturas/11_reporte_anual.png) y CRUD en la misma carpeta | Publicación selectiva tras revisión |
-| Video auténtico | [Primera toma local](evidencias/s4/video/MisFinanzas_S4.mp4), guiones y versiones de trabajo sincronizadas en `evidencias/s4_final/` | **Video final sincronizado en preparación**, revisión del grupo, URL y permisos del profesor |
+| Video auténtico | Primera toma local — `evidencias/s4/video/MisFinanzas_S4.mp4` (archivo histórico no incluido en este checkout), guiones y versiones de trabajo sincronizadas en `evidencias/s4_final/` | **Video final sincronizado en preparación**, revisión del grupo, URL y permisos del profesor |
 | Ficha del portal | [portal.yml](portal.yml): 15 campos académicos y cuatro integrantes registrados en `autores_publicos` | `demo_video` y `captura` vacíos hasta disponer de URL aprobadas |
 | Entrega | [Matriz S4](docs/seguimientos/ENTREGA_S4.md) y [acta](docs/seguimientos/ACTA_S4.md) | Instalación independiente, participación y comentarios docentes, presentación/PDF y decisión sobre tags |
 
@@ -201,20 +202,20 @@ La CI existente conserva Ubuntu con Python 3.11/3.12 y un trabajo Windows 3.12 p
 
 ## Roadmap
 
-Propuestas desde el 6/11/2026, sujetas a priorización del equipo; no se presentan como funciones ya implementadas ni compromisos aprobados.
+Las siguientes mejoras son propuestas futuras, sujetas a evaluación y priorización del equipo; no son funcionalidades implementadas ni compromisos aprobados.
 
-| Horizonte | Mejoras previstas | Cómo verificar |
+| Horizonte | Mejoras propuestas | Verificación prevista |
 | --- | --- | --- |
-| Un mes — diciembre de 2026 | Completar evidencias del curso; mejorar usabilidad/accesibilidad; ampliar CSRF, sesiones, límites de intentos y controles de acceso; diseñar recuperación de contraseña con verificación de identidad; ensayar restauración | Revisión de UX, pruebas de seguridad/permisos y restauración sobre ensayo antes de habilitar cambios |
-| Seis meses — mayo de 2027 | Gráficos, comparaciones y ampliación de reportes/CSV y notificaciones; operación supervisada, sesiones persistentes, monitoreo y backups | Contrastar gráficos y exportaciones con SQLite, no duplicar alertas existentes, comprobar operación y recuperación |
-| Posible TFG | Investigar patrones de gastos, planificación y recomendaciones explicables, con evaluación de usabilidad | Propuesta, consentimiento, protección de datos y metodología sujetos a aprobación universitaria |
+| Un mes — diciembre de 2026 | Mejorar usabilidad y accesibilidad; fortalecer la seguridad de sesiones y los controles de acceso; diseñar recuperación segura de contraseñas; realizar pruebas de restauración de datos | Pruebas de usabilidad, seguridad, permisos y recuperación de información |
+| Seis meses — mayo de 2027 | Incorporar gráficos y comparaciones financieras; ampliar reportes, exportaciones y notificaciones; mejorar monitoreo, gestión de sesiones y copias de seguridad | Contrastar los resultados con los registros de SQLite y comprobar las nuevas funcionalidades |
+| Posible TFG | Investigar patrones de ingresos y gastos; estudiar herramientas de apoyo a la planificación financiera; explorar recomendaciones personalizadas y explicables | Propuesta de investigación con metodología, evaluación de usabilidad y protección de datos, sujeta a aprobación universitaria |
 
-[Roadmap desarrollado](docs/ROADMAP.md). El análisis predictivo y las recomendaciones personalizadas son posibilidades de investigación, no prestaciones actuales.
+El [roadmap desarrollado](docs/ROADMAP.md) detalla las propuestas y sus criterios de verificación.
 
 ## Colaboración, atribución y licencia
 
-**Diego Fonseca (`dfonseca15`)** aportó la explicación detallada del proyecto, arquitectura, instalación, verificación de solo lectura, matriz S4, ficha académica y roadmap en [`4b0bfed`](https://github.com/sebastins18/Control_Finanzas_Familiares/commit/4b0bfed6ae37e527daf72fc3b6aa8727e990e199). Esta consolidación recupera y actualiza ese contenido sobre `main`, conservando la seguridad y las evidencias posteriores. La rama histórica no tiene commits exclusivos pendientes; `main` está nueve commits por delante al corte. [Comparación y atribución detalladas](docs/seguimientos/S4_APORTE_RESPALDO_DIEGO.md).
+MisFinanzas es el resultado del trabajo grupal de desarrollo, integración, pruebas y documentación. Los aportes individuales se respaldan en el historial de Git, los pull requests y la [documentación de seguimiento](docs/seguimientos/S4.md), junto con el [registro del equipo](docs/seguimientos/EVIDENCIA_EQUIPO.md) y los [antecedentes de atribución documental](docs/seguimientos/S4_APORTE_RESPALDO_DIEGO.md). Estos registros conservan la autoría y la trazabilidad de las contribuciones.
 
-Los aportes de los demás integrantes conservan sus commits, PR y [registro del equipo](docs/seguimientos/EVIDENCIA_EQUIPO.md); no se reasigna autoría ni se inventan participaciones o aprobaciones. [Issues](https://github.com/sebastins18/Control_Finanzas_Familiares/issues) · [Project](https://github.com/users/sebastins18/projects/1) · [CHANGELOG](CHANGELOG.md).
+[Issues](https://github.com/sebastins18/Control_Finanzas_Familiares/issues) · [Project](https://github.com/users/sebastins18/projects/1) · [CHANGELOG](CHANGELOG.md).
 
 Licencia [MIT](LICENSE), copyright 2026 Grupo 5, Universidad Nacional. Conservar el aviso y la licencia al redistribuir. No publicar cédulas, credenciales ni datos personales sin autorización.

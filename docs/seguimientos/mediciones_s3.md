@@ -1,5 +1,8 @@
 # Seguimiento 3: medición local con SQLite
 
+> Medición histórica local de S3; se conserva su entorno, volumen y resultados originales. Las cifras de la entrega final del 12/11/2026 en Virtualmin se consultan por separado en [evidencia final](evidencia_final_pruebas.md).
+
+
 - Python: 3.15.0
 - SQLite: 3.53.4
 - Plataforma: Windows-11-10.0.26200-SP0

@@ -14,7 +14,7 @@ Este resultado fue aportado para este registro; no se volvió a ejecutar el coma
 
 **Observación no bloqueante:** se reportó una advertencia `ResourceWarning`. Se consigna separadamente del resultado satisfactorio de las 11 pruebas; no se atribuye a un recurso o caso concreto ni se afirma que haya sido corregida, porque no se aportó su detalle.
 
-Las pruebas de `tests/test_http_crud_s2.py` **no forman parte de esas 11 pruebas**. Su evidencia anterior es [evidencia_s2_windows.md](../../evidencia_s2_windows.md), fechada el 23/10/2026: 33/33 pruebas aprobadas en 5.698 segundos, con cobertura HTTP de login, CRUD, alertas, errores 400 y escrituras sin sesión. [S2.md](S2.md) también describe esa cobertura y sus ejecuciones anteriores. Es evidencia automatizada con HTTP y SQLite temporales en localhost; no acredita una nueva ejecución S3 ni una demostración manual en CRNube.
+Las pruebas de `tests/test_http_crud_s2.py` **no forman parte de esas 11 pruebas**. Su evidencia anterior es evidencia_s2_windows.md — `../../evidencia_s2_windows.md` (archivo histórico no incluido en este checkout), fechada el 23/10/2026: 33/33 pruebas aprobadas en 5.698 segundos, con cobertura HTTP de login, CRUD, alertas, errores 400 y escrituras sin sesión. [S2.md](S2.md) también describe esa cobertura y sus ejecuciones anteriores. Es evidencia automatizada con HTTP y SQLite temporales en localhost; no acredita una nueva ejecución S3 ni una demostración manual en CRNube.
 
 ## Matriz de las 11 pruebas registradas el 30/10/2026
 

@@ -1,6 +1,6 @@
 # Arquitectura vigente del MVP — Seguimiento 4
 
-**Fecha de entrega final: viernes 13 de noviembre de 2026.**
+**Versión final: `v1.0.0` — viernes 13 de noviembre de 2026.** Las pruebas finales del 12/11/2026 se documentan en [evidencia final](../seguimientos/evidencia_final_pruebas.md); el corte arquitectónico histórico se conserva.
 
 **Corte verificado:** 6 de noviembre de 2026, `main`, `8a88aeb`, con los cambios técnicos de S4 y sus correcciones posteriores. Esta ficha actualiza los esquemas históricos de S1 y V17; **no** sustituye sus registros de evolución.
 
@@ -54,6 +54,6 @@ Medidas demostrables: `PRAGMA foreign_keys`, `integrity_check`, modo WAL para la
 
 El MVP utiliza `http.server`, sesiones en memoria y aún carece de una política CSRF completa y de protección general contra intentos automatizados. Un CI exitoso **no es certificación de seguridad ni de disponibilidad del sitio público**. Mantener solamente datos ficticios y respaldos privados fuera de `public_html`.
 
-La explicación de arquitectura se consolida con el aporte de Diego Fonseca (`dfonseca15`, `4b0bfed`), [atribución y diferencias](../seguimientos/S4_APORTE_RESPALDO_DIEGO.md). Las 109 regresiones y 27 E2E correctas son evidencia local, no certificación operativa del servidor.
+La explicación de arquitectura se consolida con el aporte de Diego Fonseca (`dfonseca15`, `4b0bfed`), [atribución y diferencias](../seguimientos/S4_APORTE_RESPALDO_DIEGO.md). Las 109 regresiones y 27 E2E correctas del 6/11/2026 son evidencia histórica local, no certificación operativa del servidor.
 
 [Guía de instalación S4](../INSTALACION_S4.md) · [Bitácora S4](../seguimientos/S4.md)

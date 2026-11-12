@@ -1,5 +1,8 @@
 # MisFinanzas S4 — guion y sincronización definitivos
 
+> Registro audiovisual histórico del 6/11/2026: las 109 regresiones y 27 E2E corresponden a aquella grabación. No representa la suite final de Virtualmin del 12/11/2026 (122/122, 0 fallos, errores y omisiones, 123,43 s). El video final de la entrega `v1.0.0` del viernes 13 de noviembre de 2026 aún no tiene enlace definitivo. Los nombres `FINAL` y las comprobaciones técnicas no acreditan aprobación editorial o publicación.
+
+
 Voz: es-CR-JuanNeural, pista AAC extraída del MP4 aceptado y reutilizada sin recodificación. Video: 1920 × 1080 nativos, 25 fps, 246,84 s. No se han cambiado tono, velocidad ni palabras del audio.
 
 | Escena | Inicio | Final | Narración | Pantalla requerida | Acción visual | Validación |

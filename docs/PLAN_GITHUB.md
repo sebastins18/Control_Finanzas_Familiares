@@ -75,7 +75,8 @@ Si ya existe una rama con ese nombre, elegir otro nombre al crearla.
 | S1 | 16 oct 2026 | `v0.1.0` + `docs/seguimientos/S1.md` |
 | S2 | 23 oct 2026 | `v0.2.0` + `docs/seguimientos/S2.md`, CRUD e integración |
 | S3 | 30 oct 2026 | `v0.3.0` + `docs/seguimientos/S3.md`, pruebas y mediciones |
-| S4 | 6 nov 2026 | `v0.9.0` + `docs/seguimientos/S4.md`, release candidate |
+| S4 (plan histórico) | 6 nov 2026 | `v0.9.0` + `docs/seguimientos/S4.md`, release candidate previsto, sin etiqueta en la consulta remota del 12/11/2026 |
+| Entrega final | 13 nov 2026 | `v1.0.0`; fecha establecida, sin etiqueta en la consulta remota del 12/11/2026 |
 
 El profesor exige subir la bitácora y el tag **antes de las 6:00 p. m. del día correspondiente**. Los plazos y lo que ya se completó deben quedar registrados con fechas reales, sin afirmar entregas retroactivas.
 

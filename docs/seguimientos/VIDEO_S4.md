@@ -1,17 +1,17 @@
 # Video auténtico S4 — estado, guion y preparación final
 
-**Corte:** 6/11/2026, Costa Rica. Existe grabación real de la aplicación. **El video final sincronizado sigue en preparación y no se declara publicado.** La situación vigente se registra aquí, aunque algunos archivos locales lleven `FINAL` en el nombre o describan comprobaciones técnicas ya realizadas.
+**Corte:** 6/11/2026, Costa Rica. Existe grabación real de la aplicación. **El video final sincronizado sigue en preparación y no se declara publicado.** El estado documental de la entrega se registra aquí, aunque algunos archivos locales lleven `FINAL` en el nombre o describan comprobaciones técnicas ya realizadas.
 
 ## Material local conservado
 
 | Material | Archivo real y alcance |
 | --- | --- |
-| Primera grabación completa | [MP4 720p, 4 min 6,84 s, sin audio](../../evidencias/s4/video/MisFinanzas_S4.mp4); [guion de esa toma](../../evidencias/s4/GUION_PRESENTACION.md) |
+| Primera grabación completa | MP4 720p, 4 min 6,84 s, sin audio — `../../evidencias/s4/video/MisFinanzas_S4.mp4` (archivo histórico no incluido en este checkout); guion de esa toma — `../../evidencias/s4/GUION_PRESENTACION.md` (archivo histórico no incluido en este checkout) |
 | Trabajo posterior en 1080p | [Inventario local](../../evidencias/s4_final/LEEME.md), 19 escenas, voz es-CR-JuanNeural existente, encuadres y desplazamientos guiados por la narración |
 | Guion y subtítulos de trabajo | [Guion](../../evidencias/s4_final/MisFinanzas_S4_FINAL_Guion.md), [SRT](../../evidencias/s4_final/MisFinanzas_S4_FINAL_Subtitulos.srt) |
 | Revisiones técnicas existentes | [Validación audiovisual local](../../evidencias/s4_final/MisFinanzas_S4_FINAL_Validacion.md); son registros técnicos, no aprobación editorial o docente |
-| Capturas reales | [Serie 1080p](../../evidencias/s4_final/capturas/) y [serie original](../../evidencias/s4/capturas/) |
-| Pruebas históricas de la grabación (6/11/2026) | [27 E2E correctas](../../evidencias/s4_final/reportes/e2e/reportes/RESUMEN.md) y [109 regresiones correctas](../../evidencias/s4_final/reportes/complementarias/regresion.txt) |
+| Capturas reales | [Serie 1080p](../../evidencias/s4_final/capturas/) y serie original — `../../evidencias/s4/capturas/` (archivo histórico no incluido en este checkout) |
+| Pruebas históricas de la grabación (6/11/2026) | 27 E2E correctas — `../../evidencias/s4_final/reportes/e2e/reportes/RESUMEN.md` (archivo histórico no incluido en este checkout) y 109 regresiones correctas — `../../evidencias/s4_final/reportes/complementarias/regresion.txt` (archivo histórico no incluido en este checkout) |
 | Reproducibilidad | [QA](../../scripts/e2e/README.md), [presentación](../../scripts/e2e/PRESENTACION.md) |
 
 Las grabaciones muestran Chromium y SQLite temporal con datos ficticios, código `8a88aeb`; no simulan una interfaz implementada. S4 fue desplegado en CRNube el 6/11/2026 con respaldo previo, WAL, 17 tablas, integridad `ok` y FK 0, según el responsable. Esta producción local no administra el servidor: su GET público no demuestra operaciones autenticadas.
@@ -30,7 +30,7 @@ La siguiente tabla conserva la propuesta de contenido. Para sincronizar cada tom
 | 1:35–2:30 | Crear, consultar, editar y eliminar gasto | Persistencia, validación y CRUD |
 | 2:30–3:10 | Presupuesto | Estados y alertas del 80 % y 100 % |
 | 3:10–3:45 | Historial, reporte y CSV | Filtros, exportación y recurrentes |
-| 3:45–4:20 | Pruebas y mediciones | 109 regresiones, 27 E2E; CI histórico e índices/EQP correctamente fechados |
+| 3:45–4:20 | Pruebas y mediciones | Grabación histórica: 109 regresiones y 27 E2E del 6/11/2026. Para la entrega final, presentar por separado las 122 pruebas y el benchmark de Virtualmin del 12/11/2026, sin atribuirlos al audio antiguo |
 | 4:20–4:40 | Conclusiones | Límites, roadmap y próximos pasos |
 
 ## Cierre editorial y publicación pendientes

@@ -1,5 +1,7 @@
 # Instalación y verificación independiente — S4
 
+**Versión final: `v1.0.0` — viernes 13 de noviembre de 2026.** Las instrucciones no acreditan por sí solas la publicación de un tag ni la validación por otro integrante.
+
 Proyecto de demostración académica. Solo datos **ficticios**; no es apto para uso financiero real ni para exposición abierta sin endurecimiento adicional.
 
 **Estado de referencia:** S4 desplegado el 6/11/2026 sobre `8a88aeb`, con respaldo previo consistente, WAL, 17 tablas, integridad `ok` y FK 0, según responsable. Los pasos siguientes son para una instalación nueva aislada, no una orden de modificar CRNube. El [README](../README.md) reúne la instalación completa y la [ficha S4](seguimientos/S4.md#validación-independiente-por-otro-integrante) registra la validación humana. Se recupera el detalle documental de Diego Fonseca (`dfonseca15`, `4b0bfed`) manteniendo la seguridad posterior de main.

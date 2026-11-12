@@ -1,5 +1,8 @@
 # Demostración S4 guiada por la voz existente
 
+> Registro audiovisual histórico del 6/11/2026: las 109 regresiones y 27 E2E corresponden a aquella grabación. No representa la suite final de Virtualmin del 12/11/2026 (122/122, 0 fallos, errores y omisiones, 123,43 s). El video final de la entrega `v1.0.0` del viernes 13 de noviembre de 2026 aún no tiene enlace definitivo. Los nombres `FINAL` y las comprobaciones técnicas no acreditan aprobación editorial o publicación.
+
+
 La grabación de presentación está separada de `run_e2e.py`. La voz aceptada es la de `evidencias/MisFinanzas_S4_Voz_Natural.mp4` (Juan Neural); se copia su AAC y se conservan los paquetes sin cambiar tono, velocidad ni calidad. No se ejecuta el generador TTS anterior ni se envían audio, video o datos a servicios externos.
 
 ## Preparación

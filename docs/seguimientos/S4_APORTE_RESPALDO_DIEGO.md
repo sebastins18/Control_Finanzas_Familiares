@@ -2,11 +2,11 @@
 
 **Autor:** Diego Fonseca · [`dfonseca15`](https://github.com/dfonseca15).
 **Commit original:** [`4b0bfed6ae37e527daf72fc3b6aa8727e990e199`](https://github.com/sebastins18/Control_Finanzas_Familiares/commit/4b0bfed6ae37e527daf72fc3b6aa8727e990e199), 6/11/2026.
-**Origen:** `origin/respaldo-documentacion-s4`. **Base vigente:** `origin/main`, `8a88aeb3a743c345ba62da650a437795272a5d05`.
+**Origen:** `origin/respaldo-documentacion-s4`. **Base del corte histórico:** `origin/main`, `8a88aeb3a743c345ba62da650a437795272a5d05`.
 
-## Comparación actual y preservación de autoría
+## Comparación histórica del 6/11/2026 y preservación de autoría
 
-La consulta de referencias remotas confirmó ambos extremos. `git rev-list --left-right --count origin/respaldo-documentacion-s4...origin/main` devuelve **0 y 9**: main está nueve commits por delante y la rama histórica no contiene commits exclusivos pendientes de integrar. `4b0bfed` ya pertenece a la ascendencia de main mediante la integración documental existente. No se necesita un nuevo merge para recuperar su explicación más extensa.
+La consulta histórica del 6/11/2026 de referencias remotas confirmó ambos extremos. `git rev-list --left-right --count origin/respaldo-documentacion-s4...origin/main` devuelve **0 y 9**: main está nueve commits por delante y la rama histórica no contiene commits exclusivos pendientes de integrar. `4b0bfed` ya pertenece a la ascendencia de main mediante la integración documental existente. No se necesita un nuevo merge para recuperar su explicación más extensa.
 
 El registro anterior comparaba la rama con `d1a1749` y anotaba **1 por delante y 7 por detrás**. Se conserva aquí exclusivamente como antecedente de aquella revisión, no como estado actual. El respaldo de Diego partía de `94412a1`, anterior a las mejoras técnicas S4.
 

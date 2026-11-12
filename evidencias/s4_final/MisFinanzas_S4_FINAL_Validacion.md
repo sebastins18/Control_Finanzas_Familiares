@@ -1,5 +1,8 @@
 # Validación final de MisFinanzas S4
 
+> Registro audiovisual histórico del 6/11/2026: las 109 regresiones y 27 E2E corresponden a aquella grabación. No representa la suite final de Virtualmin del 12/11/2026 (122/122, 0 fallos, errores y omisiones, 123,43 s). El video final de la entrega `v1.0.0` del viernes 13 de noviembre de 2026 aún no tiene enlace definitivo. Los nombres `FINAL` y las comprobaciones técnicas no acreditan aprobación editorial o publicación.
+
+
 Fecha: 2026-11-06T19:47:34-06:00.
 
 - Dos MP4 decodificados íntegramente con FFmpeg: H.264 y AAC, 1920 × 1080 nativos, 25 fps.

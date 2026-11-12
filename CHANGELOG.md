@@ -2,7 +2,7 @@
 
 ## v1.0.0 — Entrega final
 
-**Fecha de entrega final: viernes 13 de noviembre de 2026.**
+**Versión final: `v1.0.0` — viernes 13 de noviembre de 2026.**
 
 Funcionalidades implementadas y documentadas para la entrega final:
 
@@ -16,11 +16,11 @@ Funcionalidades implementadas y documentadas para la entrega final:
 - Instalación reproducible y carga de datos sintéticos.
 - Pruebas automatizadas, mediciones y respaldos SQLite.
 
-**Resultados históricos documentados de S4 (6/11/2026):** 109/109 pruebas de regresión correctas y 27/27 pruebas E2E satisfactorias. Estos resultados corresponden a la verificación histórica de S4; no se afirma una nueva ejecución para `v1.0.0`.
+**Pruebas finales — Virtualmin, 12/11/2026:** **122/122 exitosas**, 0 fallos, 0 errores y 0 omisiones, en **123,43 segundos** (Linux, Python 3.12.3, SQLite 3.45.1). Las mediciones de rendimiento se realizaron por separado con 100.000 movimientos y cinco ejecuciones por escenario, reportando la mediana. Los [reportes y su trazabilidad](docs/seguimientos/evidencia_final_pruebas.md) permiten consultar los resultados completos.
 
-**Actualización de evidencias — 12/11/2026:** Virtualmin registra **122/122 pruebas correctas**, 0 fallos, errores y omisiones, en **123,43 segundos** (Linux, Python 3.12.3, SQLite 3.45.1). Se sustituyen los reportes de Virtualmin del 11/11/2026; se conservan los registros históricos de S4 y E2E. Mediciones sobre 100.000 movimientos, cinco ejecuciones por escenario y mediana: fecha 0,522/17,074 ms, agrupación 17,540/17,565 ms y actualización por ID 0,017/0,012 ms, con/sin índices. [Reportes, procedencia y SHA-256](docs/seguimientos/evidencia_final_pruebas.md). Cambios documentales pendientes de revisión y publicación; sin nueva ejecución E2E ni cambios funcionales.
+**Antecedente histórico de S4 (6/11/2026):** 109/109 pruebas de regresión correctas y 27/27 pruebas E2E satisfactorias. Se conservan como resultados de aquella ejecución; no representan la suite final de Virtualmin ni una nueva ejecución E2E.
 
-**Pendiente de confirmación:** la publicación del Release, el video final y la validación de las evidencias. La publicación de `v1.0.0` sigue pendiente.
+El video final aún no tiene enlace definitivo y la validación independiente debe documentarse con evidencia humana. Los detalles de publicación y trazabilidad se conservan en la [documentación de evidencias](docs/seguimientos/evidencia_final_pruebas.md).
 
 ## v0.1.0 — Seguimiento 1 (16/10/2026)
 - Documentación del problema, usuarios, alcance y decisiones arquitectónicas.
@@ -86,7 +86,7 @@ Funcionalidades implementadas y documentadas para la entrega final:
 - Cookie Secure configurable mediante `FINANZAS_COOKIE_SECURE=1` bajo HTTPS; cabeceras `X-Frame-Options: DENY` y `Referrer-Policy: same-origin`.
 - CI histórico verificado sobre `4cbf76a`: [run 42303414421](https://github.com/sebastins18/Control_Finanzas_Familiares/actions/runs/42303414421), Linux Python 3.11/3.12 y Windows 3.12, tres trabajos correctos. No se declara una nueva corrida sobre la revisión documental.
 - **S4 desplegado en CRNube el 6/11/2026 sobre `8a88aeb`**, con respaldo SQLite consistente anterior a la actualización, según el responsable. SQLite del despliegue: **WAL, 17 tablas, integridad `ok`, cero errores FK**. El GET público del login es una comprobación separada y limitada.
-- Evidencia local vigente: **109/109 pruebas de regresión correctas**, 188.515 s, y **27/27 E2E satisfactorias**, 0 fallidas/omitidas. [Consola](evidencias/s4_final/reportes/complementarias/regresion.txt), [resumen E2E](evidencias/s4_final/reportes/e2e/reportes/RESUMEN.md), instalación automática y carga/respaldo de ensayo de 1.000 registros.
+- Evidencia histórica local del 6/11/2026: **109/109 pruebas de regresión correctas**, 188.515 s, y **27/27 E2E satisfactorias**, 0 fallidas/omitidas. Consola — `evidencias/s4_final/reportes/complementarias/regresion.txt` (archivo histórico no incluido en este checkout), resumen E2E — `evidencias/s4_final/reportes/e2e/reportes/RESUMEN.md` (archivo histórico no incluido en este checkout), instalación automática y carga/respaldo de ensayo de 1.000 registros.
 - Existen capturas y video auténticos locales. Se conservan la primera grabación y las versiones de trabajo 1080p, voz, guion y subtítulos. **El video final sincronizado sigue en preparación; no se afirma su publicación.** Los nombres `FINAL` no equivalen a aceptación editorial.
 - **S3 cerrado técnicamente** en [Issue #3](https://github.com/sebastins18/Control_Finanzas_Familiares/issues/3), estado `closed`, razón `completed`. Volumen de 100.000 e índices/EQP sustentan profundidad; la comparación WAL/DELETE es opcional. No se atribuye aprobación docente.
 - `v0.9.0` y `v1.0.0` **no aparecen en la consulta real de tags remotos al corte** (`git ls-remote --heads --tags origin`). No se crean ni publican versiones en esta tarea.
@@ -95,9 +95,9 @@ Funcionalidades implementadas y documentadas para la entrega final:
 ## Consolidación documental del aporte de Diego — 6/11/2026
 
 - Se recupera y acredita la documentación detallada de **Diego Fonseca (`dfonseca15`)**, commit [`4b0bfed`](https://github.com/sebastins18/Control_Finanzas_Familiares/commit/4b0bfed6ae37e527daf72fc3b6aa8727e990e199): propósito, usuarios, arquitectura, instalación, lectura SQLite, matriz académica S4, ficha independiente, verificaciones y roadmap.
-- Comparación actual: `origin/respaldo-documentacion-s4...origin/main` = **0 / 9**. El commit original ya está integrado en la ascendencia de main; la consolidación es editorial, sin otro merge ni sustitución automática de archivos históricos.
+- Comparación histórica al 6/11/2026: `origin/respaldo-documentacion-s4...origin/main` = **0 / 9**. El commit original ya está integrado en la ascendencia de main; la consolidación es editorial, sin otro merge ni sustitución automática de archivos históricos.
 - Se actualizan README, esta bitácora, S4 y documentos de entrega conservando la base técnica y todos los materiales locales de QA/video. [Registro de atribución y diferencias](docs/seguimientos/S4_APORTE_RESPALDO_DIEGO.md).
-- **103 y 105 pruebas quedan únicamente como antecedentes históricos**: 103 en la etapa v0.4.0/registro de calidad anterior; 105 aportadas sobre `94412a1`, sin consola original adjunta. Ninguna reemplaza las 109 vigentes ni se suma a ellas.
+- **103 y 105 pruebas quedan únicamente como antecedentes históricos**: 103 en la etapa v0.4.0/registro de calidad anterior; 105 aportadas sobre `94412a1`, sin consola original adjunta. Ninguna reemplaza las 109 de aquel corte histórico ni se suma a ellas.
 - `portal.yml` mantiene exactamente los 15 campos académicos y sus valores; se actualizan solo comentarios. Video y captura conservan cadenas vacías por falta de URL pública autorizada; autores públicos permanecen vacíos.
 - Los enlaces relativos de evidencia son locales y no acreditan publicación en GitHub. ZIP/manifiestos anteriores conservan su corte de ejecución. La documentación no convierte instalación automática en validación humana ni cierre técnico en aprobación académica.
 - Sin cambios de código, bases, credenciales, CI o tests; sin commit, push, merge, tags, publicaciones ni acceso a WebAdmin.

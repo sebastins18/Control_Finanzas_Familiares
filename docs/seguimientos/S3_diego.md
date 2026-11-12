@@ -56,7 +56,7 @@ Las respuestas de error examinadas verifican que no se expongan los detalles pri
 
 ## Pruebas normales y evidencia previa de S2
 
-Las cuatro pruebas de [tests/test_http_crud_s2.py](../../tests/test_http_crud_s2.py) **no están incluidas en el comando S3 de 11 pruebas**. Su evidencia anterior, descrita en [S2.md](S2.md), [pruebas_s3.md](pruebas_s3.md) y [evidencia_s2_windows.md](../../evidencia_s2_windows.md), corresponde al 23/10/2026: **33/33 pruebas aprobadas en 5.698 segundos** en el reporte Windows, sobre HTTP y SQLite temporales en localhost.
+Las cuatro pruebas de [tests/test_http_crud_s2.py](../../tests/test_http_crud_s2.py) **no están incluidas en el comando S3 de 11 pruebas**. Su evidencia anterior, descrita en [S2.md](S2.md), [pruebas_s3.md](pruebas_s3.md) y evidencia_s2_windows.md — `../../evidencia_s2_windows.md` (archivo histórico no incluido en este checkout), corresponde al 23/10/2026: **33/33 pruebas aprobadas en 5.698 segundos** en el reporte Windows, sobre HTTP y SQLite temporales en localhost.
 
 La cobertura previa comprende:
 
@@ -191,7 +191,7 @@ Las alternativas nuevas enumeradas en ese documento son posibilidades técnicas;
 | [decisiones.md](../decisiones.md) | Decisiones D-006 a D-009, alternativas posibles, justificación e impacto. |
 | [src/db.py](../../src/db.py) y [src/schema.sql](../../src/schema.sql) | Configuración SQLite, contexto transaccional, relaciones e índices base. |
 | [test_sqlite_failure_v16.py](../../tests/test_sqlite_failure_v16.py), [test_error_handling.py](../../tests/test_error_handling.py) y [test_connection.py](../../tests/test_connection.py) | Escenarios y aserciones de las 11 pruebas registradas para S3. |
-| [S2.md](S2.md), [evidencia_s2_windows.md](../../evidencia_s2_windows.md) y [test_http_crud_s2.py](../../tests/test_http_crud_s2.py) | Antecedentes y cobertura automatizada anterior del flujo normal, sin acreditar una nueva ejecución S3. |
+| [S2.md](S2.md), evidencia_s2_windows.md — `../../evidencia_s2_windows.md` (archivo histórico no incluido en este checkout) y [test_http_crud_s2.py](../../tests/test_http_crud_s2.py) | Antecedentes y cobertura automatizada anterior del flujo normal, sin acreditar una nueva ejecución S3. |
 
 La bitácora no acredita pruebas manuales S3 en Virtualmin, creación del tag `v0.3.0`, aprobación del profesor ni aportes individuales. El registro de 11 pruebas es un resultado aportado; no reemplaza la salida completa de terminal. Tampoco constituye por sí solo el cierre académico del seguimiento.
 

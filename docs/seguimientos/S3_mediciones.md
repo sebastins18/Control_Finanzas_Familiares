@@ -1,5 +1,8 @@
 # Seguimiento 3: mediciones SQLite
 
+> Medición histórica local de S3; se conserva su entorno, volumen y resultados originales. Las cifras de la entrega final del 12/11/2026 en Virtualmin se consultan por separado en [evidencia final](evidencia_final_pruebas.md).
+
+
 - Movimientos en la base de prueba: 100000 (insertados en esta ejecucion: 100000)
 - Ejecuciones por operacion: 5; se reporta la mediana en milisegundos
 - SQLite 3.42.0, Python 3.12.0, Windows 11
