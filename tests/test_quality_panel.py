@@ -69,6 +69,7 @@ class QualityPanelTests(unittest.TestCase):
         return opener.open(Request(self.base + route, data=urlencode(fields).encode()), timeout=5)
 
     def test_admin_sees_panel_and_menu_link(self):
+        """El administrador ve el panel de calidad y su enlace en el menú."""
         status, _, html = self.get(self.login(), '/admin/calidad')
         self.assertEqual(status, 200)
         self.assertIn('Ejecutar: Suite de pruebas', html)
@@ -78,6 +79,7 @@ class QualityPanelTests(unittest.TestCase):
         self.assertNotIn(self.tmp.name, html)
 
     def test_regular_user_and_anonymous_are_denied(self):
+        """Un usuario normal o sin sesión no puede ver el panel de calidad."""
         auth.register({'username': 'Ana', 'name': 'Ana', 'password': 'Clave123!', 'confirm_password': 'Clave123!'})
         user = self.login('Ana', 'Clave123!')
         with self.assertRaises(HTTPError) as denied:
@@ -92,6 +94,7 @@ class QualityPanelTests(unittest.TestCase):
         self.assertTrue(final_url.endswith('/login'))
 
     def test_run_requires_valid_csrf_and_known_job(self):
+        """Ejecutar un trabajo exige token CSRF válido y solo acepta trabajos conocidos."""
         admin = self.login()
         with patch.object(quality, 'start') as start:
             # csrf vacío = formulario sin token (el cliente de prueba solo agrega el token si el campo falta).
@@ -105,6 +108,7 @@ class QualityPanelTests(unittest.TestCase):
             self.assertIn('aviso=error', r.url)
 
     def test_only_one_job_at_a_time_and_stale_lock_expires(self):
+        """Solo corre un trabajo a la vez y un bloqueo abandonado caduca solo."""
         self.assertTrue(quality._acquire('suite'))
         self.assertEqual(quality.running_job()[0], 'suite')
         self.assertEqual(quality.start('bench'), 'busy')
@@ -115,6 +119,7 @@ class QualityPanelTests(unittest.TestCase):
         quality._release()
 
     def test_child_process_is_isolated_from_the_real_database(self):
+        """Los trabajos del panel corren en un proceso aparte con base temporal, nunca con la base real."""
         real = str(Path(self.tmp.name) / 'real.sqlite3')
         fake = MagicMock()
         fake.wait.return_value = 0
@@ -137,6 +142,7 @@ class QualityPanelTests(unittest.TestCase):
         self.assertEqual(quality.read_status()['suite']['estado'], 'error')
 
     def test_stored_results_are_escaped(self):
+        """Los resultados guardados se muestran escapados (no se puede inyectar HTML)."""
         folder = quality.results_dir()
         folder.mkdir(parents=True)
         payload = {'generado': 'hoy', 'segundos': 1, 'total': 1, 'entorno': {}, 'archivos': [
@@ -149,6 +155,7 @@ class QualityPanelTests(unittest.TestCase):
         self.assertIn('&lt;script&gt;', html)
 
     def test_corrupt_results_do_not_break_the_page(self):
+        """Un archivo de resultados dañado no rompe la página del panel."""
         folder = quality.results_dir()
         folder.mkdir(parents=True)
         (folder / 'suite.json').write_text('{no es json', encoding='utf-8')
@@ -171,6 +178,7 @@ class SuiteRunnerTests(unittest.TestCase):
                     sys.path.remove(folder)
 
     def test_summary_for_passing_suite(self):
+        """El resumen JSON de una suite exitosa cuenta pruebas y resultados por archivo."""
         payload, saved = self.run_in('"""Prueba de ejemplo."""\nimport unittest\n'
                                      'class T(unittest.TestCase):\n    def test_a(self): pass\n    def test_b(self): pass\n')
         self.assertTrue(payload['exito'])
@@ -178,6 +186,7 @@ class SuiteRunnerTests(unittest.TestCase):
         self.assertEqual(saved['archivos'][0]['descripcion'], 'Prueba de ejemplo.')
 
     def test_summary_reports_failures_without_internal_paths(self):
+        """El resumen de una suite con fallos los informa sin exponer rutas internas."""
         payload, saved = self.run_in('import unittest\nclass T(unittest.TestCase):\n'
                                      '    def test_ok(self): pass\n    def test_bad(self): self.assertEqual(1, 2)\n')
         self.assertFalse(payload['exito'])
@@ -185,6 +194,51 @@ class SuiteRunnerTests(unittest.TestCase):
         self.assertEqual((row['ok'], row['fallos']), (1, 1))
         self.assertEqual(row['problemas'][0]['prueba'], 'test_bad')
         self.assertNotIn(str(run_quality_suite.ROOT), json.dumps(saved))
+
+    def test_each_test_reports_meaning_and_functions_used(self):
+        """Cada prueba informa qué significa (docstring) y con qué funciones o rutas de la app se logró."""
+        source = ('import unittest\nfrom src import finance\n'
+                  'class T(unittest.TestCase):\n'
+                  '    def helper(self, route="/historial"):\n        return route\n'
+                  '    def test_formato(self):\n        """El formato de montos usa símbolo y decimales."""\n'
+                  '        self.assertEqual(finance.format_amount(100, "$"), "$1.00")\n'
+                  '    def test_ruta(self):\n        self.helper()\n        self.assertTrue(len("/movimientos/1/eliminar".split("/")))\n'
+                  '        self.assertEqual(str("/movimientos/5/eliminar"), "/movimientos/5/eliminar")\n'
+                  '    def test_mal(self):\n        """Debe fallar."""\n        self.assertEqual(1, 2)\n')
+        _, saved = self.run_in(source)
+        tests = {t['prueba']: t for t in saved['archivos'][0]['pruebas']}
+        self.assertEqual(set(tests), {'test_formato', 'test_ruta', 'test_mal'})
+        ok = tests['test_formato']
+        self.assertEqual((ok['clase'], ok['resultado']), ('T', 'ok'))
+        self.assertEqual(ok['significado'], 'El formato de montos usa símbolo y decimales.')
+        self.assertEqual(ok['funciones'], ['finance.format_amount()'])
+        route = tests['test_ruta']['funciones']
+        self.assertIn('Ruta /historial → reportes.history_page()', route)          # valor por defecto del ayudante
+        self.assertIn('Ruta /movimientos/5/eliminar → db.remove_movement()', route)
+        self.assertEqual(tests['test_mal']['resultado'], 'fallo')
+        self.assertIn('AssertionError', tests['test_mal']['detalle'])
+
+    def test_panel_shows_detail_escaped_and_tolerates_old_results(self):
+        """El panel muestra el detalle por prueba escapado y avisa si el JSON es de una versión anterior."""
+        with tempfile.TemporaryDirectory() as folder, patch.dict(os.environ, {'DB_PATH': str(Path(folder) / 'x.sqlite3')}):
+            results = quality.results_dir()
+            results.mkdir(parents=True)
+            row = {'archivo': 'test_x', 'descripcion': 'd', 'tests': 1, 'fallos': 1, 'errores': 0, 'segundos': 0.1, 'problemas': [],
+                   'pruebas': [{'clase': 'T', 'prueba': 'test_<b>', 'significado': '<script>x</script>', 'resultado': 'fallo',
+                                'funciones': ['db.save_movement()', '<img src=x>'], 'segundos': 0.25, 'detalle': 'AssertionError: 1 != 2'}]}
+            payload = {'generado': 'hoy', 'segundos': 1, 'total': 1, 'entorno': {}, 'archivos': [row]}
+            (results / 'suite.json').write_text(json.dumps(payload), encoding='utf-8')
+            html = quality.content('t' * 64)
+            self.assertIn('Cómo leer estos resultados', html)
+            self.assertIn('<details class="subform quality-tests" open>', html)   # con fallos: abierto
+            self.assertIn('<code>db.save_movement()</code>', html)
+            self.assertIn('FALLO', html)
+            self.assertIn('250 ms', html)
+            self.assertNotIn('<script>x', html)
+            self.assertNotIn('<img src=x', html)
+            del row['pruebas']
+            (results / 'suite.json').write_text(json.dumps(payload), encoding='utf-8')
+            self.assertIn('Vuelve a ejecutar la suite para ver el detalle por prueba', quality.content('t' * 64))
 
 
 if __name__ == '__main__':

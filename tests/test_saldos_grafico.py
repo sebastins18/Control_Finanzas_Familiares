@@ -12,6 +12,7 @@ from tests.test_s3_normal import S3HttpBase
 
 class MonthsBackTests(unittest.TestCase):
     def test_clamps_to_last_day_and_crosses_years(self):
+        """Restar meses a una fecha ajusta al último día del mes y cruza de año correctamente."""
         self.assertEqual(months_back(date(2026, 3, 31), 1), date(2026, 2, 28))
         self.assertEqual(months_back(date(2024, 5, 31), 3), date(2024, 2, 29))
         self.assertEqual(months_back(date(2026, 1, 15), 1), date(2025, 12, 15))
@@ -34,6 +35,7 @@ class BalanceHistoryTests(HttpMixin, S3HttpBase):
             self.meta = meta
 
     def test_series_follow_movements_transfers_and_savings(self):
+        """El historial diario de saldos incluye movimientos, transferencias y ahorros en el día correcto."""
         end = date(2026, 6, 30)
         start = end - timedelta(days=9)
         self.add('2026-06-01', 5000, 'Antes del rango')                            # entra en el saldo base
@@ -61,6 +63,7 @@ class BalanceHistoryTests(HttpMixin, S3HttpBase):
         self.assertNotIn('Futuro', json.dumps(history))
 
     def test_last_point_matches_current_balance(self):
+        """El último punto del gráfico de saldos coincide con el saldo actual de cada cuenta."""
         today = date.today()
         self.add((today - timedelta(days=3)).isoformat(), 12345, 'Reciente')
         history = finance.balance_history(today - timedelta(days=7), today)
@@ -69,6 +72,7 @@ class BalanceHistoryTests(HttpMixin, S3HttpBase):
                 self.assertEqual(account['serie'][-1], finance.account_balance(c, account['id']))
 
     def test_dashboard_panel_scoped_to_profile_and_escaped(self):
+        """El gráfico de saldos solo usa cuentas del perfil activo y escapa los nombres."""
         self.other_profile()
         with db.connect() as c:
             c.execute("UPDATE cuentas SET nombre='Caja </script><b>x' WHERE id_cuenta=?", (self.second,))

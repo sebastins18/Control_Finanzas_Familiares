@@ -30,6 +30,7 @@ class FxQuoteTests(unittest.TestCase):
                     monto_origen_centimos=amount,fecha=self.today,descripcion='Cotización de prueba',cotizacion=quote)
 
     def test_100000_colones_to_dollars_stores_the_original_460_quote(self):
+        """Convertir ₡100 000 a dólares con cotización 460 guarda el monto convertido y la cotización original."""
         extension.save('transferencias',self.form())
         with db.connect() as c:
             row=c.execute('SELECT * FROM transferencias').fetchone()
@@ -43,6 +44,7 @@ class FxQuoteTests(unittest.TestCase):
         self.assertIn('1 USD = 460,00 CRC',html)
 
     def test_100_dollars_to_colones_uses_the_same_460_quote(self):
+        """Convertir $100 a colones usa la misma cotización 460 en sentido inverso."""
         form=self.form(amount='100')
         form.update(id_cuenta_origen=str(self.target),id_cuenta_destino=str(self.origin))
         extension.save('transferencias',form)
@@ -51,6 +53,7 @@ class FxQuoteTests(unittest.TestCase):
             self.assertEqual(c.execute('SELECT cotizacion FROM tipos_cambio').fetchone()[0],'460.00')
 
     def test_later_quote_does_not_modify_an_existing_transfer(self):
+        """Registrar una cotización nueva no cambia transferencias ya hechas."""
         extension.save('transferencias',self.form())
         extension.save('transferencias',self.form('500',amount='50000'))
         with db.connect() as c:
@@ -62,6 +65,7 @@ class FxQuoteTests(unittest.TestCase):
             self.assertEqual(finance.historical_conversion(c,self.crc,self.usd,10000000,self.today),20000)
 
     def test_invalid_quotes_and_unrepresentable_amounts_do_not_write(self):
+        """Cotizaciones inválidas o montos imposibles de representar se rechazan sin escribir nada."""
         forms=[self.form(v) for v in ('','0','-1','NaN','Infinity','0.0021739130434783','460.123','1000000001','abc')]
         forms.append(self.form('1000000000',amount='0.01'))
         for form in forms:
@@ -72,6 +76,7 @@ class FxQuoteTests(unittest.TestCase):
             self.assertEqual(c.execute('SELECT COUNT(*) FROM tipos_cambio').fetchone()[0],0)
 
     def test_same_currency_needs_no_quote(self):
+        """Una transferencia entre cuentas de la misma moneda no pide cotización."""
         with db.connect() as c:
             target=c.execute("SELECT id_cuenta FROM cuentas WHERE nombre='Efectivo' AND id_perfil=1").fetchone()[0]
         form=self.form(amount='100');form.pop('cotizacion');form['id_cuenta_destino']=str(target)
@@ -81,6 +86,7 @@ class FxQuoteTests(unittest.TestCase):
             self.assertEqual(c.execute('SELECT COUNT(*) FROM tipos_cambio').fetchone()[0],0)
 
     def test_insufficient_funds_roll_back_the_quote_too(self):
+        """Si no hay saldo suficiente, se revierte la transferencia y también su cotización."""
         with self.assertRaisesRegex(ValueError,'Fondos insuficientes'):
             extension.save('transferencias',self.form(amount='2000000'))
         with db.connect() as c:
@@ -88,6 +94,7 @@ class FxQuoteTests(unittest.TestCase):
             self.assertEqual(c.execute('SELECT COUNT(*) FROM transferencias').fetchone()[0],0)
 
     def test_form_only_asks_for_the_quote_and_schema_has_no_directional_factor(self):
+        """El formulario solo pide la cotización y la tabla de cotizaciones no guarda factores redundantes."""
         html=extension.page('transferencias')
         self.assertIn('name="cotizacion"',html)
         for removed in ('operacion_cambio','tipo_cambio_manual','16 decimales','step="any"'):

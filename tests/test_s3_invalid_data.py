@@ -21,18 +21,22 @@ class S3InvalidDataTests(S3HttpBase):
         self.assertEqual(self.count_movements(), before, overrides)
 
     def test_negative_or_zero_amount_is_rejected(self):
+        """Montos negativos o cero se rechazan."""
         self.rejected({'monto': '-5'})
         self.rejected({'monto': '0'})
 
     def test_non_numeric_and_too_many_decimals_are_rejected(self):
+        """Montos no numéricos o con más de dos decimales se rechazan."""
         self.rejected({'monto': 'abc'})
         self.rejected({'monto': '10.999'})
 
     def test_invalid_date_is_rejected(self):
+        """Fechas inexistentes o mal escritas se rechazan."""
         self.rejected({'fecha': '2026-13-45'})
         self.rejected({'fecha': '15/10/2026'})
 
     def test_unknown_type_category_or_account_is_rejected(self):
+        """Un tipo, categoría o cuenta inexistente o de otro perfil se rechaza."""
         self.rejected({'tipo': 'regalo'})
         self.rejected({'id_categoria': '999999'})
         self.rejected({'id_cuenta': '999999'})

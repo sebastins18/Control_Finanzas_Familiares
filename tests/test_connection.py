@@ -23,6 +23,7 @@ class SQLiteConnectionTest(unittest.TestCase):
         self.tempdir.cleanup()
 
     def test_create_schema_and_connect(self):
+        """Se crea el esquema SQLite y la aplicación puede conectarse y consultarlo."""
         db.init_db()
         self.assertTrue(self.db_file.exists())
         with db.connect() as connection:
@@ -42,6 +43,7 @@ class SQLiteConnectionTest(unittest.TestCase):
             self.assertTrue(connection.execute("PRAGMA foreign_key_list(movimientos)").fetchall())
 
     def test_idempotent_init(self):
+        """Inicializar la base dos veces no falla ni duplica tablas o datos."""
         db.init_db()
         db.init_db()
         with db.connect() as connection:

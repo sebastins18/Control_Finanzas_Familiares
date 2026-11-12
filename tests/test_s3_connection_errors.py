@@ -15,6 +15,7 @@ from tests.test_s3_normal import S3HttpBase
 
 class S3ConnectionErrorTests(S3HttpBase):
     def test_read_failure_returns_generic_503_and_server_recovers(self):
+        """Si falla una lectura se responde 503 genérico y el servidor sigue atendiendo después."""
         with patch.object(db, 'connect', side_effect=sqlite3.OperationalError('ruta-secreta-interna')):
             with self.assertRaises(HTTPError) as caught:
                 self.get('/')
@@ -26,6 +27,7 @@ class S3ConnectionErrorTests(S3HttpBase):
         self.assertIn('MisFinanzas', self.get('/'))
 
     def test_write_failure_returns_503_and_saves_nothing(self):
+        """Si falla una escritura se responde 503 y no queda nada guardado."""
         before = self.count_movements()
         with patch.object(db, 'connect', side_effect=sqlite3.OperationalError('ruta-secreta-interna')):
             with self.assertRaises(HTTPError) as caught:
@@ -36,6 +38,7 @@ class S3ConnectionErrorTests(S3HttpBase):
         self.assertEqual(self.count_movements(), before)
 
     def test_locked_database_is_reported_as_busy_without_partial_write(self):
+        """Con la base bloqueada se informa «ocupada» sin escrituras parciales."""
         before = self.count_movements()
         locked = sqlite3.OperationalError('database is locked')
         locked.sqlite_errorcode = sqlite3.SQLITE_BUSY

@@ -12,6 +12,7 @@ from scripts import benchmark_s3
 
 class S3BenchmarkSmokeTests(unittest.TestCase):
     def test_benchmark_reports_median_and_plan_change(self):
+        """Las mediciones reportan la mediana de cada operación y el cambio de plan con y sin índices."""
         with patch.dict(os.environ, {}, clear=False):
             loaded, results = benchmark_s3.run(count=400, runs=3)
         self.assertEqual(loaded, 400)
@@ -26,6 +27,7 @@ class S3BenchmarkSmokeTests(unittest.TestCase):
         self.assertIn('SCAN', by_key[(date_op, 'sin indices')])
 
     def test_fewer_than_three_runs_are_rejected(self):
+        """Las mediciones exigen al menos tres ejecuciones para calcular una mediana válida."""
         with self.assertRaises(ValueError):
             benchmark_s3.run(count=100, runs=2)
 

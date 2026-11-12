@@ -9,6 +9,7 @@ from src import app
 
 class SQLiteFailureTests(unittest.TestCase):
     def test_get_failure_is_controlled(self):
+        """Si SQLite no responde, /health devuelve un error controlado en vez de una traza."""
         server=ThreadingHTTPServer(('127.0.0.1',0),app.Handler)
         thread=threading.Thread(target=server.serve_forever,daemon=True)
         thread.start()

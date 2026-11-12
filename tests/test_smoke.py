@@ -1,3 +1,4 @@
+"""Pruebas básicas: esquema y WAL, movimientos, presupuestos, validaciones, inyección SQL y respuestas HTTP."""
 import os
 import tempfile
 import threading
@@ -38,12 +39,14 @@ class TestFinanzas(unittest.TestCase):
                     id_cuenta=str(self.account), fecha=date.today().isoformat(), descripcion='Compra ficticia')
 
     def test_schema_and_wal(self):
+        """La base usa modo WAL, claves foráneas activas y tiene el esquema creado."""
         with db.connect() as cx:
             self.assertEqual(cx.execute('PRAGMA journal_mode').fetchone()[0], 'wal')
             self.assertEqual(cx.execute('PRAGMA foreign_keys').fetchone()[0], 1)
             self.assertGreaterEqual(len(cx.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()), 5)
 
     def test_crud_movements(self):
+        """Crear, editar y eliminar movimientos funciona directamente sobre la base."""
         db.save_movement(self.form())
         data = db.dashboard(date.today().year, date.today().month)
         self.assertEqual(data['expense'], 25050)
@@ -56,6 +59,7 @@ class TestFinanzas(unittest.TestCase):
         self.assertEqual(db.dashboard(date.today().year, date.today().month)['expense'], 0)
 
     def test_budget(self):
+        """El presupuesto suma el gasto del mes de su categoría y lo compara con el límite."""
         today = date.today()
         db.save_budget(dict(id_categoria=str(self.cat_expense), anio=str(today.year), mes=str(today.month), monto_limite='200'))
         db.save_movement(self.form(amount='180'))
@@ -64,6 +68,7 @@ class TestFinanzas(unittest.TestCase):
         self.assertEqual(budgets[0]['limite'], 20000)
 
     def test_reject_invalid_amount_and_type(self):
+        """Montos o tipos de movimiento inválidos se rechazan."""
         for bad in ('-1', '0', 'abc', '1.999'):
             with self.subTest(bad=bad), self.assertRaises(ValueError):
                 db.save_movement(self.form(amount=bad))
@@ -73,6 +78,7 @@ class TestFinanzas(unittest.TestCase):
             self.assertEqual(cx.execute('SELECT COUNT(*) FROM movimientos').fetchone()[0], 0)
 
     def test_sql_injection_is_not_executed(self):
+        """Texto con SQL malicioso se guarda como texto y nunca se ejecuta."""
         malicious = self.form()
         malicious['descripcion'] = "'); DROP TABLE movimientos; --"
         db.save_movement(malicious)
@@ -80,6 +86,7 @@ class TestFinanzas(unittest.TestCase):
             self.assertEqual(cx.execute('SELECT COUNT(*) FROM movimientos').fetchone()[0], 1)
 
     def test_money_display(self):
+        """La función currency() da formato a montos en colones, incluidos los negativos."""
         self.assertEqual(currency(125050), '₡1.250,50')
         self.assertEqual(currency(-100), '−₡1,00')
 
@@ -110,6 +117,7 @@ class TestHttp(unittest.TestCase):
         return opener
 
     def test_http_200_and_health(self):
+        """Las páginas principales responden 200 y /health informa que la base está disponible."""
         opener = self.logged_in()
         with opener.open(self.base + '/') as result:
             body = result.read().decode('utf-8')
@@ -119,6 +127,7 @@ class TestHttp(unittest.TestCase):
             self.assertIn('"status": "ok"',result.read().decode('utf-8'))
 
     def test_http_create_and_invalid(self):
+        """Por HTTP se crea un movimiento válido y uno inválido se rechaza con 400."""
         opener = self.logged_in()
         payload = urlencode(self.form()).encode()
         with opener.open(Request(self.base + '/movimientos', data=payload), timeout=3) as result:

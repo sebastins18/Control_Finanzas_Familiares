@@ -13,6 +13,7 @@ from scripts.backup_sqlite_s4 import backup
 
 class S4BackupTests(unittest.TestCase):
     def test_online_backup_integrity_and_no_overwrite(self):
+        """El respaldo en caliente pasa la verificación de integridad y no sobrescribe uno existente."""
         with tempfile.TemporaryDirectory() as folder:
             original = Path(folder) / 'original.sqlite3'
             copy = Path(folder) / 'backup.sqlite3'

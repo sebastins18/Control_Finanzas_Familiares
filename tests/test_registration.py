@@ -46,6 +46,7 @@ class RegistrationTests(unittest.TestCase):
         return self.client.open(Request(self.base+route,data=urlencode(fields).encode()),timeout=5)
 
     def test_public_registration_and_login_with_fixed_user_role(self):
+        """El registro público crea usuarios con rol «usuario» que luego pueden iniciar sesión."""
         with self.client.open(self.base+'/login',timeout=5) as r:
             self.assertIn('href="/registro"',r.read().decode())
         with self.client.open(self.base+'/registro',timeout=5) as r:
@@ -68,6 +69,7 @@ class RegistrationTests(unittest.TestCase):
             self.assertIn('Diego Prueba',r.read().decode())
 
     def test_duplicates_preserve_original_and_case_is_ignored(self):
+        """Un nombre de usuario repetido (sin importar mayúsculas) se rechaza y conserva la cuenta original."""
         with self.post(self.form()) as r:r.read()
         original=app.user_by_name('Diego')
         for username in ('Diego','diego','DIEGO','  Diego  '):
@@ -84,6 +86,7 @@ class RegistrationTests(unittest.TestCase):
                 c.execute("INSERT INTO usuarios(nombre,username,rol,password_salt,password_hash) VALUES('Otro','dIeGo','usuario','salt','hash')")
 
     def test_validation_and_escaping_without_returning_passwords(self):
+        """El registro valida los datos, escapa el texto y nunca devuelve la contraseña en la página."""
         for changes in ({'username':'nombre con espacios'}, {'name':' '}, {'password':'corta'},
                         {'confirm_password':'NoCoincide!'}, {'username':'a'*41}):
             with self.assertRaises(HTTPError) as caught:self.post(self.form(**changes))
@@ -98,6 +101,7 @@ class RegistrationTests(unittest.TestCase):
         with db.connect() as c:self.assertEqual(c.execute('SELECT COUNT(*) FROM usuarios').fetchone()[0],1)
 
     def test_concurrent_signup_only_creates_one_account(self):
+        """Dos registros simultáneos con el mismo usuario solo crean una cuenta."""
         def attempt(username):
             try:return auth.register(self.form(username=username))
             except ValueError:return None
@@ -109,6 +113,7 @@ class RegistrationTests(unittest.TestCase):
             self.assertEqual(c.execute('SELECT COUNT(*) FROM perfiles_financieros').fetchone()[0],2)
 
     def test_profile_creation_failure_rolls_back_account(self):
+        """Si falla la creación del perfil, también se revierte la cuenta nueva."""
         with patch.object(profiles,'ensure_default',side_effect=sqlite3.OperationalError('sensitive path')):
             with self.assertRaises(HTTPError) as caught:self.post(self.form())
             with caught.exception as r:
@@ -117,6 +122,7 @@ class RegistrationTests(unittest.TestCase):
         self.assertIsNone(app.user_by_name('Diego'))
 
     def test_registration_respects_base_path(self):
+        """El registro funciona bajo el prefijo /finanzas."""
         with patch.dict(os.environ,{'APP_BASE_PATH':'/finanzas'}):
             with self.client.open(self.base+'/finanzas/login',timeout=5) as r:
                 self.assertIn('href="/finanzas/registro"',r.read().decode())
@@ -127,6 +133,7 @@ class RegistrationTests(unittest.TestCase):
 
     @patch.object(auth, 'STANDARD_USER_MODE', True)
     def test_standard_user_mode_hides_roles_and_disables_user_management(self):
+        """En modo de usuarios estándar se ocultan los roles y se desactiva la gestión de usuarios."""
         self.assertTrue(auth.STANDARD_USER_MODE)
         with self.post({'usuario':'admin','contrasena':TEST_ADMIN_PASSWORD},'/login') as r:r.read()
         with self.post({'id_perfil':1},'/perfiles/seleccionar') as r:

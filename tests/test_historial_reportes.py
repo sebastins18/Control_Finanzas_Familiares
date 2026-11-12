@@ -46,6 +46,7 @@ class HttpMixin:
 
 class HistoryTests(HttpMixin, S3HttpBase):
     def test_pagination_and_filters(self):
+        """El historial pagina los movimientos y filtra por texto, tipo, categoría, cuenta y fechas."""
         for i in range(30):
             self.add(f'2026-02-{i % 28 + 1:02d}', 1000 + i, f'Compra {i:02d}')
         self.add('2026-05-01', 500000, 'Salario mayo', tipo='ingreso')
@@ -62,17 +63,20 @@ class HistoryTests(HttpMixin, S3HttpBase):
         self.assertIn('1 movimiento<', self.get('/historial?desde=2026-05-01&hasta=2026-05-31'))
 
     def test_like_wildcards_are_literal(self):
+        """Buscar «%» o «_» en el historial los trata como texto literal, no como comodines SQL."""
         self.add('2026-02-01', 1000, 'Descuento 50%')
         self.add('2026-02-02', 1000, 'Descuento 500')
         self.assertIn('1 movimiento<', self.get('/historial?q=50%25'))
 
     def test_invalid_filters_return_400_with_reason(self):
+        """Filtros inválidos (fechas, ids) devuelven 400 explicando el motivo."""
         self.assertEqual(self.status('/historial?desde=2026-13-01'), 400)
         self.assertEqual(self.status('/historial?desde=2026-05-01&hasta=2026-01-01'), 400)
         self.assertEqual(self.status('/historial?tipo=otro'), 400)
         self.assertEqual(self.status('/reportes/anual?anio=1999'), 400)
 
     def test_csv_export_respects_filters_and_neutralizes_formulas(self):
+        """El CSV exporta solo lo filtrado y neutraliza fórmulas para que Excel no las ejecute."""
         self.add('2026-02-01', 123456, '=HYPERLINK("http://x")')
         self.add('2026-03-01', 1000, 'Fuera del rango')
         headers, raw = self.get_raw('/historial.csv?desde=2026-02-01&hasta=2026-02-28')
@@ -86,6 +90,7 @@ class HistoryTests(HttpMixin, S3HttpBase):
         self.assertNotIn('Fuera del rango', text)
 
     def test_other_profiles_never_appear(self):
+        """El historial y sus exportaciones nunca muestran datos de otros perfiles."""
         self.other_profile()
         self.assertIn('0 movimientos', self.get('/historial?q=SECRETO'))
         self.assertNotIn('SECRETO', self.get('/historial.csv'))
@@ -94,6 +99,7 @@ class HistoryTests(HttpMixin, S3HttpBase):
 
 class AnnualReportTests(HttpMixin, S3HttpBase):
     def test_monthly_totals_by_category_and_currency(self):
+        """El reporte anual suma por mes, categoría y moneda sin mezclar monedas ni años."""
         self.add('2026-01-05', 10000, 'Ene a')
         self.add('2026-01-20', 2550, 'Ene b')
         self.add('2026-12-31', 5000, 'Dic')
@@ -116,6 +122,7 @@ class AnnualReportTests(HttpMixin, S3HttpBase):
         self.assertTrue(any(',USD,gasto,' in line and line.endswith(',42.00') for line in lines))
 
     def test_empty_year(self):
+        """Un año sin movimientos muestra el reporte vacío sin errores."""
         self.assertIn('No hay movimientos registrados en 2031', self.get('/reportes/anual?anio=2031'))
 
 
@@ -131,6 +138,7 @@ class RecurringTests(HttpMixin, S3HttpBase):
             return c.execute('SELECT COUNT(*) FROM movimientos WHERE descripcion=?', (description,)).fetchone()[0]
 
     def test_generation_is_idempotent_and_respects_deleted_movements(self):
+        """Generar recurrentes crea un movimiento por mes sin duplicar y no recrea los que se borraron."""
         self.post(self.template(), '/admin/movimientos_recurrentes/guardar')
         request_ctx.set_user_id(1)
         self.assertEqual(recurrentes.generate(today=date(2026, 3, 4)), (2, 0))   # ene y feb; el 5 de marzo aún no llega
@@ -144,6 +152,7 @@ class RecurringTests(HttpMixin, S3HttpBase):
         self.assertEqual(self.count(), 2)
 
     def test_http_flow_and_inactive_templates(self):
+        """Desde la web se generan los recurrentes pendientes y las plantillas inactivas se ignoran."""
         self.post(self.template(fecha_inicio=date.today().replace(day=1).isoformat(), dia_mes='1'), '/admin/movimientos_recurrentes/guardar')
         self.post(self.template(descripcion='Pausado', activo='0', dia_mes='1'), '/admin/movimientos_recurrentes/guardar')
         self.assertIn('Generar pendientes', self.get('/admin/movimientos_recurrentes'))
@@ -156,6 +165,7 @@ class RecurringTests(HttpMixin, S3HttpBase):
         self.assertEqual(self.count(), 1)
 
     def test_invalid_templates_are_rejected(self):
+        """Plantillas recurrentes con datos inválidos se rechazan."""
         for changes in ({'dia_mes': '31'}, {'tipo': 'ingreso'}, {'fecha_inicio': '1990-01-01'}):
             with self.assertRaises(HTTPError) as ctx:
                 self.post(self.template(**changes), '/admin/movimientos_recurrentes/guardar')
@@ -164,6 +174,7 @@ class RecurringTests(HttpMixin, S3HttpBase):
             self.assertEqual(c.execute('SELECT COUNT(*) FROM movimientos_recurrentes').fetchone()[0], 0)
 
     def test_database_enforces_one_occurrence_per_period(self):
+        """La base impide dos movimientos generados de la misma plantilla en el mismo mes."""
         self.post(self.template(), '/admin/movimientos_recurrentes/guardar')
         import sqlite3
         with self.assertRaises(sqlite3.IntegrityError):

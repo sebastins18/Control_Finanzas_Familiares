@@ -81,6 +81,7 @@ class Seguimiento2HttpCrud(unittest.TestCase):
             return cx.execute('SELECT COUNT(*) FROM movimientos').fetchone()[0]
 
     def test_crud_completo_desde_http_con_autenticacion(self):
+        """Con sesión iniciada se crea, consulta, edita y elimina un movimiento por HTTP."""
         code, _, uri = self.get('/')
         self.assertEqual(code, 200)
         self.assertTrue(uri.endswith('/finanzas/login'), uri)
@@ -113,6 +114,7 @@ class Seguimiento2HttpCrud(unittest.TestCase):
         self.assertNotIn('Movimiento editado S2', self.get('/')[1])
 
     def test_presupuesto_y_alertas_80_y_100_por_http(self):
+        """Un presupuesto creado por HTTP dispara alertas al llegar al 80 % y al 100 %."""
         self.login()
         today = date.today()
         self.post('/presupuestos', {
@@ -130,6 +132,7 @@ class Seguimiento2HttpCrud(unittest.TestCase):
         self.assertIn('Bajo control', self.get('/')[1])
 
     def test_solicitud_invalida_no_modifica_sqlite(self):
+        """Una solicitud con datos inválidos responde 400 y no modifica la base."""
         self.login()
         with self.assertRaises(HTTPError) as exc:
             self.post('/movimientos', self.form('-10.00'))
@@ -137,6 +140,7 @@ class Seguimiento2HttpCrud(unittest.TestCase):
         self.assertEqual(self.count(), 0)
 
     def test_post_sin_sesion_no_guarda_datos(self):
+        """Un POST sin sesión redirige al login y no guarda nada."""
         status, _, url = self.post('/movimientos', self.form('500.00'))
         self.assertEqual(status, 200)  # urllib siguió 303 hasta login
         self.assertTrue(url.endswith('/finanzas/login'))

@@ -88,6 +88,7 @@ class FormsV2Tests(HttpMixin, S3HttpBase):
         return self.post(parser.payload(), action)
 
     def test_movement_form_segmented_type_and_amount(self):
+        """El formulario de movimiento usa el selector Gasto/Ingreso y el campo de monto con su moneda."""
         f = self.form('/', '/movimientos')
         self.assertEqual({c['value'] for c in f.find('tipo', type='radio')}, {'gasto', 'ingreso'})
         self.assertEqual([c['value'] for c in f.find('tipo', type='radio') if c['checked']], ['gasto'])
@@ -103,6 +104,7 @@ class FormsV2Tests(HttpMixin, S3HttpBase):
         self.assertEqual(tuple(row), ('ingreso', 123450, int(ingreso_cat), '2026-10-15'))
 
     def test_movement_edit_round_trip_keeps_values(self):
+        """Editar un movimiento muestra sus valores actuales y guardarlo sin cambios los conserva."""
         self.add('2026-10-10', 98765, 'Para editar')
         with db.connect() as c:
             mid = c.execute("SELECT id_movimiento FROM movimientos WHERE descripcion='Para editar'").fetchone()[0]
@@ -114,6 +116,7 @@ class FormsV2Tests(HttpMixin, S3HttpBase):
         self.assertEqual(tuple(row), ('gasto', 98765, '2026-10-10', 'Para editar'))
 
     def test_recurring_form_switch_and_stepper(self):
+        """El formulario de recurrentes tiene el interruptor de activo y el selector de día (1 a 28)."""
         f = self.form('/admin/movimientos_recurrentes', '/admin/movimientos_recurrentes/guardar')
         self.assertEqual(f.find('dia_mes')[0]['attrs'].get('max'), '28')
         f.set('descripcion', 'Plantilla activa v2')
@@ -140,6 +143,7 @@ class FormsV2Tests(HttpMixin, S3HttpBase):
         self.assertEqual(rows['Plantilla pausada v2'], ('gasto', 1000, 1, 0))
 
     def test_recurring_edit_round_trip_and_switch_off(self):
+        """Editar una plantilla recurrente conserva sus datos y permite desactivarla."""
         f = self.form('/admin/movimientos_recurrentes', '/admin/movimientos_recurrentes/guardar')
         f.set('descripcion', 'Alquiler v2')
         f.choose('tipo', 'gasto')
@@ -163,6 +167,7 @@ class FormsV2Tests(HttpMixin, S3HttpBase):
             self.assertEqual(c.execute('SELECT activo FROM movimientos_recurrentes WHERE id_recurrente=?', (rid,)).fetchone()[0], 0)
 
     def test_savings_movement_segmented_aporte_retiro(self):
+        """Los movimientos de ahorro usan el selector Aporte/Retiro y se guardan con el tipo correcto."""
         with db.connect() as c:
             crc = c.execute("SELECT id_moneda FROM monedas WHERE codigo_iso='CRC'").fetchone()[0]
             c.execute('UPDATE cuentas SET saldo_inicial_centimos=1000000 WHERE id_cuenta=?', (self.account,))
@@ -177,6 +182,7 @@ class FormsV2Tests(HttpMixin, S3HttpBase):
             self.assertEqual(tuple(c.execute('SELECT tipo, monto_centimos FROM movimientos_ahorro WHERE id_meta=?', (meta,)).fetchone()), ('aporte', 15000))
 
     def test_history_filter_form_round_trip(self):
+        """Los filtros del historial se mantienen en el formulario después de aplicarlos."""
         self.add('2026-02-03', 5000, 'Supermercado v2')
         self.add('2026-02-04', 7000, 'Otra cosa')
         f = self.form('/historial', '/historial')
@@ -191,6 +197,7 @@ class FormsV2Tests(HttpMixin, S3HttpBase):
         self.assertIn('href="/historial?tipo=gasto&amp;desde=2026-02-01&amp;hasta=2026-02-28"', html)
 
     def test_alert_switch_marks_read(self):
+        """El interruptor «leída» de una alerta se guarda correctamente."""
         with db.connect() as c:
             crc = c.execute("SELECT id_moneda FROM monedas WHERE codigo_iso='CRC'").fetchone()[0]
             budget = c.execute('INSERT INTO presupuestos(id_perfil,id_categoria,anio,mes,monto_limite_centimos,id_moneda) VALUES(1,?,2026,10,100000,?)', (self.category, crc)).lastrowid
