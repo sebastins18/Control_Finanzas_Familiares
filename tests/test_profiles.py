@@ -12,6 +12,7 @@ from pathlib import Path
 from unittest.mock import patch
 from urllib.error import HTTPError
 from urllib.parse import urlencode
+from tests.csrf_util import csrf_opener, opener_csrf
 from urllib.request import HTTPCookieProcessor, Request, build_opener
 
 from src import app, auth, db, extension, profiles, request_ctx, finance
@@ -49,7 +50,7 @@ class ProfileTests(unittest.TestCase):
         self.env.stop();self.tmp.cleanup()
 
     def client(self,name,password):
-        client=build_opener(HTTPCookieProcessor(CookieJar()))
+        client=csrf_opener()
         self.post(client,'/login',dict(usuario=name,contrasena=password))
         uid=app.user_by_name(name)['id_usuario']
         with db.connect() as c:pid=c.execute('SELECT id_perfil FROM perfiles_financieros WHERE id_propietario=? ORDER BY id_perfil LIMIT 1',(uid,)).fetchone()[0]
@@ -111,7 +112,7 @@ class ProfileTests(unittest.TestCase):
 
     def test_login_requires_selection_before_entering_financial_information(self):
         pid=self.shared()
-        pending=build_opener(HTTPCookieProcessor(CookieJar()))
+        pending=csrf_opener()
         with pending.open(Request(self.base+'/login',data=urlencode({'usuario':'Miriam','contrasena':'Clave123!'}).encode()),timeout=5) as r:
             self.assertEqual(r.url,self.base+'/perfiles/elegir')
             html=r.read().decode()
@@ -228,8 +229,17 @@ class ProfileTests(unittest.TestCase):
         self.post(self.guest,'/movimientos',self.movement_form(pid))
         with db.connect() as c:mid=c.execute('SELECT id_movimiento FROM movimientos WHERE id_perfil=?',(pid,)).fetchone()[0]
         boundary='MisFinanzasTest'
-        data=(f'--{boundary}\r\nContent-Disposition: form-data; name="id_movimiento"\r\n\r\n{mid}\r\n'
-              f'--{boundary}\r\nContent-Disposition: form-data; name="archivo"; filename="prueba.png"\r\nContent-Type: image/png\r\n\r\n').encode()+b'\x89PNG\r\n\x1a\n'+f'\r\n--{boundary}--\r\n'.encode()
+        def multipart(csrf):
+            return (f'--{boundary}\r\nContent-Disposition: form-data; name="csrf"\r\n\r\n{csrf}\r\n'
+                    f'--{boundary}\r\nContent-Disposition: form-data; name="id_movimiento"\r\n\r\n{mid}\r\n'
+                    f'--{boundary}\r\nContent-Disposition: form-data; name="archivo"; filename="prueba.png"\r\nContent-Type: image/png\r\n\r\n').encode()+b'\x89PNG\r\n\x1a\n'+f'\r\n--{boundary}--\r\n'.encode()
+        # Sin token CSRF válido la subida multipart se rechaza y no guarda nada.
+        with self.assertRaises(HTTPError) as rejected:
+            self.guest.open(Request(self.base+'/comprobantes/subir',data=multipart('falso'),
+                headers={'Content-Type':f'multipart/form-data; boundary={boundary}'}),timeout=5)
+        self.assertEqual(rejected.exception.code,403)
+        with db.connect() as c:self.assertEqual(c.execute('SELECT COUNT(*) FROM comprobantes').fetchone()[0],0)
+        data=multipart(opener_csrf(self.guest))
         with self.guest.open(Request(self.base+'/comprobantes/subir',data=data,
             headers={'Content-Type':f'multipart/form-data; boundary={boundary}'}),timeout=5) as r:self.assertEqual(r.status,200)
         with db.connect() as c:receipt=c.execute('SELECT id_comprobante FROM comprobantes WHERE id_movimiento=?',(mid,)).fetchone()[0]

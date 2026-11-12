@@ -423,7 +423,8 @@ def page(table, edit_id=None):
             from src.profiles import can_write
             can_generate=can_write(permission_db,'movimientos')
         form_section=recurrentes.panel_html(can_generate)+'<p class="help">Cada plantilla genera un movimiento por mes en el día indicado, desde la fecha de inicio. Si elimina un movimiento generado, ese mes no se vuelve a crear.</p>'+form_section
-    empty_row=f'<tr><td colspan="{len(fields)+1}" class="empty">No hay registros</td></tr>'
+    empty_hint=' Use el formulario de arriba para crear el primero.' if allow_create and table!='alertas' else ''
+    empty_row=f'<tr><td colspan="{len(fields)+1}" class="empty">No hay registros.{empty_hint}</td></tr>'
     body=f'<section class="panel"><p><a href="/">← Panel principal</a></p><h2>{h(title)}</h2>{form_section}</section><section class="panel table-panel"><h2>Registros</h2><div class="table-scroll"><table class="records"><thead><tr>{headers}<th class="row-actions-head">Acciones</th></tr></thead><tbody>{trs or empty_row}</tbody></table></div></section>'
     if not allow_edit and table!='alertas':
         body=body.replace('<th class="row-actions-head">Acciones</th>','').replace('<td class="row-actions-cell"></td>','')

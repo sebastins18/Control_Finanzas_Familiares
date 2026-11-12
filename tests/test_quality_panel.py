@@ -18,6 +18,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 from urllib.error import HTTPError
 from urllib.parse import urlencode
+from tests.csrf_util import csrf_opener, opener_csrf
 from urllib.request import HTTPCookieProcessor, Request, build_opener
 
 from scripts import run_quality_suite
@@ -52,7 +53,7 @@ class QualityPanelTests(unittest.TestCase):
         self.tmp.cleanup()
 
     def login(self, user='admin', password=TEST_ADMIN_PASSWORD):
-        opener = build_opener(HTTPCookieProcessor(CookieJar()))
+        opener = csrf_opener()
         opener.open(Request(self.base + '/login', data=urlencode({'usuario': user, 'contrasena': password}).encode()), timeout=5).read()
         with db.connect() as c:
             pid = c.execute('SELECT id_perfil FROM perfiles_financieros WHERE id_propietario=? ORDER BY id_perfil LIMIT 1',
@@ -87,13 +88,14 @@ class QualityPanelTests(unittest.TestCase):
             self.post(user, '/admin/calidad/ejecutar', {'job': 'suite', 'csrf': 'x'})
         self.assertEqual(post_denied.exception.code, 403)
         start.assert_not_called()
-        _, final_url, _ = self.get(build_opener(HTTPCookieProcessor(CookieJar())), '/admin/calidad')
+        _, final_url, _ = self.get(csrf_opener(), '/admin/calidad')
         self.assertTrue(final_url.endswith('/login'))
 
     def test_run_requires_valid_csrf_and_known_job(self):
         admin = self.login()
         with patch.object(quality, 'start') as start:
-            for fields in ({'job': 'suite'}, {'job': 'suite', 'csrf': 'falso'}):
+            # csrf vacío = formulario sin token (el cliente de prueba solo agrega el token si el campo falta).
+            for fields in ({'job': 'suite', 'csrf': ''}, {'job': 'suite', 'csrf': 'falso'}):
                 with self.assertRaises(HTTPError) as bad:
                     self.post(admin, '/admin/calidad/ejecutar', fields)
                 self.assertEqual(bad.exception.code, 403)

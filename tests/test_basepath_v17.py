@@ -8,6 +8,7 @@ from http.server import ThreadingHTTPServer
 from pathlib import Path
 from unittest.mock import patch
 from urllib.parse import urlencode
+from tests.csrf_util import csrf_opener, opener_csrf
 from urllib.request import Request, build_opener, HTTPCookieProcessor
 from src import db
 from src.app import Handler
@@ -33,7 +34,7 @@ class BasePathTests(unittest.TestCase):
         self.patch.stop()
         self.tmp.cleanup()
     def test_prefixed_login_flow(self):
-        opener=build_opener(HTTPCookieProcessor(CookieJar()))
+        opener=csrf_opener()
         with opener.open(self.base+'/finanzas/') as response:
             self.assertEqual(response.geturl(),self.base+'/finanzas/login')
             html=response.read().decode()

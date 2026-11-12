@@ -280,7 +280,7 @@ def page():
                 content+=f'<h3>Nombre del perfil</h3><form method="post" action="/perfiles/{pid}/guardar" class="form-grid"><label>Nombre<input name="nombre" maxlength="100" value="{h(row["nombre"])}" required></label><button>Guardar nombre</button></form>'
                 content+='<h3>Invitados</h3><p class="help">Pueden consultar y registrar operaciones. Las cuentas, categorías, presupuestos e integrantes los administra el propietario.</p>'
                 for member in members:
-                    content+=f'<p>{h(member["nombre"])} ({h(member["username"])})</p><form method="post" action="/perfiles/{pid}/integrantes/{member["id_usuario"]}/eliminar"><button>Quitar acceso</button></form>'
+                    content+=f'<p>{h(member["nombre"])} ({h(member["username"])})</p><form method="post" action="/perfiles/{pid}/integrantes/{member["id_usuario"]}/eliminar"><button data-confirm="¿Quitar el acceso de {h(member["username"])} a este perfil?">Quitar acceso</button></form>'
                 if not members: content+='<p class="muted">Todavía no hay invitados.</p>'
                 content+=f'<form method="post" action="/perfiles/{pid}/invitar" class="form-grid"><label>Usuario de acceso<input name="username" maxlength="40" required></label><button>Agregar invitado</button></form>'
                 content+=f'<form method="post" action="/perfiles/{pid}/eliminar"><button onclick="return confirm(\'¿Eliminar este perfil vacío?\')">Eliminar perfil vacío</button></form>'

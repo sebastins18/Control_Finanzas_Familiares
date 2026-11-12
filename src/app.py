@@ -219,6 +219,35 @@ def prefix_html(body: bytes) -> bytes:
     return html.encode('utf-8')
 
 
+# CSRF: cada formulario POST de una página con sesión lleva un token oculto (HMAC de la sesión, ver quality.csrf_token).
+# Se inyecta en la respuesta, así que no hay que editar cada plantilla. No depende de cabeceras Host/Origin,
+# por lo que funciona igual detrás del proxy de Apache/Virtualmin.
+CSRF_FIELD = 'csrf'
+_POST_FORM_RE = re.compile(r'<form\b[^>]*\bmethod=(["\']?)post\1[^>]*>', re.I)
+
+
+def inject_csrf(body: bytes, token: str) -> bytes:
+    if not token or b'<form' not in body:
+        return body
+    field = f'<input type="hidden" name="{CSRF_FIELD}" value="{e(token)}">'
+    return _POST_FORM_RE.sub(lambda match: match.group(0) + field, body.decode('utf-8')).encode('utf-8')
+
+
+def submitted_csrf(payload: bytes, content_type: str) -> str:
+    """Token enviado en un formulario urlencoded o multipart (subida de comprobantes)."""
+    try:
+        if content_type.lower().startswith('multipart/form-data'):
+            message = BytesParser(policy=default).parsebytes(
+                b'Content-Type: ' + content_type.encode('latin-1') + b'\r\nMIME-Version: 1.0\r\n\r\n' + payload)
+            for part in message.iter_parts() if message.is_multipart() else ():
+                if part.get_param('name', header='content-disposition') == CSRF_FIELD:
+                    return str(part.get_content()).strip()
+            return ''
+        return parse_qs(payload.decode('utf-8', 'replace'), keep_blank_values=True).get(CSRF_FIELD, [''])[0]
+    except Exception:
+        return ''
+
+
 CSS_PATH = Path(__file__).with_name('static') / 'styles.css'
 
 
@@ -244,7 +273,7 @@ def option_rows(rows, selected: int | None, kind: str | None = None) -> str:
     return ''.join(result)
 
 
-def layout(content: str, *, subtitle: str = '', selection: bool = False) -> str:
+def layout(content: str, *, subtitle: str = '', selection: bool = False, compact_hero: bool = False) -> str:
     # Opciones de administración visibles solo para administradores (las rutas se protegen aparte).
     security_links = ('<a href="/admin/usuarios">Mantenimiento de usuarios</a>'
                       if request_is_admin() and not auth.STANDARD_USER_MODE else '')
@@ -260,7 +289,7 @@ def layout(content: str, *, subtitle: str = '', selection: bool = False) -> str:
 <html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>MisFinanzas · Grupo 5</title><link rel="icon" type="image/png" href="/static/logo.png"><link rel="stylesheet" href="/static/styles.css"></head>
 <body><header class="topbar"><div class="shell top-inner"><div class="brand"><img class="app-logo" src="/static/logo.png" alt="Logo de MisFinanzas" width="64" height="64"><span><strong>MisFinanzas</strong><small>Proyecto open source · Grupo 5</small></span></div>{identity}</div></header>
-<main class="shell"><nav class="main-nav" aria-label="Menú principal"><a class="nav-home" href="/">⌂ Resumen</a><details class="nav-group"><summary>Operaciones</summary><div class="nav-drop"><a href="/">Ingresos y gastos</a><a href="/historial">Historial y búsqueda</a><a href="/admin/movimientos_recurrentes">Movimientos recurrentes</a><a href="/admin/transferencias">Transferencias</a><a href="/admin/movimientos_ahorro">Movimientos de ahorro</a><a href="/comprobantes">Comprobantes</a></div></details><details class="nav-group"><summary>Planificación</summary><div class="nav-drop"><a href="/admin/presupuestos">Presupuestos</a><a href="/admin/metas_ahorro">Metas de ahorro</a><a href="/admin/alertas">Alertas</a><a href="/reportes/anual">Reporte anual</a></div></details><details class="nav-group"><summary>Catálogos</summary><div class="nav-drop"><a href="/admin/cuentas">Cuentas</a><a href="/admin/categorias">Categorías</a><a href="/admin/monedas">Monedas</a></div></details><details class="nav-group"><summary>Seguridad</summary><div class="nav-drop">{security_links}<a href="/admin/cambiar-clave">Cambiar contraseña</a></div></details></nav>{profile_bar}<section class="hero"><div><p class="eyebrow">PANEL FINANCIERO</p><h1>Un panorama claro de tu dinero.</h1><p>Movimientos, presupuestos y alertas en una sola página. {e(subtitle)}</p></div><span class="hero-art" aria-hidden="true">↗</span></section>{content}</main>
+<main class="shell"><nav class="main-nav" aria-label="Menú principal"><a class="nav-home" href="/">⌂ Resumen</a><details class="nav-group"><summary>Operaciones</summary><div class="nav-drop"><a href="/">Ingresos y gastos</a><a href="/historial">Historial y búsqueda</a><a href="/admin/movimientos_recurrentes">Movimientos recurrentes</a><a href="/admin/transferencias">Transferencias</a><a href="/admin/movimientos_ahorro">Movimientos de ahorro</a><a href="/comprobantes">Comprobantes</a></div></details><details class="nav-group"><summary>Planificación</summary><div class="nav-drop"><a href="/admin/presupuestos">Presupuestos</a><a href="/admin/metas_ahorro">Metas de ahorro</a><a href="/admin/alertas">Alertas</a><a href="/reportes/anual">Reporte anual</a></div></details><details class="nav-group"><summary>Catálogos</summary><div class="nav-drop"><a href="/admin/cuentas">Cuentas</a><a href="/admin/categorias">Categorías</a><a href="/admin/monedas">Monedas</a></div></details><details class="nav-group"><summary>Seguridad</summary><div class="nav-drop">{security_links}<a href="/admin/cambiar-clave">Cambiar contraseña</a></div></details></nav>{profile_bar}<section class="hero{' hero-compact' if compact_hero else ''}"><div><p class="eyebrow">PANEL FINANCIERO</p><h1>Un panorama claro de tu dinero.</h1><p>Movimientos, presupuestos y alertas en una sola página. {e(subtitle)}</p></div><span class="hero-art" aria-hidden="true">↗</span></section>{content}</main>
 <footer class="shell footer">Datos de demostración ficticios · Sin cuentas reales · UNA · II-2026</footer>
 <script>
 // Categorías según el tipo elegido (botones Gasto / Ingreso del formulario de movimiento).
@@ -309,7 +338,8 @@ for(const form of document.querySelectorAll('form[method="post"]')){{
     if(submit){{submit.setAttribute('aria-disabled','true');submit.dataset.textoOriginal=submit.textContent;submit.textContent='Procesando…';}}
   }});
 }}
-for(const b of document.querySelectorAll('[data-confirm]'))b.addEventListener('click',ev=>{{if(!confirm('¿Eliminar este movimiento?'))ev.preventDefault();}});
+// Confirmación antes de borrar: el texto viene en data-confirm (valor "true" heredado = movimiento).
+for(const b of document.querySelectorAll('[data-confirm]'))b.addEventListener('click',ev=>{{const t=b.dataset.confirm;if(!confirm(t&&t!=='true'?t:'¿Eliminar este movimiento?'))ev.preventDefault();}});
 // Menú principal: se abre al pasar el cursor (hover) y se cierra al salir; un solo desplegable abierto a la vez.
 // Teclado y pantallas táctiles siguen funcionando con clic/Enter gracias al <summary> nativo.
 const grupos=[...document.querySelectorAll('.main-nav details.nav-group')];
@@ -345,9 +375,257 @@ if(finHover.matches&&!window.matchMedia('(prefers-reduced-motion: reduce)').matc
         html=html.replace('<summary>Catálogos</summary>','<summary>Consultas</summary>')
     if selection:
         html=re.sub(r'<nav class="main-nav".*?</nav>','',html,flags=re.S)
-        html=re.sub(r'<section class="hero">.*?</section>','',html,flags=re.S)
+        html=re.sub(r'<section class="hero[^"]*">.*?</section>','',html,flags=re.S)
         html=html.replace('Proyecto open source · Grupo 5','Bienvenido, '+e(name))
     return html
+
+
+def months_back(day: date, months: int) -> date:
+    """Misma fecha N meses antes; si el día no existe en ese mes, usa el último día del mes."""
+    index = day.year * 12 + day.month - 1 - months
+    year, month = divmod(index, 12)
+    month += 1
+    last = (date(year + (month == 12), month % 12 + 1, 1) - timedelta(days=1)).day
+    return date(year, month, min(day.day, last))
+
+
+BALANCE_RANGES = (('1s', '1 semana'), ('1m', '1 mes'), ('3m', '3 meses'))
+
+# Gráfico de evolución de saldos: se dibuja en el navegador a partir del JSON embebido (sin dependencias).
+# Los nombres de cuenta se insertan siempre con textContent, nunca como HTML.
+BALANCE_CHART_JS = r'''<script>(()=>{
+const fuente=document.getElementById('saldos-datos'),caja=document.getElementById('saldos-grafico');
+if(!fuente||!caja)return;
+const datos=JSON.parse(fuente.textContent),fechas=datos.fechas;
+const resumen=document.getElementById('saldos-resumen'),leyenda=document.getElementById('saldos-leyenda');
+const COLORES=['#2a78d6','#eb6834','#1baf7a','#eda100','#e87ba4','#008300','#6250d6','#e34948'],OTRAS='#7b8494';
+const NS='http://www.w3.org/2000/svg',TEXTOS={'1s':'última semana','1m':'último mes','3m':'últimos 3 meses'};
+// Series por moneda: color fijo por cuenta (orden por nombre); más de 8 cuentas se agrupan en «Otras cuentas».
+const grupos={};
+for(const c of datos.cuentas)(grupos[c.moneda]=grupos[c.moneda]||[]).push(c);
+for(const k of Object.keys(grupos)){const l=grupos[k];
+  if(l.length>8){const resto=l.slice(7);grupos[k]=l.slice(0,7).concat([{nombre:'Otras cuentas ('+resto.length+')',simbolo:l[0].simbolo,otras:true,
+    serie:fechas.map((_,i)=>resto.reduce((s,c)=>s+c.serie[i],0))}]);}
+  grupos[k].forEach((c,i)=>{c.color=c.otras?OTRAS:COLORES[i];});}
+const monedas=Object.keys(grupos);
+const leer=k=>{try{return localStorage.getItem(k);}catch(_){return null;}},guardar=(k,v)=>{try{localStorage.setItem(k,v);}catch(_){}};
+const marcada=document.querySelector('input[name="moneda-saldos"]:checked');
+let rango=TEXTOS[leer('saldos-rango')]?leer('saldos-rango'):'1m';
+let moneda=monedas.includes(leer('saldos-moneda'))?leer('saldos-moneda'):(marcada&&monedas.includes(marcada.value)?marcada.value:monedas[0]);
+for(const r of document.querySelectorAll('input[name="rango-saldos"]')){r.checked=r.value===rango;
+  r.addEventListener('change',()=>{rango=r.value;guardar('saldos-rango',rango);dibujar();});}
+for(const r of document.querySelectorAll('input[name="moneda-saldos"]')){r.checked=r.value===moneda;
+  r.addEventListener('change',()=>{moneda=r.value;guardar('saldos-moneda',moneda);dibujar();});}
+const dinero=(c,s)=>(c<0?'−':'')+s+(Math.abs(c)/100).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+// Etiquetas del eje: la forma más corta que siga distinguiendo cada marca (compacta, entera o con céntimos).
+const FORMATOS=[{notation:'compact',maximumFractionDigits:1},{notation:'compact',maximumFractionDigits:2},{maximumFractionDigits:0},{minimumFractionDigits:2,maximumFractionDigits:2}].map(o=>new Intl.NumberFormat('en-US',o));
+const etiquetasEje=(ticks,s)=>{for(const f of FORMATOS){const l=ticks.map(c=>(c<0?'−':'')+s+f.format(Math.abs(c)/100));if(new Set(l).size===l.length)return l;}return ticks.map(c=>dinero(c,s));};
+const aFecha=iso=>{const[y,m,d]=iso.split('-').map(Number);return new Date(y,m-1,d);};
+const fCorta=iso=>aFecha(iso).toLocaleDateString('es-CR',{day:'numeric',month:'short'});
+const fLarga=iso=>{const t=aFecha(iso).toLocaleDateString('es-CR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});return t.charAt(0).toUpperCase()+t.slice(1);};
+const el=(tag,attrs,padre,texto)=>{const n=document.createElementNS(NS,tag);for(const k in attrs)n.setAttribute(k,attrs[k]);if(texto!=null)n.textContent=texto;if(padre)padre.appendChild(n);return n;};
+const html=(tag,clase,padre,texto)=>{const n=document.createElement(tag);if(clase)n.className=clase;if(texto!=null)n.textContent=texto;if(padre)padre.appendChild(n);return n;};
+function marcas(min,max){if(min===max){const p=Math.max(Math.abs(min)*.1,10000);min-=p;max+=p;}
+  const bruto=(max-min)/4,mag=10**Math.floor(Math.log10(bruto)),paso=[1,2,2.5,5,10].map(k=>k*mag).find(p=>p>=bruto);
+  const t=[];for(let v=Math.floor(min/paso)*paso;v<=Math.ceil(max/paso)*paso+paso/2;v+=paso)t.push(Math.round(v));return t;}
+function dibujar(){
+  const lista=grupos[moneda]||[],simbolo=lista.length?lista[0].simbolo:'';
+  let desde=fechas.indexOf(datos.rangos[rango]);if(desde<0)desde=0;
+  const dias=fechas.slice(desde),n=dias.length,series=lista.map(c=>({...c,valores:c.serie.slice(desde)}));
+  caja.replaceChildren();resumen.replaceChildren();leyenda.replaceChildren();
+  if(!series.length||n<2){html('p','chart-empty',caja,'Aún no hay cuentas para graficar en este perfil.');return;}
+  // Resumen: total de la moneda al final del rango y variación (signo y flecha, no solo color).
+  const total=i=>series.reduce((s,c)=>s+c.valores[i],0),fin=total(n-1),ini=total(0),dif=fin-ini;
+  const kpi=html('div','chart-kpi',resumen);html('span','chart-kpi-label',kpi,'Saldo total · '+moneda);html('strong','',kpi,dinero(fin,simbolo));
+  const delta=html('div','chart-delta '+(dif>0?'up':dif<0?'down':'flat'),resumen);
+  html('span','',delta,dif>0?'▲ ':dif<0?'▼ ':'● ').setAttribute('aria-hidden','true');
+  const pct=ini>0&&dif?' ('+(dif>0?'+':'−')+Math.abs(dif/ini*100).toFixed(1)+' %)':'';
+  delta.appendChild(document.createTextNode((dif>0?'+':'')+dinero(dif,simbolo)+pct));
+  html('small','',delta,'desde el '+fCorta(dias[0]));
+  // Geometría
+  const W=Math.max(caja.clientWidth,280),H=W<560?220:280,todos=series.flatMap(s=>s.valores);
+  const ticks=marcas(Math.min(...todos),Math.max(...todos)),yMin=ticks[0],yMax=ticks[ticks.length-1],eje=etiquetasEje(ticks,simbolo);
+  const directas=series.length<=4&&W>=560;
+  // Leyenda siempre con 2+ series; con una sola basta la etiqueta directa (si cabe).
+  if(series.length>1||!directas)for(const s of series){const it=html('span','legend-item',leyenda);html('span','legend-key',it).style.background=s.color;html('span','',it,s.nombre);}
+  const m={t:12,r:directas?128:14,b:30,l:Math.max(...eje.map(t=>t.length))*7+14};
+  const pw=W-m.l-m.r,ph=H-m.t-m.b,x=i=>m.l+i/(n-1)*pw,y=v=>m.t+(yMax-v)/((yMax-yMin)||1)*ph;
+  const etiqueta=series.map(s=>s.nombre+': de '+dinero(s.valores[0],simbolo)+' a '+dinero(s.valores[n-1],simbolo)).join('; ');
+  const svg=el('svg',{viewBox:'0 0 '+W+' '+H,width:W,height:H,role:'img',tabindex:'0',
+    'aria-label':'Evolución de saldos en '+moneda+', '+TEXTOS[rango]+'. '+etiqueta+'. Use las flechas para recorrer los días.'},caja);
+  const rejilla=el('g',{},svg);
+  ticks.forEach((t,i)=>{el('line',{x1:m.l,x2:W-m.r,y1:y(t),y2:y(t),stroke:t===0&&yMin<0?'#9aa6b8':'#e6ebf2','stroke-width':1},rejilla);
+    el('text',{x:m.l-10,y:y(t)+4,'text-anchor':'end',class:'chart-axis'},rejilla,eje[i]);});
+  const k=n<=8&&W>=560?n:(W<560?3:5);
+  for(let j=0;j<k;j++){const i=Math.round(j*(n-1)/(k-1));
+    el('text',{x:x(i),y:H-8,'text-anchor':j===0?'start':j===k-1?'end':'middle',class:'chart-axis'},rejilla,fCorta(dias[i]));}
+  for(const s of series){
+    el('path',{d:s.valores.map((v,i)=>(i?'L':'M')+x(i).toFixed(1)+' '+y(v).toFixed(1)).join(''),fill:'none',stroke:s.color,'stroke-width':2,'stroke-linejoin':'round','stroke-linecap':'round'},svg);
+    el('circle',{cx:x(n-1),cy:y(s.valores[n-1]),r:4,fill:s.color,stroke:'#fff','stroke-width':2},svg);}
+  if(directas){const pos=series.map(s=>({s,y:y(s.valores[n-1])})).sort((a,b)=>a.y-b.y);
+    for(let i=1;i<pos.length;i++)pos[i].y=Math.max(pos[i].y,pos[i-1].y+15);
+    const exceso=pos.length?pos[pos.length-1].y-(m.t+ph):0;if(exceso>0)for(const p of pos)p.y-=exceso;
+    for(const p of pos){const nombre=p.s.nombre.length>16?p.s.nombre.slice(0,15)+'…':p.s.nombre;
+      el('text',{x:W-m.r+10,y:p.y+4,class:'chart-direct'},svg,nombre);}}
+  // Capa de lectura: cruz vertical que se ajusta al día más cercano y un tooltip con todas las cuentas.
+  const cruz=el('line',{y1:m.t,y2:m.t+ph,stroke:'#5b6b82','stroke-width':1,'stroke-dasharray':'3 3',visibility:'hidden'},svg);
+  const puntos=series.map(s=>el('circle',{r:4.5,fill:s.color,stroke:'#fff','stroke-width':2,visibility:'hidden'},svg));
+  const zona=el('rect',{x:m.l,y:m.t,width:pw,height:ph,fill:'transparent'},svg);
+  const tip=html('div','chart-tip',caja);tip.hidden=true;let actual=n-1;
+  const mostrar=i=>{actual=Math.max(0,Math.min(n-1,i));const cx=x(actual);
+    cruz.setAttribute('x1',cx);cruz.setAttribute('x2',cx);cruz.setAttribute('visibility','visible');
+    puntos.forEach((p,j)=>{p.setAttribute('cx',cx);p.setAttribute('cy',y(series[j].valores[actual]));p.setAttribute('visibility','visible');});
+    tip.replaceChildren();html('div','chart-tip-fecha',tip,fLarga(dias[actual]));
+    for(const s of series){const f=html('div','chart-tip-fila',tip);html('span','legend-key',f).style.background=s.color;
+      html('strong','',f,dinero(s.valores[actual],simbolo));html('span','',f,s.nombre);}
+    if(series.length>1){const f=html('div','chart-tip-fila chart-tip-total',tip);html('strong','',f,dinero(total(actual),simbolo));html('span','',f,'Total');}
+    tip.hidden=false;const ancho=tip.offsetWidth,izq=cx+14+ancho>W?cx-14-ancho:cx+14;
+    tip.style.left=Math.max(0,Math.min(W-ancho,izq))+'px';tip.style.top=m.t+'px';};
+  const ocultar=()=>{tip.hidden=true;cruz.setAttribute('visibility','hidden');for(const p of puntos)p.setAttribute('visibility','hidden');};
+  zona.addEventListener('pointermove',ev=>{const r=svg.getBoundingClientRect();mostrar(Math.round((ev.clientX-r.left-m.l)/pw*(n-1)));});
+  zona.addEventListener('pointerleave',ocultar);
+  svg.addEventListener('focus',()=>mostrar(actual));svg.addEventListener('blur',ocultar);
+  svg.addEventListener('keydown',ev=>{const mov={ArrowLeft:-1,ArrowRight:1}[ev.key];
+    if(mov){ev.preventDefault();mostrar(actual+mov);}else if(ev.key==='Home'){ev.preventDefault();mostrar(0);}else if(ev.key==='End'){ev.preventDefault();mostrar(n-1);}else if(ev.key==='Escape')ocultar();});
+}
+dibujar();
+let ancho=caja.clientWidth,pend=false;
+if(window.ResizeObserver)new ResizeObserver(()=>{if(pend||caja.clientWidth===ancho)return;pend=true;requestAnimationFrame(()=>{pend=false;ancho=caja.clientWidth;dibujar();});}).observe(caja);
+})();</script>'''
+
+
+def balance_chart_panel(today: date) -> str:
+    """Módulo del Resumen: evolución diaria del saldo de cada cuenta (1 semana, 1 mes, 3 meses)."""
+    starts = {'1s': today - timedelta(days=7), '1m': months_back(today, 1), '3m': months_back(today, 3)}
+    history = finance.balance_history(min(starts.values()), today)
+    history['rangos'] = {key: day.isoformat() for key, day in starts.items()}
+    data_json = json.dumps(history, ensure_ascii=False).replace('</', '<\\/')
+    # Moneda inicial: la que tiene más cuentas (empate: orden alfabético).
+    counts = {}
+    for account in history['cuentas']:
+        counts[account['moneda']] = counts.get(account['moneda'], 0) + 1
+    currencies = sorted(counts, key=lambda code: (-counts[code], code))
+    ranges = ''.join(f'<input type="radio" name="rango-saldos" id="rango-{key}" value="{key}"{" checked" if key == "1m" else ""}>'
+                     f'<label for="rango-{key}">{label}</label>' for key, label in BALANCE_RANGES)
+    currency_control = ''
+    if len(currencies) > 1:
+        currency_control = ('<div class="segmented chart-currency" role="radiogroup" aria-label="Moneda del gráfico">' + ''.join(
+            f'<input type="radio" name="moneda-saldos" id="moneda-saldos-{e(code)}" value="{e(code)}"{" checked" if i == 0 else ""}>'
+            f'<label for="moneda-saldos-{e(code)}">{e(code)}</label>' for i, code in enumerate(currencies)) + '</div>')
+    return f'''<section class="panel balance-chart" id="evolucion-saldos" aria-labelledby="titulo-evolucion">
+    <div class="panel-title"><div><p class="eyebrow">SALDOS</p><h2 id="titulo-evolucion">Evolución de saldos</h2></div>
+    <div class="chart-controls">{currency_control}<div class="segmented chart-range" role="radiogroup" aria-label="Rango de tiempo">{ranges}</div></div></div>
+    <div class="chart-summary" id="saldos-resumen" aria-live="polite"></div>
+    <div class="chart-legend" id="saldos-leyenda"></div>
+    <div class="chart-wrap" id="saldos-grafico"><p class="chart-empty">Cargando gráfico…</p></div>
+    <p class="help">Saldo al cierre de cada día en la moneda de cada cuenta; no se suman monedas distintas. Los valores actuales exactos están en «Saldos por cuenta».</p>
+    <script type="application/json" id="saldos-datos">{data_json}</script>{BALANCE_CHART_JS}</section>'''
+
+
+MONTHS_ES = ('enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre')
+
+
+def previous_month(year: int, month: int) -> tuple[int, int]:
+    return (year - 1, 12) if month == 1 else (year, month - 1)
+
+
+def variation_html(current: int, previous: int, previous_label: str) -> str:
+    """Variación frente al mes anterior con flecha y signo (no depende solo del color)."""
+    if not previous:
+        return f'<small class="variation">Sin registros en {e(previous_label)}</small>' if current else ''
+    pct = round((current - previous) / previous * 100)
+    if pct == 0:
+        return f'<small class="variation">= igual que {e(previous_label)}</small>'
+    arrow = '▲' if pct > 0 else '▼'
+    return f'<small class="variation"><span aria-hidden="true">{arrow}</span> {"+" if pct > 0 else "−"}{abs(pct)} % vs. {e(previous_label)}</small>'
+
+
+def summary_cards(totals: dict, balances: list, symbols: dict, month_label: str) -> str:
+    """Tarjetas superiores: saldo total, ingresos, gastos y neto del mes. Una moneda principal; las demás, aparte."""
+    balance_by_code, account_count = {}, {}
+    for _, code, amount in balances:
+        balance_by_code[code] = balance_by_code.get(code, 0) + amount
+        account_count[code] = account_count.get(code, 0) + 1
+    codes = sorted(set(balance_by_code) | set(totals), key=lambda c: (-account_count.get(c, 0), c != 'CRC', c))
+    if not codes:
+        codes = ['CRC']
+    primary, others = codes[0], codes[1:]
+
+    def values(getter):
+        return {code: getter(code) for code in codes}
+
+    cards = (('Saldo total', 'Todas las cuentas', values(lambda c: balance_by_code.get(c, 0)), ''),
+             ('Ingresos', month_label, values(lambda c: totals.get(c, {}).get('ingreso', 0)), 'income'),
+             ('Gastos', month_label, values(lambda c: totals.get(c, {}).get('gasto', 0)), 'expense'),
+             ('Neto del mes', month_label, values(lambda c: totals.get(c, {}).get('ingreso', 0) - totals.get(c, {}).get('gasto', 0)), 'net'))
+    html = ''
+    for title, context, amounts, kind in cards:
+        main = amounts[primary]
+        css = {'income': 'income', 'expense': 'expense'}.get(kind, '')
+        if kind == 'net':
+            css = 'income' if main > 0 else ('expense' if main < 0 else '')
+        extra = ''.join(f'<small class="metric-other">{e(code)} {e(finance.format_amount(amounts[code], symbols.get(code, "")))}</small>'
+                        for code in others if amounts[code])
+        html += (f'<article class="metric"><span>{e(title)} · {e(primary)}</span><strong class="{css}">{e(finance.format_amount(main, symbols.get(primary, "")))}</strong>'
+                 f'<small>{e(context)}</small>{extra}</article>')
+    return f'<section class="metrics metrics-4" aria-label="Resumen del período">{html}</section>'
+
+
+def category_panel(groups: dict, month_label: str, start_day: str, end_day: str) -> str:
+    """Gastos del mes por categoría: barras horizontales por moneda (sin conversión). HTML puro, sin JavaScript."""
+    body = ''
+    for code in sorted(groups):
+        symbol, items = groups[code]['simbolo'], groups[code]['categorias']
+        total = sum(amount for _, amount in items)
+        shown = items[:6]
+        if len(items) > 6:
+            shown = shown + [(f'Otras ({len(items) - 6})', sum(amount for _, amount in items[6:]))]
+        top = max(amount for _, amount in shown) or 1
+        heading = f'<h3 class="cat-currency">{e(code)} · total {e(finance.format_amount(total, symbol))}</h3>' if len(groups) > 1 else ''
+        rows = ''.join(f'<li class="cat-row"><span class="cat-name">{e(name)}</span>'
+                       f'<span class="cat-bar" aria-hidden="true"><span style="width:{max(2, round(amount / top * 100))}%"></span></span>'
+                       f'<span class="cat-value">{e(finance.format_amount(amount, symbol))}<small>{round(amount / total * 100) if total else 0} %</small></span></li>'
+                       for name, amount in shown)
+        body += f'{heading}<ul class="cat-list">{rows}</ul>'
+    if not body:
+        body = (f'<p class="empty-state">Sin gastos registrados en {e(month_label)}. '
+                '<a href="#monto-movimiento">Registrar un gasto →</a></p>')
+    return (f'<article class="panel"><div class="panel-title"><div><p class="eyebrow">¿EN QUÉ SE VA EL DINERO?</p><h2>Gastos por categoría</h2></div>'
+            f'<a href="/historial?tipo=gasto&amp;desde={start_day}&amp;hasta={end_day}">Ver gastos →</a></div>'
+            f'<p class="help">{e(month_label.capitalize())}. Cada moneda se muestra por separado.</p>{body}</article>')
+
+
+def goals_panel(goals: list, today: date, can_manage: bool) -> str:
+    """Progreso de metas de ahorro (aportes − retiros frente al objetivo). Solo lectura."""
+    items = ''
+    for goal in goals[:4]:
+        target, saved, symbol = goal['objetivo'], goal['ahorrado'], goal['simbolo']
+        pct = round(saved / target * 100) if target else 0
+        remaining = max(target - saved, 0)
+        try:
+            days_left = (date.fromisoformat(goal['fecha_objetivo']) - today).days
+        except ValueError:
+            days_left = None
+        if saved >= target:
+            status, css = 'Completada', 'ok'
+        elif days_left is not None and days_left < 0:
+            status, css = 'Fecha vencida', 'warning'
+        elif days_left is not None:
+            status, css = ('Vence hoy' if days_left == 0 else f'Faltan {days_left} días'), 'neutral'
+        else:
+            status, css = 'En curso', 'neutral'
+        detail = 'Objetivo alcanzado' if not remaining else f'Faltan {finance.format_amount(remaining, symbol)}'
+        items += (f'<div class="budget-line goal-line"><div class="budget-head"><strong>{e(goal["nombre"])}</strong><span class="pill {css}">{e(status)}</span></div>'
+                  f'<div class="budget-values"><span>{e(finance.format_amount(saved, symbol))} de {e(finance.format_amount(target, symbol))}</span><span>{pct} % · {e(detail)}</span></div>'
+                  f'<div class="track" role="progressbar" aria-label="Progreso de {e(goal["nombre"])}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{min(max(pct, 0), 100)}">'
+                  f'<div class="fill goal" style="width:{min(max(pct, 0), 100)}%"></div></div></div>')
+    if not items:
+        action = '<a href="/admin/metas_ahorro">Crear una meta →</a>' if can_manage else ''
+        items = f'<p class="empty-state">Aún no hay metas de ahorro en este perfil. {action}</p>'
+    more = f'<p class="help">Se muestran 4 de {len(goals)} metas.</p>' if len(goals) > 4 else ''
+    return (f'<article class="panel"><div class="panel-title"><div><p class="eyebrow">AHORRO</p><h2>Metas de ahorro</h2></div>'
+            f'<a href="/admin/metas_ahorro">Ver todas →</a></div>{items}{more}'
+            '<p class="help">Lo ahorrado son los aportes menos los retiros registrados en «Movimientos de ahorro».</p></article>')
 
 
 def dashboard_page(query: dict) -> str:
@@ -395,23 +673,37 @@ def dashboard_page(query: dict) -> str:
         <div class="budget-values"><span>{finance.format_amount(p['gastado'],p['simbolo'])} utilizados</span><span>de {finance.format_amount(p['limite'],p['simbolo'])}</span></div>
         <div class="track"><div class="fill {status_class}" style="width:{min(pct,100)}%"></div></div>{f"<small>Faltan tipos de cambio para {p['missing']} gastos; total parcial.</small>" if p['missing'] else ""}</div>'''
     if not budget_html:
-        budget_html = '<p class="muted">Todavía no se han definido presupuestos para este mes.</p>'
+        budget_html = ('<p class="empty-state">Todavía no se han definido presupuestos para este mes.'
+                       + (' <a href="#nuevo-limite">Crear el primero ↓</a>' if can_manage else '') + '</p>')
+    symbols = finance.currency_symbols()
+    account_symbol = {r['id_cuenta']: r['simbolo'] for r in account_rows}
     rows = ''
     for tx in data['movements']:
-        symbol = '+' if tx['tipo'] == 'ingreso' else '−'
+        sign = '+' if tx['tipo'] == 'ingreso' else '−'
         css_class = 'income' if tx['tipo'] == 'ingreso' else 'expense'
         desc = tx['descripcion'] or tx['categoria']
+        shown_amount = sign + finance.format_amount(tx['monto_centimos'], account_symbol.get(tx['id_cuenta'], ''))
         rows += f'''<tr><td><strong>{e(desc)}</strong><small>{e(tx['categoria'])} · {e(tx['cuenta'])}</small></td>
-        <td>{e(tx['fecha'])}</td><td class="amount {css_class}">{symbol}{tx['monto_centimos']/100:,.2f} {e(account_currency.get(str(tx['id_cuenta']), ''))}</td>
+        <td>{e(tx['fecha'])}</td><td class="amount {css_class}" title="{e(account_currency.get(str(tx['id_cuenta']), ''))}">{e(shown_amount)}</td>
         <td class="actions"><a class="btn btn-neutral btn-sm" href="/?editar={tx['id_movimiento']}&anio={year}&mes={month}">Editar</a>
-        <form method="post" action="/movimientos/{tx['id_movimiento']}/eliminar"><button class="btn btn-danger btn-sm" data-confirm="true" type="submit">Eliminar</button></form></td></tr>'''
+        <form method="post" action="/movimientos/{tx['id_movimiento']}/eliminar"><button class="btn btn-danger btn-sm" data-confirm="¿Eliminar este movimiento?" type="submit">Eliminar</button></form></td></tr>'''
     if not rows:
-        rows = '<tr><td colspan="4" class="empty">Aún no hay movimientos en el período seleccionado.</td></tr>'
+        rows = ('<tr><td colspan="4" class="empty"><span>Aún no hay movimientos en el período seleccionado.</span> '
+                '<a href="#monto-movimiento">Registrar el primero ↑</a></td></tr>')
+    prev_year, prev_month_number = previous_month(year, month)
+    previous_label = MONTHS_ES[prev_month_number - 1]
+    previous_totals = finance.month_totals(prev_year, prev_month_number)
     metric_rows = []
     for code, amounts in sorted(data['totals_by_currency'].items()):
         inc, exp = amounts['ingreso'], amounts['gasto']
-        metric_rows.append(f'<tr><td>{e(code)}</td><td>{inc/100:,.2f}</td><td>{exp/100:,.2f}</td><td>{(inc-exp)/100:,.2f}</td></tr>')
-    metrics_html = '<section class="panel"><h2>Resumen mensual por moneda</h2><p>Los montos no se suman entre monedas diferentes.</p><div class="table-scroll"><table><thead><tr><th>Moneda</th><th>Ingresos</th><th>Gastos</th><th>Balance</th></tr></thead><tbody>' + (''.join(metric_rows) or '<tr><td colspan="4">Sin movimientos este mes</td></tr>') + '</tbody></table></div></section>'
+        before = previous_totals.get(code, {'ingreso': 0, 'gasto': 0})
+        sym = symbols.get(code, '')
+        metric_rows.append(f'<tr><td>{e(code)}</td><td class="num">{e(finance.format_amount(inc, sym))}{variation_html(inc, before["ingreso"], previous_label)}</td>'
+                           f'<td class="num">{e(finance.format_amount(exp, sym))}{variation_html(exp, before["gasto"], previous_label)}</td>'
+                           f'<td class="num">{e(finance.format_amount(inc - exp, sym))}</td></tr>')
+    metrics_html = ('<section class="panel"><h2>Resumen mensual por moneda</h2><p>Los montos no se suman entre monedas diferentes. '
+                    f'La variación compara con {e(previous_label)}.</p><div class="table-scroll"><table><thead><tr><th>Moneda</th><th class="num">Ingresos</th><th class="num">Gastos</th><th class="num">Balance</th></tr></thead><tbody>'
+                    + (''.join(metric_rows) or '<tr><td colspan="4">Sin movimientos este mes</td></tr>') + '</tbody></table></div></section>')
     with db.connect() as c:
         active=extension.current_profile_id(c)
         alert_count=c.execute('SELECT COUNT(*) FROM alertas WHERE id_perfil=? AND leida=0',(active,)).fetchone()[0]
@@ -419,13 +711,21 @@ def dashboard_page(query: dict) -> str:
     start_day=f'{year:04d}-{month:02d}-01'
     end_day=(date(year+(month==12),month%12+1,1)-timedelta(days=1)).isoformat()
     recurring_strip=(f'<section class="notice-strip"><span>🔁 <strong>{recurring_count}</strong> movimientos recurrentes pendientes</span><a href="/admin/movimientos_recurrentes">Revisar y generar →</a></section>' if recurring_count else '')
-    balances=''.join(f'<tr><td>{e(name)}</td><td>{e(code)}</td><td>{amount/100:,.2f}</td></tr>' for name,code,amount in finance.all_balances())
+    all_balances = finance.all_balances()
+    balances = ''.join(f'<tr><td>{e(name)}</td><td>{e(code)}</td><td class="num">{e(finance.format_amount(amount, symbols.get(code, "")))}</td></tr>'
+                       for name, code, amount in all_balances)
+    if not balances:
+        balances = '<tr><td colspan="3" class="empty"><span>Aún no hay cuentas en este perfil.</span>' + (' <a href="/admin/cuentas">Crear una cuenta →</a>' if can_manage else '') + '</td></tr>'
+    month_label = f'{MONTHS_ES[month - 1]} {year}'
     content = f'''
-    <section class="panel"><h2>Saldos por cuenta</h2><p>Incluye ingresos, gastos, transferencias y ahorros. Cada saldo está en su propia moneda.</p><table><tr><th>Cuenta</th><th>Moneda</th><th>Saldo</th></tr>{balances}</table></section>
     <section class="notice-strip"><span>🔔 <strong>{alert_count}</strong> alertas pendientes</span><a href="/admin/alertas">Ver alertas →</a></section>{recurring_strip}
     <form class="period" method="get"><label>Período <input type="month" name="periodo" value="{year:04d}-{month:02d}" aria-label="Mes de consulta" onchange="const a=this.value.split('-');document.getElementById('anio').value=a[0];document.getElementById('mes').value=Number(a[1]);this.form.submit()"></label>
     <input type="hidden" id="anio" name="anio" value="{year}"><input type="hidden" id="mes" name="mes" value="{month}"><button class="secondary" type="submit">Actualizar</button></form>
+    {summary_cards(data['totals_by_currency'], all_balances, symbols, month_label)}
+    {balance_chart_panel(today)}
+    <section class="panel"><h2>Saldos por cuenta</h2><p>Incluye ingresos, gastos, transferencias y ahorros. Cada saldo está en su propia moneda.</p><div class="table-scroll"><table class="table-fit"><tr><th>Cuenta</th><th>Moneda</th><th class="num">Saldo</th></tr>{balances}</table></div></section>
     {metrics_html}
+    <section class="columns">{category_panel(finance.month_expenses_by_category(year, month), month_label, start_day, end_day)}{goals_panel(finance.savings_goals(), today, can_manage)}</section>
     <section class="columns"><article class="panel"><div class="panel-title"><div><p class="eyebrow">REGISTRO</p><h2>{'Editar movimiento' if movement_edit else 'Nuevo movimiento'}</h2></div><a href="/historial">Ver historial</a></div>
     <form action="{action}" method="post" class="form-card"><div class="form-grid">
     <fieldset class="field span2"><legend class="field-label">Tipo de movimiento</legend><div class="segmented">
@@ -446,7 +746,7 @@ def dashboard_page(query: dict) -> str:
     <script>const cuentasInfo={account_json};const cuentaMov=document.getElementById('cuenta-movimiento');const cambiarMoneda=()=>{{const i=cuentasInfo[cuentaMov.value]||{{}};document.getElementById('moneda-monto').textContent=i.codigo||'—';document.getElementById('simbolo-monto').textContent=i.simbolo||'';document.getElementById('saldo-valor').textContent=i.saldo||'—';}};cuentaMov.addEventListener('change',cambiarMoneda);cuentaMov.form.addEventListener('reset',()=>setTimeout(cambiarMoneda));cambiarMoneda();</script>
     </form></article>
     <article class="panel"><div class="panel-title"><div><p class="eyebrow">CONTROL MENSUAL</p><h2>Presupuestos y alertas</h2></div></div>{budget_html}
-    <div class="subform"><h3>Crear o actualizar límite</h3><form method="post" action="/presupuestos" class="form-grid"><label class="span2">Categoría<select name="id_categoria" required>{option_rows(categories, None, 'gasto')}</select></label>
+    <div class="subform"><h3 id="nuevo-limite">Crear o actualizar límite</h3><form method="post" action="/presupuestos" class="form-grid"><label class="span2">Categoría<select name="id_categoria" required>{option_rows(categories, None, 'gasto')}</select></label>
     <label>Monto máximo (moneda elegida)<input name="monto_limite" type="number" min="0.01" step="0.01" placeholder="50000.00" required></label>
     <label>Moneda del presupuesto<select name="id_moneda">{extension.currency_options()}</select></label><input type="hidden" name="anio" value="{year}"><input type="hidden" name="mes" value="{month}"><button class="primary" type="submit">Guardar límite</button></form>
     <p class="help">Una alerta aparece al alcanzar el 80 % del presupuesto de una categoría.</p></div></article></section>
@@ -457,7 +757,7 @@ def dashboard_page(query: dict) -> str:
     if not can_manage:
         content=re.sub(r'<div class="subform">.*?</div>','<p class="help">El propietario administra los presupuestos.</p>',content,flags=re.S)
         content=re.sub(r'<td class="actions">.*?</td>','<td>Consulta</td>',content,flags=re.S)
-    return layout(content, subtitle='')
+    return layout(content, subtitle='', compact_hero=True)
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -496,6 +796,12 @@ class Handler(BaseHTTPRequestHandler):
                 key = self.read_cache_key()
                 if key:
                     read_cache.store(key, body)
+            # Después de guardar en caché: la copia guardada nunca lleva token y se vuelve a firmar al servirse.
+            # Sin tomar AUTH_LOCK: respond() también se llama con ese lock tomado (p. ej. al guardar usuarios).
+            # Un token de una cookie vencida es inofensivo: ese POST igual exige sesión válida.
+            token = self.session_token()
+            if token:
+                body = inject_csrf(body, quality.csrf_token(token))
             body = prefix_html(body)
         self.send_response(status)
         for name, value in (headers or {}).items():
@@ -545,6 +851,10 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header('Location',external_path(path))
         self.send_header('Content-Length','0')
         self.end_headers()
+
+    @staticmethod
+    def csrf_rejected() -> bytes:
+        return error_page('Solicitud no válida', 'El formulario caducó o no proviene de esta aplicación. Recargue la página e intente de nuevo.')
 
     def session_token(self):
         try:
@@ -676,6 +986,9 @@ class Handler(BaseHTTPRequestHandler):
             return self.respond(413, b'Formulario demasiado grande', 'text/plain; charset=utf-8')
         try:
             if path == '/logout':
+                payload=self.rfile.read(length)
+                if self.authenticated() and not quality.csrf_valid(self.session_token(),submitted_csrf(payload,self.headers.get('Content-Type',''))):
+                    return self.respond(403,self.csrf_rejected())
                 with AUTH_LOCK: SESSIONS.pop(self.session_token(),None)
                 self.send_response(303);self.send_header('Location',external_path('/login'));self.send_header('Set-Cookie',f'finanzas_session=; HttpOnly; SameSite=Strict; Path={app_base_path() or chr(47)}; Max-Age=0{self.secure_cookie_suffix()}');self.send_header('Content-Length','0');self.end_headers();return
             payload=self.rfile.read(length)
@@ -695,6 +1008,9 @@ class Handler(BaseHTTPRequestHandler):
                     self.send_response(303);self.send_header('Location',external_path('/perfiles/elegir'));self.send_header('Set-Cookie',f'finanzas_session={token}; HttpOnly; SameSite=Strict; Path={app_base_path() or chr(47)}; Max-Age=28800{self.secure_cookie_suffix()}');self.send_header('Content-Length','0');self.end_headers();return
                 return self.respond(401,login_page('Usuario o contraseña incorrectos').encode('utf-8'))
             if not self.authenticated(): return self.auth_redirect()
+            # Toda escritura con sesión exige el token CSRF del formulario (login y registro ocurren sin sesión).
+            if not quality.csrf_valid(self.session_token(),submitted_csrf(payload,self.headers.get('Content-Type',''))):
+                return self.respond(403,self.csrf_rejected())
             if not request_ctx.profile() and not path.startswith('/perfiles/') and path not in ('/admin/usuarios/guardar','/admin/cambiar-clave'):
                 return self.redirect_to('/perfiles/elegir')
             if path == '/admin/calidad/ejecutar':

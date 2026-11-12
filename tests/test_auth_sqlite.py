@@ -15,6 +15,7 @@ from pathlib import Path
 from unittest.mock import patch
 from urllib.error import HTTPError
 from urllib.parse import urlencode
+from tests.csrf_util import csrf_opener, opener_csrf
 from urllib.request import HTTPCookieProcessor, Request, build_opener
 
 from src import app, auth, db, extension, request_ctx
@@ -83,7 +84,7 @@ class AuthSQLiteTests(unittest.TestCase):
         thread = threading.Thread(target=server.serve_forever, daemon=True)
         thread.start()
         try:
-            client = build_opener(HTTPCookieProcessor(CookieJar()))
+            client = csrf_opener()
             with client.open(Request(f'http://127.0.0.1:{server.server_port}/login',
                     data=urlencode({'usuario':'admin', 'contrasena':'admin123!'}).encode()), timeout=5) as r:
                 self.assertTrue(r.url.endswith('/perfiles/elegir'))
@@ -173,7 +174,7 @@ class AuthSQLiteTests(unittest.TestCase):
         thread = threading.Thread(target=server.serve_forever, daemon=True)
         thread.start()
         base = f'http://127.0.0.1:{server.server_port}'
-        opener = build_opener(HTTPCookieProcessor(CookieJar()))
+        opener = csrf_opener()
 
         def post(path, data):
             with opener.open(Request(base+path, data=urlencode(data).encode()), timeout=5) as r:
