@@ -12,6 +12,7 @@ from http.server import ThreadingHTTPServer
 from pathlib import Path
 from unittest.mock import patch
 from urllib.parse import urlencode
+from tests.csrf_util import csrf_opener, opener_csrf
 from urllib.request import HTTPCookieProcessor, build_opener
 
 from src import app, db, read_cache, request_ctx
@@ -34,7 +35,7 @@ class S3HttpBase(unittest.TestCase):
         self.server = ThreadingHTTPServer(('127.0.0.1', 0), app.Handler)
         threading.Thread(target=self.server.serve_forever, daemon=True).start()
         self.base = f'http://127.0.0.1:{self.server.server_port}'
-        self.opener = build_opener(HTTPCookieProcessor(CookieJar()))
+        self.opener = csrf_opener()
         self.post({'usuario': 'admin', 'contrasena': TEST_ADMIN_PASSWORD}, '/login')
         self.post({'id_perfil': 1}, '/perfiles/seleccionar')
         with db.connect() as c:

@@ -102,6 +102,46 @@ def all_balances():
     with db.connect() as c:
         return [(r['nombre'],r['codigo_iso'],account_balance(c,r['id_cuenta'])) for r in c.execute('SELECT a.*,m.codigo_iso FROM cuentas a JOIN monedas m ON m.id_moneda=a.id_moneda WHERE a.id_perfil=current_profile_id() ORDER BY a.nombre')]
 
+BALANCE_EVENTS_SQL = '''SELECT e.id_cuenta, e.fecha, SUM(e.delta) AS delta FROM (
+    SELECT id_cuenta, fecha, CASE WHEN tipo='ingreso' THEN COALESCE(monto_acreditado_centimos,monto_centimos)
+        ELSE -COALESCE(monto_acreditado_centimos,monto_centimos) END AS delta FROM movimientos
+    UNION ALL SELECT id_cuenta_destino, fecha, monto_destino_centimos FROM transferencias
+    UNION ALL SELECT id_cuenta_origen, fecha, -monto_origen_centimos FROM transferencias
+    UNION ALL SELECT id_cuenta, fecha, CASE WHEN tipo='retiro' THEN monto_centimos ELSE -monto_centimos END FROM movimientos_ahorro
+) e JOIN cuentas a ON a.id_cuenta=e.id_cuenta
+WHERE a.id_perfil=current_profile_id() AND e.fecha<=? GROUP BY e.id_cuenta, e.fecha'''
+
+
+def balance_history(start, end):
+    """Saldo al cierre de cada día entre start y end (inclusive) para cada cuenta del perfil activo.
+
+    Usa las mismas reglas que account_balance; solo lectura y con una consulta de eventos por perfil.
+    Devuelve las fechas ISO y, por cuenta, una serie de centavos alineada con esas fechas.
+    """
+    from datetime import timedelta
+    days = [(start + timedelta(days=i)).isoformat() for i in range((end - start).days + 1)]
+    with db.connect() as c:
+        accounts = c.execute('''SELECT a.id_cuenta,a.nombre,a.saldo_inicial_centimos,m.codigo_iso,m.simbolo
+            FROM cuentas a JOIN monedas m ON m.id_moneda=a.id_moneda
+            WHERE a.id_perfil=current_profile_id() ORDER BY a.nombre COLLATE NOCASE,a.id_cuenta''').fetchall()
+        before, daily = {}, {}
+        for r in c.execute(BALANCE_EVENTS_SQL, (end.isoformat(),)):
+            if r['fecha'] < days[0]:
+                before[r['id_cuenta']] = before.get(r['id_cuenta'], 0) + r['delta']
+            else:
+                daily[(r['id_cuenta'], r['fecha'])] = r['delta']
+    result = []
+    for a in accounts:
+        running = a['saldo_inicial_centimos'] + before.get(a['id_cuenta'], 0)
+        series = []
+        for day in days:
+            running += daily.get((a['id_cuenta'], day), 0)
+            series.append(running)
+        result.append({'id': a['id_cuenta'], 'nombre': a['nombre'], 'moneda': a['codigo_iso'],
+                       'simbolo': a['simbolo'], 'serie': series})
+    return {'fechas': days, 'cuentas': result}
+
+
 def conversion(c, origin, destination, amount, date, rate_id=None):
     if origin==destination: return amount
     if not rate_id:
@@ -121,4 +161,55 @@ def historical_conversion(c,origin,destination,amount,day):
     return apply_quote(rate,origin,destination,amount)
 
 def format_amount(cents,symbol):
-    return f'{symbol}{cents/100:,.2f}'
+    """Formato único de montos en pantalla: símbolo, miles con coma y dos decimales; el signo va antes del símbolo."""
+    return f"{'−' if cents < 0 else ''}{symbol}{abs(cents)/100:,.2f}"
+
+
+def _month_bounds(year, month):
+    start = f'{year:04d}-{month:02d}-01'
+    end = f'{year+1:04d}-01-01' if month == 12 else f'{year:04d}-{month+1:02d}-01'
+    return start, end
+
+
+def month_totals(year, month):
+    """Ingresos y gastos del mes por moneda de la cuenta (misma regla que el resumen mensual). Solo lectura."""
+    start, end = _month_bounds(year, month)
+    totals = {}
+    with db.connect() as c:
+        for r in c.execute('''SELECT m.tipo, mo.codigo_iso, COALESCE(SUM(m.monto_centimos),0) AS total
+                FROM movimientos m JOIN cuentas a ON a.id_cuenta=m.id_cuenta JOIN monedas mo ON mo.id_moneda=a.id_moneda
+                WHERE m.id_perfil=current_profile_id() AND m.fecha>=? AND m.fecha<? GROUP BY m.tipo, mo.codigo_iso''', (start, end)):
+            totals.setdefault(r['codigo_iso'], {'ingreso': 0, 'gasto': 0})[r['tipo']] = r['total']
+    return totals
+
+
+def month_expenses_by_category(year, month):
+    """Gastos del mes agrupados por moneda y categoría, de mayor a menor. Nunca mezcla monedas."""
+    start, end = _month_bounds(year, month)
+    groups = {}
+    with db.connect() as c:
+        for r in c.execute('''SELECT mo.codigo_iso, mo.simbolo, c.nombre AS categoria, SUM(m.monto_centimos) AS total
+                FROM movimientos m JOIN cuentas a ON a.id_cuenta=m.id_cuenta JOIN monedas mo ON mo.id_moneda=a.id_moneda
+                JOIN categorias c ON c.id_categoria=m.id_categoria
+                WHERE m.id_perfil=current_profile_id() AND m.tipo='gasto' AND m.fecha>=? AND m.fecha<?
+                GROUP BY mo.codigo_iso, mo.simbolo, c.id_categoria, c.nombre
+                ORDER BY mo.codigo_iso, total DESC, c.nombre''', (start, end)):
+            group = groups.setdefault(r['codigo_iso'], {'simbolo': r['simbolo'], 'categorias': []})
+            group['categorias'].append((r['categoria'], r['total']))
+    return groups
+
+
+def savings_goals():
+    """Metas del perfil con lo ahorrado (aportes − retiros). Aportes y meta comparten moneda por validación."""
+    with db.connect() as c:
+        return [dict(r) for r in c.execute('''SELECT g.id_meta, g.nombre, g.monto_objetivo_centimos AS objetivo, g.fecha_objetivo,
+                mo.codigo_iso, mo.simbolo,
+                COALESCE((SELECT SUM(CASE WHEN s.tipo='aporte' THEN s.monto_centimos ELSE -s.monto_centimos END)
+                          FROM movimientos_ahorro s WHERE s.id_meta=g.id_meta),0) AS ahorrado
+            FROM metas_ahorro g JOIN monedas mo ON mo.id_moneda=g.id_moneda
+            WHERE g.id_perfil=current_profile_id() ORDER BY g.fecha_objetivo, g.nombre''')]
+
+
+def currency_symbols():
+    with db.connect() as c:
+        return {r['codigo_iso']: r['simbolo'] for r in c.execute('SELECT codigo_iso, simbolo FROM monedas')}

@@ -15,6 +15,7 @@ from pathlib import Path
 from unittest.mock import patch
 from urllib.error import HTTPError
 from urllib.parse import urlencode
+from tests.csrf_util import csrf_opener, opener_csrf
 from urllib.request import HTTPCookieProcessor, Request, build_opener
 
 from src import app, db, request_ctx
@@ -34,7 +35,7 @@ class ErrorHandlingTests(unittest.TestCase):
         self.thread = threading.Thread(target=self.server.serve_forever,daemon=True)
         self.thread.start()
         self.base = f'http://127.0.0.1:{self.server.server_port}'
-        self.opener = build_opener(HTTPCookieProcessor(CookieJar()))
+        self.opener = csrf_opener()
         self.post('/login', {'usuario':'admin','contrasena':TEST_ADMIN_PASSWORD})
         self.post('/perfiles/seleccionar',{'id_perfil':1})
 

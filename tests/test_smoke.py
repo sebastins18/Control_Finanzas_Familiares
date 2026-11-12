@@ -8,6 +8,7 @@ from pathlib import Path
 from unittest.mock import patch
 from urllib.error import HTTPError
 from urllib.parse import urlencode
+from tests.csrf_util import csrf_opener, opener_csrf
 from urllib.request import urlopen, Request, build_opener, HTTPCookieProcessor
 from http.cookiejar import CookieJar
 
@@ -100,7 +101,7 @@ class TestHttp(unittest.TestCase):
         TestFinanzas.tearDown(self)
 
     def logged_in(self):
-        opener = build_opener(HTTPCookieProcessor(CookieJar()))
+        opener = csrf_opener()
         payload = urlencode({'usuario': 'admin', 'contrasena': TEST_ADMIN_PASSWORD}).encode()
         with opener.open(Request(self.base + '/login', data=payload), timeout=3) as result:
             self.assertEqual(result.status, 200)

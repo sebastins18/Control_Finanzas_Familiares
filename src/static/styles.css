@@ -606,3 +606,63 @@ body:not(.login-body) .profile-tabs.con-indicador [role=tab],body:not(.login-bod
 .profile-group.entra-der{animation:tab-entra-der .3s var(--ease-out)}
 .profile-group.entra-izq{animation:tab-entra-izq .3s var(--ease-out)}
 @media(prefers-reduced-motion:reduce){.seg-thumb,.con-indicador label,.con-indicador [role=tab],.input-money .addon.prefix{transition:none}.profile-group.entra-der,.profile-group.entra-izq{animation:none}}
+
+/* Evolución de saldos (Resumen): gráfico de líneas por cuenta con rangos 1 semana / 1 mes / 3 meses */
+.balance-chart .panel-title{flex-wrap:wrap;align-items:flex-end}
+.chart-controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.chart-range{min-width:300px}
+.chart-currency{min-width:130px}
+body:not(.login-body) .chart-controls .segmented label{font-size:13px;white-space:nowrap}
+.chart-summary{display:flex;align-items:baseline;gap:8px 20px;flex-wrap:wrap;margin:-4px 0 14px}
+.chart-kpi-label{display:block;font-size:12px;font-weight:700;color:#5b6b82;letter-spacing:.02em}
+.chart-kpi strong{display:block;font-size:clamp(22px,2.6vw,30px);line-height:1.15;letter-spacing:-.035em;color:#14213d;font-variant-numeric:tabular-nums}
+.chart-delta{font-size:13px;font-weight:750;font-variant-numeric:tabular-nums}
+.chart-delta.up{color:#1d7a5f}.chart-delta.down{color:#9c2f27}.chart-delta.flat{color:#5b6b82}
+.chart-delta small{font-weight:500;color:#5b6b82;margin-left:6px}
+.chart-legend{display:flex;flex-wrap:wrap;gap:6px 18px;margin:0 0 6px;font-size:12px;color:#34445e}
+.legend-item{display:inline-flex;align-items:center;gap:7px}
+.legend-key{display:inline-block;flex-shrink:0;width:16px;height:3px;border-radius:2px}
+.chart-wrap{position:relative;min-height:220px}
+.chart-wrap svg{display:block;max-width:100%;height:auto;overflow:visible;touch-action:pan-y}
+.chart-wrap svg:focus{outline:none}
+.chart-wrap svg:focus-visible{outline:2px solid #2d5f9f;outline-offset:4px;border-radius:8px}
+.chart-axis{font-size:11px;fill:#5b6b82;font-variant-numeric:tabular-nums}
+.chart-direct{font-size:12px;font-weight:650;fill:#34445e}
+.chart-empty{margin:0;padding:70px 0;text-align:center;color:#5b6b82;font-size:13px}
+.chart-tip{position:absolute;z-index:3;pointer-events:none;min-width:170px;max-width:260px;padding:9px 11px;background:#fff;border:1px solid rgba(20,40,80,.14);border-radius:12px;box-shadow:0 14px 30px -14px rgba(20,40,80,.4);font-size:12px;color:#34445e}
+.chart-tip-fecha{margin-bottom:5px;font-size:11px;color:#5b6b82}
+.chart-tip-fila{display:flex;align-items:center;gap:8px;padding:2px 0;white-space:nowrap}
+.chart-tip-fila strong{color:#14213d;font-variant-numeric:tabular-nums}
+.chart-tip-fila span:last-child{overflow:hidden;text-overflow:ellipsis}
+.chart-tip-total{margin-top:4px;padding-top:5px;border-top:1px solid rgba(20,40,80,.1)}
+.chart-tip-total strong{margin-left:24px}
+@media(max-width:560px){.chart-controls,.chart-range,.chart-currency{width:100%;min-width:0}}
+
+/* ===== Resumen v2: tarjetas, hero compacto, gastos por categoría, metas, variaciones y estados vacíos ===== */
+body:not(.login-body) .hero.hero-compact{min-height:0;padding:18px 28px;margin:20px 0 16px}
+body:not(.login-body) .hero.hero-compact h1{font-size:clamp(20px,2.3vw,26px);margin:4px 0 6px}
+body:not(.login-body) .hero.hero-compact .hero-art{font-size:64px}
+.metrics.metrics-4{grid-template-columns:repeat(4,minmax(0,1fr));margin:0 0 16px}
+.metrics-4 .metric{padding:18px 20px;gap:4px}
+body:not(.login-body) .metrics-4 .metric>span{font-size:12px;font-weight:700;color:#4a5b75}
+.metrics-4 .metric strong{font-size:clamp(19px,2vw,25px);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.metrics-4 .metric small{font-size:12px}
+.metric-other{font-variant-numeric:tabular-nums}
+.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+.num .variation{display:block;margin-top:2px;font-size:11px;font-weight:600;color:#5b6b82;white-space:nowrap}
+.cat-currency{font-size:13px;margin:14px 0 6px;color:#34445e}
+.cat-list{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.cat-row{display:grid;grid-template-columns:minmax(90px,1fr) minmax(80px,1.4fr) 10.5rem;align-items:center;gap:12px;font-size:13px}
+.cat-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#14213d;font-weight:600}
+.cat-bar{height:8px;border-radius:4px;background:#e8edf3;overflow:hidden}
+.cat-bar>span{display:block;height:100%;border-radius:4px;background:#2d5f9f}
+.cat-value{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;color:#14213d;font-weight:650}
+.cat-value small{margin-left:8px;color:#5b6b82;font-weight:500;display:inline-block;min-width:34px}
+.goal-line:last-of-type{border-bottom:0}
+.fill.goal{background:linear-gradient(90deg,#2d5f9f,#2a7f78)}
+.empty-state{margin:6px 0;padding:14px 16px;border:1px dashed rgba(20,40,80,.2);border-radius:12px;color:#4a5b75;font-size:13px}
+.empty-state a,.empty a{font-weight:700;white-space:nowrap}
+@media(max-width:830px){.metrics.metrics-4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){body:not(.login-body) .hero.hero-compact{padding:16px 18px}.metrics.metrics-4{grid-template-columns:1fr}.cat-row{grid-template-columns:1fr auto}.cat-bar{grid-column:1/-1;grid-row:2}}
+.columns>.panel+.panel{margin-top:0}
+table.table-fit{min-width:0}

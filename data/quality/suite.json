@@ -1,6 +1,6 @@
 {
- "generado": "2026-10-30T17:54:22",
- "segundos": 57.6,
+ "generado": "2026-11-03T21:56:03",
+ "segundos": 56.24,
  "entorno": {
   "python": "3.12.0",
   "sqlite": "3.42.0",
@@ -16,7 +16,7 @@
    "fallos": 0,
    "errores": 0,
    "omitidos": 0,
-   "segundos": 3.563,
+   "segundos": 3.493,
    "problemas": [],
    "descripcion": "Autenticación SQLite, migración y permisos mediante solicitudes HTTP reales."
   },
@@ -27,7 +27,7 @@
    "fallos": 0,
    "errores": 0,
    "omitidos": 0,
-   "segundos": 0.869,
+   "segundos": 0.851,
    "problemas": [],
    "descripcion": "Cobertura del reverse proxy para /finanzas en CRNube."
   },
@@ -38,7 +38,7 @@
    "fallos": 0,
    "errores": 0,
    "omitidos": 0,
-   "segundos": 0.196,
+   "segundos": 0.169,
    "problemas": [],
    "descripcion": "La carga masiva se confirma o revierte como una transacción."
   },
@@ -49,7 +49,7 @@
    "fallos": 0,
    "errores": 0,
    "omitidos": 0,
-   "segundos": 0.34,
+   "segundos": 0.308,
    "problemas": [],
    "descripcion": "Pruebas de conectividad SQLite del MVP (modelo real de cinco tablas)."
   },
@@ -60,7 +60,7 @@
    "fallos": 0,
    "errores": 0,
    "omitidos": 0,
-   "segundos": 6.934,
+   "segundos": 6.873,
    "problemas": [],
    "descripcion": "Fallos reales de SQLite y errores durante autenticación: siempre una respuesta."
   },
@@ -71,7 +71,7 @@
    "fallos": 0,
    "errores": 0,
    "omitidos": 0,
-   "segundos": 0.616,
+   "segundos": 0.583,
    "problemas": [],
    "descripcion": ""
   },
@@ -82,7 +82,7 @@
    "fallos": 0,
    "errores": 0,
    "omitidos": 0,
-   "segundos": 1.345,
+   "segundos": 1.192,
    "problemas": [],
    "descripcion": "Cotización legible, dirección automática e historial inmutable."
   },
@@ -93,7 +93,7 @@
    "fallos": 0,
    "errores": 0,
    "omitidos": 0,
-   "segundos": 3.659,
+   "segundos": 3.479,
    "problemas": [],
    "descripcion": "S2: pruebas HTTP reales sobre SQLite temporal; no se toca la base del curso."
   },
@@ -104,7 +104,7 @@
    "fallos": 0,
    "errores": 0,
    "omitidos": 0,
-   "segundos": 0.534,
+   "segundos": 0.487,
    "problemas": [],
    "descripcion": "Pruebas actualizadas al modelo V17 de cambio manual sin API de divisas."
   },
@@ -115,7 +115,7 @@
    "fallos": 0,
    "errores": 0,
    "omitidos": 0,
-   "segundos": 0.554,
+   "segundos": 0.499,
    "problemas": [],
    "descripcion": ""
   },
@@ -126,7 +126,7 @@
    "fallos": 0,
    "errores": 0,
    "omitidos": 0,
-   "segundos": 15.259,
+   "segundos": 14.412,
    "problemas": [],
    "descripcion": "Perfiles compartidos: aislamiento, sesiones e invitados por HTTP y SQLite."
   },
@@ -137,7 +137,7 @@
    "fallos": 0,
    "errores": 0,
    "omitidos": 0,
-   "segundos": 5.33,
+   "segundos": 5.329,
    "problemas": [],
    "descripcion": "Panel de calidad (/admin/calidad): acceso solo para administradores y ejecucion segura."
   },
@@ -148,7 +148,7 @@
    "fallos": 0,
    "errores": 0,
    "omitidos": 0,
-   "segundos": 2.55,
+   "segundos": 2.454,
    "problemas": [],
    "descripcion": ""
   },
@@ -159,7 +159,7 @@
    "fallos": 0,
    "errores": 0,
    "omitidos": 0,
-   "segundos": 5.651,
+   "segundos": 5.695,
    "problemas": [],
    "descripcion": "Registro público, unicidad y creación transaccional del perfil inicial."
   },
@@ -170,7 +170,7 @@
    "fallos": 0,
    "errores": 0,
    "omitidos": 0,
-   "segundos": 0.172,
+   "segundos": 0.171,
    "problemas": [],
    "descripcion": "Prueba de humo del benchmark S3: corre en pequeno y produce mediana, con y sin indices."
   },
@@ -181,7 +181,7 @@
    "fallos": 0,
    "errores": 0,
    "omitidos": 0,
-   "segundos": 2.444,
+   "segundos": 2.451,
    "problemas": [],
    "descripcion": "Error de conexion (Seguimiento 3): que hace la aplicacion si SQLite no responde."
   },
@@ -192,7 +192,7 @@
    "fallos": 0,
    "errores": 0,
    "omitidos": 0,
-   "segundos": 3.366,
+   "segundos": 3.355,
    "problemas": [],
    "descripcion": "Datos invalidos (Seguimiento 3): la aplicacion rechaza entradas incorrectas sin escribir."
   },
@@ -203,7 +203,7 @@
    "fallos": 0,
    "errores": 0,
    "omitidos": 0,
-   "segundos": 0.934,
+   "segundos": 0.918,
    "problemas": [],
    "descripcion": "Caso normal (Seguimiento 3): alta, edicion y borrado de un movimiento por HTTP."
   },
@@ -214,7 +214,7 @@
    "fallos": 0,
    "errores": 0,
    "omitidos": 0,
-   "segundos": 2.618,
+   "segundos": 2.636,
    "problemas": [],
    "descripcion": ""
   },
@@ -225,7 +225,7 @@
    "fallos": 0,
    "errores": 0,
    "omitidos": 0,
-   "segundos": 0.532,
+   "segundos": 0.53,
    "problemas": [],
    "descripcion": ""
   }

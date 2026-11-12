@@ -10,6 +10,7 @@ from pathlib import Path
 from unittest.mock import patch
 from urllib.error import HTTPError
 from urllib.parse import urlencode
+from tests.csrf_util import csrf_opener, opener_csrf
 from urllib.request import HTTPCookieProcessor, Request, build_opener
 
 from src import db
@@ -40,7 +41,7 @@ class Seguimiento2HttpCrud(unittest.TestCase):
         self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
         self.thread.start()
         self.base = f'http://127.0.0.1:{self.server.server_port}/finanzas'
-        self.opener = build_opener(HTTPCookieProcessor(CookieJar()))
+        self.opener = csrf_opener()
 
     def tearDown(self):
         self.server.shutdown()
