@@ -15,11 +15,13 @@ from tests.test_s3_normal import S3HttpBase
 
 class FormatTests(unittest.TestCase):
     def test_single_money_format(self):
+        """Todos los montos se muestran con un único formato: signo, símbolo, miles y dos decimales."""
         self.assertEqual(finance.format_amount(572480000, '₡'), '₡5,724,800.00')
         self.assertEqual(finance.format_amount(-23690000, '₡'), '−₡236,900.00')
         self.assertEqual(finance.format_amount(0, '$'), '$0.00')
 
     def test_variation_text(self):
+        """La variación contra el mes anterior muestra flecha, signo y porcentaje correctos."""
         self.assertIn('+20 % vs. mayo', variation_html(12000, 10000, 'mayo'))
         self.assertIn('▲', variation_html(12000, 10000, 'mayo'))
         self.assertIn('−50 % vs. mayo', variation_html(5000, 10000, 'mayo'))
@@ -33,6 +35,7 @@ class DashboardTests(HttpMixin, S3HttpBase):
         return self.get('/?anio=2026&mes=6')
 
     def test_empty_states_and_compact_hero(self):
+        """Sin datos, el Resumen muestra estados vacíos con una acción sugerida y el encabezado compacto."""
         html = self.page()
         self.assertIn('class="hero hero-compact"', html)
         self.assertIn('Un panorama claro de tu dinero.', html)
@@ -43,6 +46,7 @@ class DashboardTests(HttpMixin, S3HttpBase):
         self.assertIn('id="nuevo-limite"', html)
 
     def test_cards_categories_comparison_and_goals(self):
+        """El Resumen calcula tarjetas, gastos por categoría, comparación mensual y progreso de metas."""
         with db.connect() as c:
             other = c.execute("INSERT INTO categorias(id_perfil,nombre,tipo) VALUES(1,'Taxis de prueba','gasto')").lastrowid
             crc = c.execute("SELECT id_moneda FROM monedas WHERE codigo_iso='CRC'").fetchone()[0]
@@ -86,6 +90,7 @@ class CsrfTests(HttpMixin, S3HttpBase):
             return c.execute("SELECT COUNT(*) FROM movimientos WHERE descripcion='CSRF'").fetchone()[0]
 
     def test_every_post_form_carries_the_token(self):
+        """Cada formulario POST de una página con sesión lleva el token CSRF; el login no lo necesita."""
         html = self.get('/')
         post_forms = re.findall(r'<form\b[^>]*method="post"[^>]*>', html)
         self.assertGreaterEqual(len(post_forms), 3)
@@ -94,6 +99,7 @@ class CsrfTests(HttpMixin, S3HttpBase):
         self.assertNotIn('name="csrf"', login)
 
     def test_post_without_or_with_wrong_token_is_rejected_and_saves_nothing(self):
+        """Un POST sin token o con token falso responde 403 y no guarda nada."""
         plain = self.plain_client()
         for extra in ({}, {'csrf': 'falso'}):
             with self.assertRaises(HTTPError) as caught:
@@ -104,6 +110,7 @@ class CsrfTests(HttpMixin, S3HttpBase):
         self.assertEqual(self.count(), 1)
 
     def test_logout_requires_token(self):
+        """Cerrar sesión también exige el token: sin él la sesión sigue activa."""
         with self.assertRaises(HTTPError) as caught:
             self.plain_client().open(Request(self.base + '/logout', data=b''), timeout=5)
         self.assertEqual(caught.exception.code, 403)

@@ -301,8 +301,58 @@ def _suite_section(data) -> str:
             f'<p><strong>{_h(data.get("total", 0))}</strong> pruebas en <strong>{len(rows)}</strong> archivos · {_h(summary)}.<br>'
             f'Generado: {_h(data.get("generado", ""))} · Duración total: {_h(data.get("segundos", ""))} s · '
             f'Python {_h(env.get("python", "?"))}, SQLite {_h(env.get("sqlite", "?"))}, {_h(env.get("sistema", "?"))}.</p>'
+            + RESULT_LEGEND
             + _table(['Archivo', 'Qué comprueba', 'Tests', 'Resultado', 'Segundos', 'Detalle de problemas'], rows)
+            + _tests_detail(data['archivos'])
             + '</section>')
+
+
+RESULT_LABELS = {'ok': ('OK', 'ok'), 'fallo': ('FALLO', 'danger'), 'error': ('ERROR', 'danger'), 'omitida': ('OMITIDA', 'neutral')}
+
+RESULT_LEGEND = (
+    '<details class="subform quality-legend"><summary><strong>Cómo leer estos resultados</strong></summary><ul>'
+    '<li><strong>OK</strong>: todas las comprobaciones (<code>assert</code>) de la prueba se cumplieron; el comportamiento descrito funciona.</li>'
+    '<li><strong>FALLO</strong>: una comprobación no se cumplió; la aplicación respondió distinto de lo esperado.</li>'
+    '<li><strong>ERROR</strong>: la prueba no pudo terminar por una excepción inesperada (en la app o en la propia prueba).</li>'
+    '<li><strong>OMITIDA</strong>: no se ejecutó porque falta un requisito del entorno.</li>'
+    '<li><strong>Qué significa</strong>: la descripción de la prueba (su docstring), es decir, qué queda demostrado cuando pasa.</li>'
+    '<li><strong>Con qué se logró</strong>: el método de prueba (<code>Clase.método</code> en <code>tests/</code>) y las funciones de la aplicación que '
+    'ejercita, detectadas al analizar su código: llamadas directas (p. ej. <code>finance.balance_history()</code>) y rutas HTTP con la función que las atiende.</li>'
+    '<li>Cada prueba usa una base SQLite temporal; nunca toca la base real.</li></ul></details>')
+
+
+def _tests_detail(files) -> str:
+    """Detalle desplegable por archivo: cada prueba con su significado, cómo se logró y su resultado."""
+    blocks, missing = '', False
+    for item in files:
+        if not isinstance(item, dict):
+            continue
+        tests = [t for t in item.get('pruebas', []) if isinstance(t, dict)]
+        if not tests:
+            missing = missing or 'pruebas' not in item
+            continue
+        bad = any(t.get('resultado') in ('fallo', 'error') for t in tests)
+        rows = ''
+        for test in tests:
+            label, css = RESULT_LABELS.get(test.get('resultado'), ('?', 'neutral'))
+            functions = [f for f in test.get('funciones', []) if isinstance(f, str)]
+            how = (f'<code>{_h(test.get("clase", ""))}.{_h(test.get("prueba", ""))}</code>'
+                   + (('<ul class="quality-functions">' + ''.join(f'<li><code>{_h(f)}</code></li>' for f in functions) + '</ul>') if functions else ''))
+            meaning = _h(test.get('significado') or 'Sin descripción.')
+            if test.get('detalle'):
+                meaning += f'<br><small class="quality-problem">{_h(test.get("detalle"))}</small>'
+            ms = round(float(test.get('segundos') or 0) * 1000)
+            rows += (f'<tr><td>{meaning}</td><td>{how}</td>'
+                     f'<td><span class="pill {css}">{_h(label)}</span></td><td class="num">{ms} ms</td></tr>')
+        title = f'{_h(item.get("archivo", ""))} · {len(tests)} pruebas · {"con fallos" if bad else "todas OK"}'
+        blocks += (f'<details class="subform quality-tests"{" open" if bad else ""}><summary><strong>{title}</strong>'
+                   f'<span class="help"> — {_h(item.get("descripcion", ""))}</span></summary>'
+                   '<div class="table-scroll"><table><thead><tr><th>Qué significa</th><th>Con qué se logró</th>'
+                   f'<th>Resultado</th><th class="num">Tiempo</th></tr></thead><tbody>{rows}</tbody></table></div></details>')
+    if not blocks:
+        return ('<p class="help">Vuelve a ejecutar la suite para ver el detalle por prueba '
+                '(qué significa cada una y con qué funciones se logró).</p>') if missing else ''
+    return '<h4 class="quality-detail-title">Detalle por prueba</h4>' + blocks
 
 
 def _bench_section() -> str:
@@ -321,7 +371,22 @@ def _bench_section() -> str:
             f'<p>Fuente: {_h(source)}. Cada operación se repite varias veces y se reporta la mediana. '
             'Los tiempos dependen del equipo: compara escenarios, no máquinas.</p>'
             f'<ul>{help_items}</ul>'
+            + BENCH_LEGEND
             + _table(['Operación', 'Escenario', 'Ejecuciones (ms)', 'Mediana (ms)'], rows) + '</section>')
+
+
+BENCH_LEGEND = (
+    '<details class="subform quality-legend"><summary><strong>Qué significa y con qué se midió</strong></summary><ul>'
+    '<li><strong>Con índices / sin índices</strong>: la misma consulta se mide con los índices de la aplicación '
+    '(<code>idx_movimientos_fecha_tipo</code>, <code>idx_movimientos_categoria_fecha</code>) y después sin ellos. '
+    'Si la mediana baja con índices, el índice está ayudando a esa consulta.</li>'
+    '<li><strong>Ejecuciones</strong>: el tiempo de cada repetición en milisegundos; la <strong>mediana</strong> es el valor central '
+    '(menos sensible a una ejecución lenta aislada que el promedio).</li>'
+    '<li><strong>Cómo se obtuvo</strong>: <code>scripts/benchmark_s3.py</code> crea una base temporal con el esquema real, carga datos '
+    'sintéticos con <code>seed_bulk_s2.bulk_load()</code> y mide cada consulta con <code>measure()</code> usando '
+    '<code>time.perf_counter()</code>; la mediana se calcula con <code>statistics.median()</code> y el plan con '
+    '<code>EXPLAIN QUERY PLAN</code>. La actualización se ejecuta dentro de <code>BEGIN … ROLLBACK</code>, así que no deja cambios.</li>'
+    '</ul></details>')
 
 
 def _decisions_section() -> str:

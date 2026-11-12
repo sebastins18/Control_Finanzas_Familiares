@@ -86,6 +86,7 @@ class ProfileTests(unittest.TestCase):
                     id_categoria=category,id_cuenta=account,descripcion=description)
 
     def test_shared_ledger_and_independent_session_selection(self):
+        """Propietario e invitado comparten los datos del perfil y cada sesión elige su perfil por separado."""
         pid=self.shared()
         self.post(self.guest,'/movimientos',self.movement_form(pid))
         self.assertIn('Gasto compartido',self.get(self.owner))
@@ -101,6 +102,7 @@ class ProfileTests(unittest.TestCase):
         self.assertNotIn('id_cuenta"',self.get(self.guest,'/admin/cuentas'))
 
     def test_two_sessions_of_same_account_keep_independent_profiles(self):
+        """Dos sesiones del mismo usuario pueden tener perfiles distintos seleccionados."""
         pid=self.shared()
         second_session=self.client('admin',TEST_ADMIN_PASSWORD)
         self.assertNotIn('Perfil financiero: <strong>Hogar compartido',self.get(second_session))
@@ -111,6 +113,7 @@ class ProfileTests(unittest.TestCase):
         self.assertNotIn('Perfil financiero: <strong>Hogar compartido',self.get(self.owner))
 
     def test_login_requires_selection_before_entering_financial_information(self):
+        """Tras iniciar sesión hay que elegir un perfil antes de ver información financiera."""
         pid=self.shared()
         pending=csrf_opener()
         with pending.open(Request(self.base+'/login',data=urlencode({'usuario':'Miriam','contrasena':'Clave123!'}).encode()),timeout=5) as r:
@@ -136,6 +139,7 @@ class ProfileTests(unittest.TestCase):
         self.assertIn('Gasto compartido',self.get(self.owner))
 
     def test_guest_cannot_change_structure_or_members_even_with_direct_posts(self):
+        """Un invitado no puede cambiar cuentas, catálogos ni integrantes, ni siquiera con POST directos."""
         pid=self.shared()
         form=self.movement_form(pid)
         guest_panel=self.get(self.guest)
@@ -174,6 +178,7 @@ class ProfileTests(unittest.TestCase):
         self.denied(self.guest,'/admin/usuarios')
 
     def test_revoking_guest_access_keeps_records_and_takes_effect_next_request(self):
+        """Quitar el acceso a un invitado conserva sus registros y surte efecto en su siguiente solicitud."""
         pid=self.shared()
         self.post(self.guest,'/movimientos',self.movement_form(pid))
         self.post(self.owner,f'/perfiles/{pid}/integrantes/2/eliminar',{})
@@ -183,6 +188,7 @@ class ProfileTests(unittest.TestCase):
         self.denied(self.guest,f'/perfiles/{pid}/invitar',{'username':'OtraPersona'})
 
     def test_multiple_profiles_edit_and_delete_only_empty_profiles(self):
+        """Se pueden crear y renombrar varios perfiles; solo se eliminan los que están vacíos."""
         self.post(self.owner,'/perfiles/crear',{'nombre':'Segundo hogar'})
         with db.connect() as c:pid=c.execute("SELECT id_perfil FROM perfiles_financieros WHERE nombre='Segundo hogar'").fetchone()[0]
         self.post(self.owner,f'/perfiles/{pid}/guardar',{'nombre':'Hogar renombrado'})
@@ -197,6 +203,7 @@ class ProfileTests(unittest.TestCase):
         self.denied(self.owner,f'/perfiles/{pid}/eliminar',{},status=400)
 
     def test_guest_can_register_transfers_and_savings_and_read_alerts(self):
+        """Un invitado puede registrar transferencias y ahorros y marcar alertas como leídas."""
         pid=self.shared()
         self.post(self.owner,'/movimientos',self.movement_form(pid,kind='ingreso',amount='1000'))
         with db.connect() as c:
@@ -213,6 +220,7 @@ class ProfileTests(unittest.TestCase):
             self.assertEqual(c.execute('SELECT COUNT(*) FROM movimientos_ahorro WHERE id_meta=?',(meta,)).fetchone()[0],1)
 
     def test_exchange_rates_do_not_change_another_profiles_conversions(self):
+        """Las cotizaciones de un perfil no afectan las conversiones de otro."""
         first=profiles.create('Primer perfil')
         second=profiles.create('Segundo perfil')
         with db.connect() as c:
@@ -225,6 +233,7 @@ class ProfileTests(unittest.TestCase):
             self.assertEqual(finance.historical_conversion(c,1,2,100000,date.today().isoformat()),300)
 
     def test_guest_receipts_are_shared_but_outsiders_cannot_read_them(self):
+        """Los comprobantes se comparten dentro del perfil, pero un usuario ajeno no puede verlos."""
         pid=self.shared()
         self.post(self.guest,'/movimientos',self.movement_form(pid))
         with db.connect() as c:mid=c.execute('SELECT id_movimiento FROM movimientos WHERE id_perfil=?',(pid,)).fetchone()[0]
@@ -252,6 +261,7 @@ class ProfileTests(unittest.TestCase):
 
 class ProfileMigrationTests(unittest.TestCase):
     def test_existing_financial_tables_and_children_keep_ids(self):
+        """La migración a perfiles conserva los identificadores de los datos financieros existentes."""
         with tempfile.TemporaryDirectory() as tmp:
             path=Path(tmp)/'old.sqlite3'
             with patch.dict(os.environ,{'DB_PATH':str(path)}):

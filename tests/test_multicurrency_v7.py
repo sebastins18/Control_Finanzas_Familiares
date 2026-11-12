@@ -1,15 +1,18 @@
+"""Multimoneda v7: totales separados por moneda, transferencias entre monedas y presupuestos con conversión."""
 from datetime import date
 from src import db, extension
 from tests.helpers_multicurrency import MulticurrencyBase
 
 class MulticurrencyTests(MulticurrencyBase):
     def test_separate_monthly_totals(self):
+        """Los totales mensuales se calculan por separado para cada moneda."""
         for account, amount in [(self.crc_account,'1000'),(self.usd_account,'25')]:
             db.save_movement({'tipo':'gasto','monto':amount,'fecha':self.today,'id_categoria':str(self.cat),'id_cuenta':str(account)})
         d=db.dashboard(date.today().year,date.today().month)
         self.assertEqual(d['totals_by_currency']['CRC']['gasto'],100000)
         self.assertEqual(d['totals_by_currency']['USD']['gasto'],2500)
     def test_transfer_between_currencies(self):
+        """Una transferencia entre monedas descuenta y acredita los montos correctos en cada cuenta."""
         with db.connect() as c:
             c.execute('INSERT INTO tipos_cambio(id_moneda_base,id_moneda_cotizada,fecha,cotizacion) VALUES(?,?,?,?)',
                       (self.usd,self.crc,self.today,'500'))
@@ -22,6 +25,7 @@ class MulticurrencyTests(MulticurrencyBase):
             self.assertEqual(t['monto_destino_centimos'],500000)
             self.assertIsNotNone(t['id_tipo_cambio'])
     def test_budget_converts_from_actual_account_currency(self):
+        """El presupuesto convierte el gasto desde la moneda real de la cuenta usando la cotización histórica."""
         with db.connect() as c:
             c.execute('INSERT INTO tipos_cambio(id_moneda_base,id_moneda_cotizada,fecha,cotizacion) VALUES(?,?,?,?)',
                       (self.usd,self.crc,self.today,'500'))

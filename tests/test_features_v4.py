@@ -1,3 +1,4 @@
+"""Funcionalidades v4: alertas de presupuesto al 80 % y 100 %, página de comprobantes y alertas manuales."""
 import os
 import tempfile
 import unittest
@@ -16,6 +17,7 @@ class V4Features(unittest.TestCase):
         close_app_log_handlers()
         self.env.stop();self.temp.cleanup()
     def test_budget_alerts_and_currency(self):
+        """Los presupuestos generan alertas al 80 % y 100 % y respetan la moneda del presupuesto."""
         with db.connect() as c:
             cat=c.execute("SELECT id_categoria FROM categorias WHERE nombre='Alimentación' AND id_perfil=1").fetchone()[0]
             account=c.execute('SELECT id_cuenta FROM cuentas WHERE id_perfil=1 LIMIT 1').fetchone()[0]
@@ -33,11 +35,13 @@ class V4Features(unittest.TestCase):
             self.assertEqual(c.execute('SELECT COUNT(*) FROM alertas').fetchone()[0],2)
         self.assertEqual(db.dashboard(date.today().year,date.today().month)['budgets'][0]['gastado'],1000)
     def test_menus_and_receipt_page(self):
+        """La página de comprobantes permite subir archivos y las tablas no administrables (roles) se rechazan."""
         self.assertIn('multipart/form-data',extension.receipts_page())
         with self.assertRaises(ValueError):
             extension.page('roles')
 
     def test_manual_alert_survives_refresh_while_automatic_alerts_recalculate(self):
+        """Al recalcular alertas automáticas se conservan las alertas creadas a mano."""
         today=date.today()
         with db.connect() as c:
             category=c.execute("SELECT id_categoria FROM categorias WHERE tipo='gasto' AND id_perfil=1 LIMIT 1").fetchone()[0]

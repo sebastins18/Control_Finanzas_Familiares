@@ -34,6 +34,7 @@ class BasePathTests(unittest.TestCase):
         self.patch.stop()
         self.tmp.cleanup()
     def test_prefixed_login_flow(self):
+        """Bajo el prefijo /finanzas (proxy de Apache) el login, la elección de perfil y los enlaces funcionan."""
         opener=csrf_opener()
         with opener.open(self.base+'/finanzas/') as response:
             self.assertEqual(response.geturl(),self.base+'/finanzas/login')

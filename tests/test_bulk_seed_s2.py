@@ -16,11 +16,13 @@ class BulkSeedTests(unittest.TestCase):
         self.env.stop()
         self.tmp.cleanup()
     def test_bulk_transaction_and_idempotence(self):
+        """La carga masiva se guarda en una sola transacción y repetirla no duplica registros."""
         self.assertEqual(bulk_load(1000),1000)
         with db.connect() as connection:
             self.assertEqual(connection.execute("SELECT COUNT(*) FROM movimientos WHERE descripcion LIKE 'SIM-S2-%'").fetchone()[0],1000)
             self.assertEqual(connection.execute('PRAGMA foreign_key_check').fetchall(),[])
         self.assertEqual(bulk_load(1000),0)
     def test_reject_large_unintended_load(self):
+        """Una carga masiva mayor al límite permitido (100 000) se rechaza antes de escribir."""
         with self.assertRaises(ValueError):
             bulk_load(100001)

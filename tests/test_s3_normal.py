@@ -70,6 +70,7 @@ class S3HttpBase(unittest.TestCase):
 
 class S3NormalCaseTests(S3HttpBase):
     def test_create_read_update_delete_movement(self):
+        """Caso normal: crear, consultar, editar y eliminar un movimiento actualiza bien la base."""
         with db.connect() as c:
             c.execute('UPDATE cuentas SET saldo_inicial_centimos=10000000 WHERE id_cuenta=?', (self.account,))
         self.post(self.form(), '/movimientos')

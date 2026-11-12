@@ -35,6 +35,7 @@ class ReleaseSecurityTests(unittest.TestCase):
         self.tmp.cleanup()
 
     def test_secure_headers_and_login_cookie_with_explicit_tls(self):
+        """Las respuestas llevan cabeceras de seguridad y la cookie de sesión es segura cuando hay TLS."""
         server = ThreadingHTTPServer(('127.0.0.1', 0), app.Handler)
         thread = threading.Thread(target=server.serve_forever, daemon=True)
         thread.start()
@@ -64,6 +65,7 @@ class ReleaseSecurityTests(unittest.TestCase):
             thread.join(timeout=3)
 
     def test_deployment_requires_strong_initial_admin(self):
+        """Una instalación nueva bajo /finanzas exige una contraseña inicial fuerte para el administrador."""
         for password in ('', 'admin123!', '12345678901'):
             with self.subTest(length=len(password)):
                 with tempfile.TemporaryDirectory() as folder:
@@ -77,6 +79,7 @@ class ReleaseSecurityTests(unittest.TestCase):
         self.assertEqual(len(auth.credentials()), 1)
 
     def test_existing_admin_is_not_overwritten_by_new_env_variable(self):
+        """Cambiar la variable de contraseña inicial no sobrescribe un administrador existente."""
         before = auth.credentials()[0]['hash']
         with patch.dict(os.environ, {'FINANZAS_INITIAL_ADMIN_PASSWORD': 'CambioNoDebeAplicar2026!'}):
             db.init_db()

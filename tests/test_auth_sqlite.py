@@ -39,6 +39,7 @@ class AuthSQLiteTests(unittest.TestCase):
         self.tmp.cleanup()
 
     def test_defaults_and_idempotence(self):
+        """Inicializar la base crea el administrador con contraseña cifrada (hash + salt) y repetirlo no cambia nada."""
         db.init_db()
         admin = app.user_by_name('admin')
         self.assertEqual(admin['hash'], auth.hash_password(TEST_ADMIN_PASSWORD, admin['salt']))
@@ -63,6 +64,7 @@ class AuthSQLiteTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
     def test_fresh_cli_ignores_json_and_preserves_existing_credentials(self):
+        """El script de instalación ignora el JSON heredado y no sobrescribe las credenciales que ya existen."""
         legacy = self.path.parent / 'login_credentials.json'
         salt = 'ab' * 16
         legacy_text = json.dumps({'users': [
@@ -108,6 +110,7 @@ class AuthSQLiteTests(unittest.TestCase):
         self.assertEqual(legacy.read_text(encoding='utf-8'), legacy_text)
 
     def test_fresh_cli_custom_password_ignores_invalid_json(self):
+        """Una instalación nueva usa la contraseña inicial indicada aunque el JSON heredado esté dañado."""
         legacy = self.path.parent / 'login_credentials.json'
         legacy.write_text('{invalid', encoding='utf-8')
         self.run_init_script(TEST_ADMIN_PASSWORD)
@@ -119,6 +122,7 @@ class AuthSQLiteTests(unittest.TestCase):
         self.assertEqual(legacy.read_text(encoding='utf-8'), '{invalid')
 
     def test_migrate_json_preserves_users_and_financial_ids(self):
+        """Migrar usuarios desde el JSON antiguo conserva usuarios y los identificadores de los datos financieros."""
         with closing(sqlite3.connect(self.path)) as c:
             with c:
                 c.execute('CREATE TABLE usuarios(id_usuario INTEGER PRIMARY KEY,nombre TEXT NOT NULL)')
@@ -146,6 +150,7 @@ class AuthSQLiteTests(unittest.TestCase):
         self.assertIsNotNone(app.user_by_name('Diego'))  # SQLite es la fuente de verdad.
 
     def test_migrate_role_table_to_fixed_user_field(self):
+        """La migración de la antigua tabla de roles deja el rol como campo fijo del usuario sin perder datos."""
         salt='ab'*16
         password=auth.hash_password('Anterior123!',salt)
         with closing(sqlite3.connect(self.path)) as c:
@@ -169,6 +174,7 @@ class AuthSQLiteTests(unittest.TestCase):
         self.assertEqual(app.user_by_name('Miriam')['hash'],password)
 
     def test_http_users_roles_and_permissions(self):
+        """Por HTTP, solo el administrador gestiona usuarios y los roles se validan; un usuario normal recibe 403."""
         db.init_db()
         server = ThreadingHTTPServer(('127.0.0.1',0), app.Handler)
         thread = threading.Thread(target=server.serve_forever, daemon=True)

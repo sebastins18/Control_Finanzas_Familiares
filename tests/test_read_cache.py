@@ -1,3 +1,4 @@
+"""Caché de lectura: catálogos servidos desde caché con aviso cuando SQLite falla, con caducidad y límite."""
 import os
 import sqlite3
 import tempfile
@@ -53,6 +54,7 @@ class ReadCacheTests(unittest.TestCase):
             return r.status, r.headers, r.read().decode()
 
     def test_catalog_is_served_from_cache_with_notice_when_sqlite_fails(self):
+        """Si SQLite falla, los catálogos se sirven desde caché con un aviso visible."""
         status, _, fresh = self.get('/admin/cuentas')
         self.assertEqual(status, 200)
         self.assertNotIn('La base de datos no responde', fresh)
@@ -64,6 +66,7 @@ class ReadCacheTests(unittest.TestCase):
         self.assertNotIn('caida', stale)
 
     def test_non_cacheable_pages_still_return_503(self):
+        """Las páginas que no se guardan en caché responden 503 cuando SQLite falla."""
         self.get('/')
         with patch.object(db, 'connect', side_effect=sqlite3.OperationalError('caida')):
             with self.assertRaises(HTTPError) as caught:
@@ -72,6 +75,7 @@ class ReadCacheTests(unittest.TestCase):
         caught.exception.close()
 
     def test_cache_expires_and_is_bounded(self):
+        """La caché de lectura caduca con el tiempo y tiene un número máximo de entradas."""
         read_cache.store('k', b'x')
         with patch('src.read_cache.time.time', return_value=read_cache._entries['k'][0] + read_cache.MAX_AGE_SECONDS + 1):
             self.assertIsNone(read_cache.fetch('k'))

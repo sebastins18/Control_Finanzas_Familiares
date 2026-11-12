@@ -63,6 +63,7 @@ class ErrorHandlingTests(unittest.TestCase):
             return body
 
     def test_authentication_failure_get_and_post_are_controlled(self):
+        """Si falla la base al autenticar, GET y POST responden con un error controlado y sin datos internos."""
         with patch.object(db,'connect',side_effect=sqlite3.OperationalError('sensitive path')):
             self.expect_error(self.base+'/',503,'Base de datos no disponible')
             self.expect_error(Request(self.base+'/login',data=b'usuario=admin'),503,'Base de datos no disponible')
@@ -70,6 +71,7 @@ class ErrorHandlingTests(unittest.TestCase):
             self.assertEqual(r.status,200)
 
     def test_constraint_and_validation_have_friendly_responses(self):
+        """Duplicados y registros relacionados producen mensajes claros (409/400) en lugar de errores técnicos."""
         self.expect_error(Request(self.base+'/admin/categorias/guardar',
             data=urlencode({'nombre':'Salario','tipo':'ingreso'}).encode()),409,'Ya existe un registro')
         with db.connect() as c:
@@ -80,6 +82,7 @@ class ErrorHandlingTests(unittest.TestCase):
             self.assertEqual(r.status,200)
 
     def test_locked_database_returns_without_retry_loop(self):
+        """Con la base bloqueada se responde «ocupada» (503) de inmediato, sin reintentos infinitos."""
         with closing(sqlite3.connect(self.path)) as blocker:
             blocker.execute('BEGIN IMMEDIATE')
             try:
@@ -95,6 +98,7 @@ class ErrorHandlingTests(unittest.TestCase):
         self.post('/admin/categorias/guardar',{'nombre':'Nuevo','tipo':'gasto'})
 
     def test_transaction_rolls_back_and_closes_after_failure(self):
+        """Si una escritura falla a mitad, la transacción se revierte y la conexión se cierra."""
         with self.assertRaises(sqlite3.IntegrityError):
             with db.connect() as c:
                 c.execute("INSERT INTO categorias(id_perfil,nombre,tipo) VALUES(1,'Temporal','gasto')")
@@ -105,6 +109,7 @@ class ErrorHandlingTests(unittest.TestCase):
             self.assertIsNone(c.execute("SELECT 1 FROM categorias WHERE nombre='Temporal'").fetchone())
 
     def test_expensive_query_is_interrupted_and_next_connection_works(self):
+        """Una consulta demasiado lenta se interrumpe por tiempo y la siguiente conexión funciona normal."""
         with patch.object(db,'OPERATION_TIMEOUT_SECONDS',0):
             with self.assertRaises(sqlite3.OperationalError) as caught:
                 with db.connect() as c:
@@ -116,12 +121,14 @@ class ErrorHandlingTests(unittest.TestCase):
             self.assertEqual(c.execute('SELECT 1').fetchone()[0],1)
 
     def test_storage_and_unexpected_errors_do_not_break_response(self):
+        """Errores de almacenamiento o inesperados devuelven 503/500 con mensaje genérico, sin rutas internas."""
         with patch.object(app,'dashboard_page',side_effect=PermissionError('sensitive path')):
             self.expect_error(self.base+'/',503,'almacenamiento')
         with patch.object(app,'dashboard_page',side_effect=RuntimeError('sensitive path')):
             self.expect_error(self.base+'/',500,'problema inesperado')
 
     def test_cli_failure_has_no_unhandled_traceback(self):
+        """Si el script de inicialización falla, muestra un mensaje claro sin traza ni rutas del servidor."""
         environment=dict(os.environ, DB_PATH=self.tmp.name)
         result=subprocess.run([sys.executable,'scripts/init_db.py'],env=environment,
                               capture_output=True,text=True,timeout=5,cwd=db.ROOT)
@@ -131,6 +138,7 @@ class ErrorHandlingTests(unittest.TestCase):
         self.assertNotIn(self.tmp.name,result.stderr)
 
     def test_quote_transfer_errors_are_controlled_and_rollback_all_changes(self):
+        """Una transferencia con cotización inválida o fallida se rechaza y no deja cambios parciales."""
         with db.connect() as c:
             origin=c.execute('SELECT id_cuenta FROM cuentas WHERE id_perfil=1 LIMIT 1').fetchone()[0]
             c.execute('UPDATE cuentas SET saldo_inicial_centimos=10000000 WHERE id_cuenta=?',(origin,))
