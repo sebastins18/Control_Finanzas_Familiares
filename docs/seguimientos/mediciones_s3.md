@@ -19,6 +19,14 @@
 | Consultar por categoría y rango de fechas (fetchall) | 1.379600 | 1.311200 | 1.135100 | 1.098900 | 1.100800 | 1.135100 |
 | SUM(monto_centimos) de gastos del período | 0.326300 | 0.274000 | 0.262700 | 0.266100 | 0.262800 | 0.266100 |
 
+### Interpretación de los resultados
+
+Las mediciones realizadas muestran que las tres operaciones evaluadas tuvieron tiempos de respuesta bajos en el entorno local. Los inserts de gastos registraron la mediana más alta, con 2,4016 ms, considerando el registro del movimiento y la confirmación de la transacción.
+
+La consulta por categoría y rango de fechas obtuvo una mediana de 1,1351 ms, mientras que el cálculo de la suma de gastos presentó el menor tiempo, con 0,2661 ms.
+
+Los resultados se obtuvieron utilizando datos sintéticos y cinco ejecuciones por operación. Estos valores sirven como referencia para evaluar el rendimiento de SQLite en las condiciones de la prueba. Sin embargo, pueden variar según la configuración del equipo y el volumen de datos, por lo que no deben interpretarse como tiempos garantizados en otros entornos.
+
 Validaciones satisfactorias: foreign_keys=ON, foreign_key_check sin
 violaciones e integrity_check=ok (antes y después de medir).
 La consulta devuelve 1005 movimientos y SUM devuelve 605750 céntimos,
