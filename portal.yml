@@ -7,7 +7,7 @@ motores: [SQLite]
 lenguaje: Python
 licencia: MIT
 repositorio: https://github.com/sebastins18/Control_Finanzas_Familiares
-demo_video: ""   # Grabación local existente; video final en preparación y URL autorizada pendiente.
+demo_video: "https://github.com/sebastins18/Control_Finanzas_Familiares/blob/main/video/demo_misfinanzas.mp4"
 demo_url: https://diego01.grupo5.crnube.org/finanzas/login
 captura: ""      # Capturas auténticas locales existentes; URL pública autorizada pendiente.
 grupo: 5

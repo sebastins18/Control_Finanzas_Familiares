@@ -10,15 +10,15 @@ Es un MVP académico open source con datos ficticios. El backend utiliza Python 
 
 ## Estado de la entrega final
 
-| Área                  | Situación actual                                                                                                                         | Procedencia                                                                                                                                                                                                             |
-| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Base técnica          | Rama main, con el código, las funcionalidades, las pruebas y la documentación correspondientes a los seguimientos S1 a S4.                                                   | Historial Git; PR #20, #21 y #22                                                                                                                                                                                        |
-| CRNube                | S4 desplegado el **6/11/2026 sobre `8a88aeb`**, con respaldo SQLite consistente anterior a la actualización                              | Confirmación del responsable; esta revisión documental no administra el servidor                                                                                                                                        |
-| SQLite del despliegue | **WAL, 17 tablas, integridad `ok` y 0 errores de claves foráneas**                                                                       | Verificación del despliegue aportada por el responsable; comprobaciones locales separadas                                                                                                                               |
+| Área                          | Situación actual                                                                                                           | Procedencia                                                                                                                                                                |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Base técnica                  | Rama main, con el código, las funcionalidades, las pruebas y la documentación correspondientes a los seguimientos S1 a S4. | Historial Git; PR #20, #21 y #22                                                                                                                                           |
+| CRNube                        | S4 desplegado el **6/11/2026 sobre `8a88aeb`**, con respaldo SQLite consistente anterior a la actualización                | Confirmación del responsable; esta revisión documental no administra el servidor                                                                                           |
+| SQLite del despliegue         | **WAL, 17 tablas, integridad `ok` y 0 errores de claves foráneas**                                                         | Verificación del despliegue aportada por el responsable; comprobaciones locales separadas                                                                                  |
 | Pruebas automatizadas finales | **122/122 exitosas**, 0 fallos, 0 errores y 0 omisiones; **123,43 segundos** | Virtualmin, **12/11/2026**; [suite original](evidencias/s4_final/reportes/virtualmin/suite.json) y [detalle de la ejecución](docs/seguimientos/evidencia_final_pruebas.md) |
-| Navegador             | **27/27 E2E satisfactorias, 0 fallidas y 0 omitidas**, según el registro histórico del 6/11/2026                                         | [Matriz histórica S4](docs/seguimientos/ENTREGA_S4.md); reporte original no disponible en este checkout, sin nueva ejecución E2E                                                                                        |
-| S3                    | Cerrado técnicamente en [Issue #3](https://github.com/sebastins18/Control_Finanzas_Familiares/issues/3)                                  | GitHub: `closed`, motivo `completed`; sin atribuir aprobación docente                                                                                                                                                   |
-| Video                 | Hay grabaciones y versiones de trabajo locales; el **video final sincronizado sigue en preparación para la entrega y no está publicado** | [Estado y evidencias audiovisuales](docs/seguimientos/VIDEO_S4.md)                                                                                                                                                      |
+| Navegador | **27/27 E2E satisfactorias, 0 fallidas y 0 omitidas**, según el registro histórico del 6/11/2026 | [Matriz histórica S4](docs/seguimientos/ENTREGA_S4.md); reporte original no disponible en este checkout, sin nueva ejecución E2E |
+| S3 | Cerrado técnicamente en [Issue #3](https://github.com/sebastins18/Control_Finanzas_Familiares/issues/3) | GitHub: `closed`, motivo `completed`; sin atribuir aprobación docente |
+| Video | Video de demostración final de MisFinanzas, incorporado a la entrega final | [Ver video de MisFinanzas](video/demo_misfinanzas.mp4) |
 | Versión final | **`v1.0.0` — viernes 13 de noviembre de 2026** | [Registro de cambios](CHANGELOG.md) |
 
 La aplicación se encuentra publicada en [MisFinanzas en CRNube](https://diego01.grupo5.crnube.org/finanzas/login). Las verificaciones del despliegue y sus evidencias se encuentran documentadas en la [matriz de entrega S4](docs/seguimientos/ENTREGA_S4.md).
@@ -181,15 +181,22 @@ No copiar directamente un archivo SQLite activo en WAL como sustituto de la API 
 
 ## Evidencias locales, publicación y cierre académico
 
+
 | Material | Evidencia existente | Pendiente |
 | --- | --- | --- |
 | Pruebas y mediciones de Virtualmin del 12/11/2026 | [122/122 pruebas exitosas](evidencias/s4_final/reportes/virtualmin/suite.json), sin fallos, errores ni omisiones, en 123,43 segundos; [mediciones de rendimiento](evidencias/s4_final/reportes/virtualmin/benchmark.md) y [trazabilidad](docs/seguimientos/evidencia_final_pruebas.md) | Reporte E2E histórico original no incluido; no se realizó una nueva ejecución E2E |
 | Capturas auténticas | [Login](evidencias/s4_final/capturas/01_login.png), [dashboard](evidencias/s4_final/capturas/02_dashboard.png), [presupuesto](evidencias/s4_final/capturas/07_presupuestos.png), [historial](evidencias/s4_final/capturas/10_historial.png), [reporte](evidencias/s4_final/capturas/11_reporte_anual.png) y CRUD en la misma carpeta | Publicación selectiva tras revisión |
-| Video auténtico | Primera toma local — `evidencias/s4/video/MisFinanzas_S4.mp4` (archivo histórico no incluido en este checkout), guiones y versiones de trabajo sincronizadas en `evidencias/s4_final/` | **Video final sincronizado en preparación**, revisión del grupo, URL y permisos del profesor |
-| Ficha del portal | [portal.yml](portal.yml): 15 campos académicos y cuatro integrantes registrados en `autores_publicos` | `demo_video` y `captura` vacíos hasta disponer de URL aprobadas |
+| Video de demostración final | [Ver video de MisFinanzas](video/demo_misfinanzas.mp4), elaborado por Sebastián para la entrega final | Incorporado a la entrega final |
+| Ficha del portal | [portal.yml](portal.yml): 15 campos académicos y cuatro integrantes registrados en `autores_publicos` | Actualizar `demo_video` con el enlace del video final; revisar `captura` por separado |
 | Entrega | [Matriz S4](docs/seguimientos/ENTREGA_S4.md) y [acta](docs/seguimientos/ACTA_S4.md) | Instalación independiente, participación y comentarios docentes, presentación/PDF y decisión sobre tags |
 
-Los archivos cuyo nombre incluye `FINAL` son versiones de trabajo locales conservadas; su existencia y sus verificaciones técnicas no equivalen a aceptación editorial ni publicación. Los ZIP y reportes anteriores permanecen como snapshots de sus ejecuciones. El estado de entrega solicitado por el responsable sigue siendo **preparación del video final**. No hay un enlace público de video acreditado.
+
+
+
+
+
+
+Los archivos históricos y las versiones de trabajo se conservan como antecedentes de sus respectivas ejecuciones. El video de demostración final de MisFinanzas se encuentra en `video/demo_misfinanzas.mp4`, preparado para su publicación en GitHub. Los ZIP y reportes anteriores conservan sus resultados originales. La publicación del video no implica aprobación académica.
 
 ## Seguimientos y CI
 
